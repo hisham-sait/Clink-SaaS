@@ -1,0 +1,223 @@
+.accounting {
+  .page-header {
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  // Feature Cards
+  .feature-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-icon {
+      margin-bottom: 1rem;
+
+      i {
+        font-size: 1.75rem;
+        color: #13B5EA;
+      }
+    }
+
+    .feature-content {
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+      }
+
+      .btn-link {
+        color: #13B5EA;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0;
+
+        &:hover {
+          color: darken(#13B5EA, 10%);
+        }
+
+        i {
+          transition: transform 0.2s ease;
+        }
+
+        &:hover i {
+          transform: translateX(4px);
+        }
+      }
+    }
+  }
+
+  // Recent Accounts Card
+  .card {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    .card-header {
+      background: none;
+      border-bottom: 1px solid #e9ecef;
+      padding: 1.25rem 1.5rem;
+
+      h5 {
+        font-weight: 600;
+        color: #2d3748;
+      }
+
+      .header-actions {
+        .btn-link {
+          color: #13B5EA;
+          text-decoration: none;
+          font-weight: 500;
+          padding: 0;
+
+          &:hover {
+            color: darken(#13B5EA, 10%);
+          }
+
+          i {
+            font-size: 1.1rem;
+            margin-right: 0.25rem;
+          }
+        }
+      }
+    }
+
+    .table {
+      margin: 0;
+
+      th {
+        font-weight: 500;
+        color: #6c757d;
+        border-top: none;
+        padding: 1rem 1.5rem;
+        background-color: #f8f9fa;
+      }
+
+      td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+        color: #2d3748;
+      }
+
+      .account-type {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+
+        &.asset {
+          background-color: rgba(56, 161, 105, 0.1);
+          color: #38a169;
+        }
+
+        &.liability {
+          background-color: rgba(229, 62, 62, 0.1);
+          color: #e53e3e;
+        }
+
+        &.revenue {
+          background-color: rgba(66, 153, 225, 0.1);
+          color: #4299e1;
+        }
+
+        &.expense {
+          background-color: rgba(236, 201, 75, 0.1);
+          color: #b7791f;
+        }
+      }
+
+      .btn-link {
+        color: #6c757d;
+        padding: 0.25rem;
+
+        &:hover {
+          color: #13B5EA;
+        }
+      }
+    }
+  }
+
+  // Quick Actions
+  .quick-actions {
+    .btn {
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+
+      i {
+        font-size: 1.1rem;
+      }
+    }
+
+    .btn-primary {
+      background-color: #13B5EA;
+      border-color: #13B5EA;
+
+      &:hover {
+        background-color: darken(#13B5EA, 5%);
+        border-color: darken(#13B5EA, 5%);
+      }
+    }
+
+    .btn-outline-primary {
+      color: #13B5EA;
+      border-color: #13B5EA;
+
+      &:hover {
+        background-color: #13B5EA;
+        border-color: #13B5EA;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .accounting {
+    .feature-card {
+      .feature-icon {
+        i {
+          font-size: 1.5rem;
+        }
+      }
+    }
+
+    .table-responsive {
+      margin: 0;
+      border: 0;
+    }
+
+    .header-actions {
+      .btn-link {
+        span {
+          display: none;
+        }
+      }
+    }
+  }
+}

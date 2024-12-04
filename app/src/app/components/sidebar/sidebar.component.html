@@ -1,0 +1,32 @@
+<div class="sidebar" [class.collapsed]="isCollapsed">
+  <div class="sidebar-header">
+    <div class="brand">
+      <i class="bi bi-building"></i>
+      <span class="brand-text" [class.d-none]="isCollapsed">Bradán</span>
+    </div>
+    <button class="toggle-btn" (click)="toggleSidebar()">
+      <i class="bi" [class.bi-chevron-left]="!isCollapsed" [class.bi-chevron-right]="isCollapsed"></i>
+    </button>
+  </div>
+
+  <div class="sidebar-content">
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <a *ngFor="let item of menuItems" 
+           [routerLink]="item.route" 
+           routerLinkActive="active" 
+           class="nav-link">
+          <i [class]="item.icon"></i>
+          <span class="nav-text" [class.d-none]="isCollapsed">{{ item.title }}</span>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="sidebar-footer">
+    <a class="nav-link">
+      <i class="bi bi-gear"></i>
+      <span class="nav-text" [class.d-none]="isCollapsed">Settings</span>
+    </a>
+  </div>
+</div>

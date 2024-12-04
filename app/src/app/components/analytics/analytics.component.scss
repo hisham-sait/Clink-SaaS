@@ -1,0 +1,296 @@
+.analytics {
+  .page-header {
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  // Metric Cards
+  .metric-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      .metric-title {
+        color: #6c757d;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      i {
+        font-size: 1.25rem;
+        color: #13B5EA;
+      }
+    }
+
+    .metric-body {
+      .metric-value {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+      }
+
+      .metric-details {
+        .trend {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.875rem;
+          font-weight: 500;
+
+          &.up {
+            color: #38a169;
+            background-color: rgba(56, 161, 105, 0.1);
+          }
+
+          &.down {
+            color: #e53e3e;
+            background-color: rgba(229, 62, 62, 0.1);
+          }
+        }
+      }
+    }
+  }
+
+  // Report Categories
+  .report-category {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    height: 100%;
+
+    .category-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+
+      h5 {
+        margin: 0;
+        font-weight: 600;
+        color: #2d3748;
+      }
+    }
+
+    .report-list {
+      .report-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          background-color: #f8f9fa;
+        }
+
+        .report-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          background-color: rgba(19, 181, 234, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 1rem;
+          flex-shrink: 0;
+
+          i {
+            font-size: 1.25rem;
+            color: #13B5EA;
+          }
+        }
+
+        .report-content {
+          flex: 1;
+
+          .report-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.25rem;
+          }
+
+          .report-description {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+          }
+
+          .report-meta {
+            font-size: 0.75rem;
+            color: #718096;
+          }
+        }
+
+        .report-actions {
+          .btn-link {
+            color: #13B5EA;
+            padding: 0.25rem;
+
+            &:hover {
+              color: darken(#13B5EA, 10%);
+            }
+
+            i {
+              font-size: 1.25rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Activity List
+  .activity-list {
+    .activity-item {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+
+        &.report {
+          background-color: rgba(66, 153, 225, 0.1);
+          color: #4299e1;
+        }
+
+        &.export {
+          background-color: rgba(56, 161, 105, 0.1);
+          color: #38a169;
+        }
+
+        &.schedule {
+          background-color: rgba(236, 201, 75, 0.1);
+          color: #b7791f;
+        }
+
+        &.share {
+          background-color: rgba(159, 122, 234, 0.1);
+          color: #9f7aea;
+        }
+
+        i {
+          font-size: 1rem;
+        }
+      }
+
+      .activity-content {
+        flex: 1;
+
+        .activity-description {
+          color: #2d3748;
+          margin-bottom: 0.25rem;
+        }
+
+        .activity-meta {
+          font-size: 0.875rem;
+          color: #6c757d;
+
+          .user {
+            font-weight: 500;
+            margin-right: 0.5rem;
+          }
+
+          .time {
+            &:before {
+              content: '•';
+              margin: 0 0.5rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Chart Placeholders
+  .chart-placeholder {
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    color: #6c757d;
+
+    i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: #13B5EA;
+    }
+
+    span {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .analytics {
+    .metric-card {
+      .metric-value {
+        font-size: 1.5rem;
+      }
+    }
+
+    .report-category {
+      .report-item {
+        padding: 1rem;
+
+        .report-icon {
+          width: 32px;
+          height: 32px;
+
+          i {
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+
+    .chart-placeholder {
+      height: 200px;
+
+      i {
+        font-size: 2rem;
+      }
+    }
+  }
+}

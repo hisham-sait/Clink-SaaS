@@ -1,0 +1,166 @@
+<div class="contacts">
+  <!-- Page Header -->
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Contacts</h1>
+        <p class="text-muted">Manage your customers and vendors</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline-primary me-2">
+          <i class="bi bi-upload"></i>
+          Import
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-person-plus"></i>
+          Add Contact
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Metrics -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3" *ngFor="let metric of contactMetrics">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">{{ metric.title }}</span>
+          <i [class]="metric.icon"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ metric.value }}</h3>
+          <div class="metric-details" *ngIf="metric.change">
+            <span [class]="'trend ' + metric.trend">
+              <i [class]="metric.trend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ metric.change }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions mb-4">
+    <div class="row g-4">
+      <div class="col-12 col-sm-6 col-md-3" *ngFor="let action of quickActions">
+        <div class="action-card" [attr.data-action]="action.action">
+          <i [class]="action.icon"></i>
+          <span class="action-title">{{ action.title }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Groups -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Contact Groups</h5>
+      <div class="header-actions">
+        <button class="btn btn-link">
+          Manage Groups
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-12 col-md-6 col-xl-3" *ngFor="let group of contactGroups">
+          <div class="group-card">
+            <div class="group-icon">
+              <i [class]="group.icon"></i>
+            </div>
+            <div class="group-content">
+              <h4 class="group-name">{{ group.name }}</h4>
+              <div class="group-meta">
+                <span class="count">{{ group.count }} contacts</span>
+                <div class="group-stats" *ngIf="!group.mixed">
+                  <span *ngIf="group.totalRevenue">Revenue: {{ group.totalRevenue | currency }}</span>
+                  <span *ngIf="group.totalSpent">Spent: {{ group.totalSpent | currency }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Contacts -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Recent Contacts</h5>
+      <div class="header-actions">
+        <button class="btn btn-link">
+          View All Contacts
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Balance</th>
+              <th>Last Transaction</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let contact of recentContacts">
+              <td>{{ contact.name }}</td>
+              <td>
+                <span class="type-badge" [class]="getTypeClass(contact.type)">
+                  {{ contact.type }}
+                </span>
+              </td>
+              <td>{{ contact.email }}</td>
+              <td>{{ contact.phone }}</td>
+              <td [class.text-success]="contact.balance > 0" [class.text-danger]="contact.balance < 0">
+                {{ contact.balance | currency }}
+              </td>
+              <td>{{ contact.lastTransaction | date:'MMM d, y' }}</td>
+              <td>
+                <span class="status-badge" [class]="getStatusClass(contact.status)">
+                  {{ contact.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">Recent Activity</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="activity-list">
+        <div class="activity-item" *ngFor="let activity of recentActivity">
+          <div class="activity-icon" [class]="activity.type">
+            <i [class]="getActivityIcon(activity.type)"></i>
+          </div>
+          <div class="activity-content">
+            <div class="activity-description">{{ activity.description }}</div>
+            <div class="activity-meta">
+              <span class="user">{{ activity.user }}</span>
+              <span class="time">{{ activity.time }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

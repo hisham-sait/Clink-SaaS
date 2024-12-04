@@ -1,59 +1,45 @@
-<!-- Navigation -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-  <div class="container">
-    <a class="navbar-brand" href="#">
-      <i class="bi bi-building"></i>
-      Bradán Accountants
-    </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="#">
-            <i class="bi bi-house-door"></i> Home
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">
-            <i class="bi bi-person"></i> Profile
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">
-            <i class="bi bi-gear"></i> Settings
-          </a>
-        </li>
-      </ul>
-    </div>
-  </div>
-</nav>
+<div class="app-container">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
 
-<!-- Main Content -->
-<div class="container py-4">
-  <div class="row">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h2 class="card-title">Welcome to Bradán Accountants</h2>
-          <p class="card-text">This is a basic application environment with Angular frontend and Node.js backend.</p>
+  <div class="main-content">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+      <div class="container-fluid px-4">
+        <div class="d-flex align-items-center">
+          <span class="navbar-brand">
+            <i class="bi bi-building"></i>
+            Bradán Accountants
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-link">
+            <i class="bi bi-question-circle"></i>
+          </button>
+          <button class="btn btn-link">
+            <i class="bi bi-bell"></i>
+          </button>
+          <div class="vr mx-2"></div>
+          <button class="btn btn-link d-flex align-items-center gap-2">
+            <i class="bi bi-person-circle"></i>
+            <span class="d-none d-md-inline">Account</span>
+          </button>
         </div>
       </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="content-wrapper">
+      <div class="container-fluid px-4 py-4">
+        <router-outlet></router-outlet>
+      </div>
     </div>
-  </div>
-  
-  <!-- Router Outlet -->
-  <div class="row mt-4">
-    <div class="col-12">
-      <router-outlet></router-outlet>
-    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container-fluid px-4">
+        <span class="text-muted">© 2024 Bradán Accountants. All rights reserved.</span>
+      </div>
+    </footer>
   </div>
 </div>
-
-<!-- Footer -->
-<footer class="footer mt-auto py-3 bg-light">
-  <div class="container text-center">
-    <span class="text-muted">© 2024 Bradán Accountants. All rights reserved.</span>
-  </div>
-</footer>
