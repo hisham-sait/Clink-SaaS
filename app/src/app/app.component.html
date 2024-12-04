@@ -5,74 +5,35 @@
       <i class="bi" [class.bi-list]="!isSidebarExpanded" [class.bi-x-lg]="isSidebarExpanded"></i>
     </button>
     <img src="assets/logo.png" alt="Bradán" class="mobile-logo">
-    <div class="mobile-actions">
-      <button class="mobile-action-btn" (click)="toggleNotifications()">
-        <i class="bi bi-bell"></i>
-        <span class="notification-badge" *ngIf="notificationCount > 0">
-          {{ notificationCount }}
-        </span>
-      </button>
-      <button class="mobile-action-btn" (click)="toggleUserMenu()">
-        <img [src]="userAvatar" [alt]="userName" class="user-avatar">
-      </button>
-    </div>
   </div>
 
-  <!-- Sidebar -->
+  <!-- Tiny Sidebar -->
+  <app-tiny-sidebar
+    [isDarkMode]="isDarkMode"
+    [notificationCount]="notificationCount"
+    [userAvatar]="userAvatar"
+    [userName]="userName"
+    [activeSection]="activeSection"
+    (sectionChange)="onSectionChange($event)"
+    (sectionHover)="onSectionHover($event)"
+    (sectionLeave)="onSectionLeave()"
+    (themeToggle)="toggleTheme()"
+    (notificationsToggle)="toggleNotifications()"
+    (userMenuToggle)="toggleUserMenu()">
+  </app-tiny-sidebar>
+
+  <!-- Main Sidebar -->
   <app-sidebar
     [isExpanded]="isSidebarExpanded"
     [isMobile]="isMobile"
-    (toggleSidebar)="toggleSidebar()">
+    [activeSection]="activeSection"
+    (toggleSidebar)="toggleSidebar()"
+    (mouseenter)="onSectionHover(activeSection)"
+    (mouseleave)="onSectionLeave()">
   </app-sidebar>
 
   <!-- Main Content -->
   <main class="main-content" [class.sidebar-expanded]="isSidebarExpanded">
-    <!-- Desktop Header -->
-    <header class="desktop-header" *ngIf="!isMobile">
-      <div class="header-search">
-        <div class="search-input">
-          <i class="bi bi-search"></i>
-          <input 
-            type="text" 
-            placeholder="Search..."
-            [(ngModel)]="searchQuery"
-            (input)="onSearch($event)"
-            (focus)="isSearchActive = true"
-            (blur)="isSearchActive = false">
-          <button 
-            class="clear-search" 
-            *ngIf="searchQuery" 
-            (click)="clearSearch()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="header-actions">
-        <!-- Theme Toggle -->
-        <button class="action-btn" (click)="toggleTheme()">
-          <i class="bi" [class.bi-moon-fill]="!isDarkMode" [class.bi-sun-fill]="isDarkMode"></i>
-        </button>
-
-        <!-- Notifications -->
-        <button class="action-btn" (click)="toggleNotifications()" data-notifications>
-          <i class="bi bi-bell"></i>
-          <span class="notification-badge" *ngIf="notificationCount > 0">
-            {{ notificationCount }}
-          </span>
-        </button>
-
-        <!-- User Menu -->
-        <div class="user-menu">
-          <button class="user-btn" (click)="toggleUserMenu()">
-            <img [src]="userAvatar" [alt]="userName" class="user-avatar">
-            <span class="user-name">{{ userName }}</span>
-            <i class="bi bi-chevron-down"></i>
-          </button>
-        </div>
-      </div>
-    </header>
-
     <!-- Page Content -->
     <div class="page-content">
       <router-outlet></router-outlet>

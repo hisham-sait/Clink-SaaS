@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { TinySidebarComponent } from './components/tiny-sidebar/tiny-sidebar.component';
+
+type SectionType = 'books' | 'crm' | 'settings' | 'help';
 
 interface User {
   name: string;
@@ -15,16 +18,13 @@ interface User {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, SidebarComponent]
+  imports: [CommonModule, RouterModule, FormsModule, SidebarComponent, TinySidebarComponent]
 })
 export class AppComponent implements OnInit {
   // Layout state
-  isSidebarExpanded = true;
+  isSidebarExpanded = false;
   isMobile = window.innerWidth <= 768;
-
-  // Search
-  searchQuery = '';
-  isSearchActive = false;
+  activeSection: SectionType = 'books';
 
   // Theme
   isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -42,6 +42,9 @@ export class AppComponent implements OnInit {
   // Dropdowns
   isUserMenuOpen = false;
   isNotificationsPanelOpen = false;
+
+  // Hover timer
+  private hoverTimer: any;
 
   @HostListener('window:resize', ['$event'])
   onResize() {
@@ -63,6 +66,28 @@ export class AppComponent implements OnInit {
 
   get userAvatar(): string {
     return this.user.avatar;
+  }
+
+  // Section handling
+  onSectionChange(section: SectionType) {
+    if (this.activeSection === section) {
+      this.isSidebarExpanded = !this.isSidebarExpanded;
+    } else {
+      this.activeSection = section;
+      this.isSidebarExpanded = true;
+    }
+  }
+
+  onSectionHover(section: SectionType) {
+    clearTimeout(this.hoverTimer);
+    this.activeSection = section;
+    this.isSidebarExpanded = true;
+  }
+
+  onSectionLeave() {
+    this.hoverTimer = setTimeout(() => {
+      this.isSidebarExpanded = false;
+    }, 300); // 300ms delay before hiding
   }
 
   // Toggle functions
@@ -88,17 +113,6 @@ export class AppComponent implements OnInit {
     if (this.isNotificationsPanelOpen) {
       this.isUserMenuOpen = false;
     }
-  }
-
-  // Search functions
-  onSearch(event: Event) {
-    const value = (event.target as HTMLInputElement).value;
-    console.log('Searching for:', value);
-    // Implement search functionality
-  }
-
-  clearSearch() {
-    this.searchQuery = '';
   }
 
   // Theme initialization

@@ -1,4 +1,5 @@
-<div class="sidebar" [class.expanded]="isExpanded">
+<!-- Main Sidebar -->
+<div class="sidebar" [class.show]="isExpanded">
   <!-- Sidebar Header -->
   <div class="sidebar-header">
     <div class="logo-container">
@@ -10,7 +11,7 @@
   <!-- Navigation Container with Scroll -->
   <div class="nav-container">
     <!-- Books Section -->
-    <div class="nav-section">
+    <div class="nav-section" *ngIf="activeSection === 'books'">
       <div class="section-header">
         <span>BOOKS</span>
       </div>
@@ -85,7 +86,7 @@
     </div>
 
     <!-- CRM Section -->
-    <div class="nav-section">
+    <div class="nav-section" *ngIf="activeSection === 'crm'">
       <div class="section-header">
         <span>CRM</span>
       </div>
@@ -140,30 +141,61 @@
         </li>
       </ul>
     </div>
-  </div>
 
-  <!-- Bottom Actions -->
-  <div class="bottom-actions">
-    <ul class="nav-items">
-      <li>
-        <a routerLink="/settings" routerLinkActive="active">
-          <i class="bi bi-gear"></i>
-          <span class="nav-label">Settings</span>
-        </a>
-      </li>
-      <li>
-        <a href="#" (click)="onHelpClick($event)">
-          <i class="bi bi-question-circle"></i>
-          <span class="nav-label">Help & Support</span>
-        </a>
-      </li>
-    </ul>
-  </div>
+    <!-- Settings Section -->
+    <div class="nav-section" *ngIf="activeSection === 'settings'">
+      <div class="section-header">
+        <span>SETTINGS</span>
+      </div>
+      <ul class="nav-items">
+        <li>
+          <a routerLink="/settings/profile" routerLinkActive="active">
+            <i class="bi bi-person"></i>
+            <span class="nav-label">Profile</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/settings/organization" routerLinkActive="active">
+            <i class="bi bi-building"></i>
+            <span class="nav-label">Organization</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/settings/preferences" routerLinkActive="active">
+            <i class="bi bi-sliders"></i>
+            <span class="nav-label">Preferences</span>
+          </a>
+        </li>
+      </ul>
+    </div>
 
-  <!-- Toggle Button -->
-  <button class="toggle-button" (click)="toggleExpanded()" *ngIf="!isMobile">
-    <i class="bi" [class.bi-chevron-left]="isExpanded" [class.bi-chevron-right]="!isExpanded"></i>
-  </button>
+    <!-- Help Section -->
+    <div class="nav-section" *ngIf="activeSection === 'help'">
+      <div class="section-header">
+        <span>HELP & SUPPORT</span>
+      </div>
+      <ul class="nav-items">
+        <li>
+          <a href="#" (click)="openDocumentation($event)">
+            <i class="bi bi-book"></i>
+            <span class="nav-label">Documentation</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" (click)="openSupport($event)">
+            <i class="bi bi-headset"></i>
+            <span class="nav-label">Support</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" (click)="openFeedback($event)">
+            <i class="bi bi-chat-dots"></i>
+            <span class="nav-label">Feedback</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <!-- Mobile Overlay -->

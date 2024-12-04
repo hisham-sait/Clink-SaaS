@@ -3,47 +3,23 @@
   height: 100%;
 }
 
+// Main Sidebar
 .sidebar {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 48px;
   height: 100vh;
-  width: 280px;
+  width: 48px; // Start with collapsed width
   background: var(--background-secondary);
   display: flex;
   flex-direction: column;
   transition: width 0.2s ease;
   z-index: 1000;
+  border-right: 1px solid var(--border-color);
+  overflow: hidden;
 
-  &:not(.expanded) {
-    width: 56px;
-    overflow: hidden;
-
-    .logo-text,
-    .section-header span,
-    .nav-label {
-      display: none;
-    }
-
-    .nav-items li a {
-      padding: 8px 16px;
-      justify-content: center;
-
-      i {
-        margin: 0;
-      }
-    }
-
-    .bottom-actions {
-      .nav-items li a {
-        padding: 8px 16px;
-        justify-content: center;
-
-        i {
-          margin: 0;
-        }
-      }
-    }
+  &.show {
+    width: 280px;
   }
 
   // Sidebar Header
@@ -57,27 +33,15 @@
     position: sticky;
     top: 0;
     z-index: 2;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    min-width: 280px;
+  }
 
-    .logo-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      overflow: hidden;
-
-      img {
-        height: 24px;
-        width: auto;
-        flex-shrink: 0;
-      }
-
-      .logo-text {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text-primary);
-        white-space: nowrap;
-        transition: opacity 0.2s ease;
-      }
-    }
+  &.show .sidebar-header {
+    opacity: 1;
+    visibility: visible;
   }
 
   // Navigation Container
@@ -86,6 +50,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: 8px 0;
+    min-width: 280px;
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -116,6 +81,9 @@
       color: var(--text-secondary);
       letter-spacing: 0.5px;
       white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
     }
 
     .nav-items {
@@ -127,26 +95,29 @@
         a {
           display: flex;
           align-items: center;
-          padding: 8px 16px;
           color: var(--text-secondary);
           text-decoration: none;
           transition: all 0.2s ease;
           font-size: 14px;
           font-weight: 500;
           white-space: nowrap;
+          cursor: pointer;
+          padding: 8px 0;
+          width: 48px;
+          justify-content: center;
 
           i {
             font-size: 18px;
-            margin-right: 12px;
             width: 20px;
             text-align: center;
             color: var(--text-secondary);
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
             flex-shrink: 0;
+            margin-right: 0;
           }
 
           .nav-label {
-            transition: opacity 0.2s ease;
+            display: none;
           }
 
           &:hover {
@@ -171,91 +142,26 @@
     }
   }
 
-  // Bottom Actions
-  .bottom-actions {
-    padding: 8px 0;
-    border-top: 1px solid var(--border-color);
-    background: var(--background-secondary);
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
+  &.show {
+    .nav-section {
+      .section-header {
+        opacity: 1;
+        visibility: visible;
+      }
 
-    .nav-items {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      
-      li {
-        a {
-          display: flex;
-          align-items: center;
-          padding: 8px 16px;
-          color: var(--text-secondary);
-          text-decoration: none;
-          transition: all 0.2s ease;
-          font-size: 14px;
-          font-weight: 500;
-          white-space: nowrap;
+      .nav-items li a {
+        padding: 8px 16px;
+        width: 100%;
+        justify-content: flex-start;
 
-          i {
-            font-size: 18px;
-            margin-right: 12px;
-            width: 20px;
-            text-align: center;
-            transition: color 0.2s ease;
-            flex-shrink: 0;
-          }
+        i {
+          margin-right: 12px;
+        }
 
-          &:hover {
-            color: var(--text-primary);
-            background: var(--neutral-100);
-
-            i {
-              color: var(--brand-primary);
-            }
-          }
-
-          &.active {
-            color: var(--brand-primary);
-            background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
-
-            i {
-              color: var(--brand-primary);
-            }
-          }
+        .nav-label {
+          display: inline-block;
         }
       }
-    }
-  }
-
-  // Toggle Button
-  .toggle-button {
-    position: absolute;
-    top: 50%;
-    right: -12px;
-    transform: translateY(-50%);
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--background-secondary);
-    border: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 3;
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-
-    &:hover {
-      background: var(--neutral-100);
-      box-shadow: var(--shadow-md);
-    }
-
-    i {
-      font-size: 14px;
-      color: var(--text-secondary);
-      transition: transform 0.2s ease;
     }
   }
 }
@@ -263,15 +169,13 @@
 // Mobile Styles
 @media (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%);
+    left: 40px;
+    transform: translateX(-280px);
+    width: 280px;
 
-    &.expanded {
+    &.show {
       transform: translateX(0);
       box-shadow: var(--shadow-lg);
-    }
-
-    .toggle-button {
-      display: none;
     }
   }
 
