@@ -1,0 +1,384 @@
+.marketing-hub {
+  // HubSpot's color palette
+  $hubspot-orange: #ff7a59;
+  $hubspot-dark: #2e475d;
+  $hubspot-blue: #0091ae;
+  $hubspot-light: #f5f8fa;
+
+  .page-header {
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $hubspot-dark;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+  }
+
+  // Metric Cards
+  .metric-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      .metric-title {
+        color: $hubspot-dark;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      i {
+        font-size: 1.25rem;
+        color: $hubspot-orange;
+      }
+    }
+
+    .metric-body {
+      .metric-value {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: $hubspot-dark;
+        margin-bottom: 0.5rem;
+      }
+
+      .metric-details {
+        .trend {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.875rem;
+          font-weight: 500;
+
+          &.up {
+            color: #38a169;
+            background-color: rgba(56, 161, 105, 0.1);
+          }
+
+          &.down {
+            color: #e53e3e;
+            background-color: rgba(229, 62, 62, 0.1);
+          }
+        }
+      }
+    }
+  }
+
+  // Tool Cards
+  .tool-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+
+    &:hover {
+      border-color: $hubspot-orange;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+      .arrow-icon {
+        transform: translateX(4px);
+        opacity: 1;
+      }
+    }
+
+    .tool-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background-color: rgba($hubspot-orange, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      i {
+        font-size: 1.5rem;
+        color: $hubspot-orange;
+      }
+    }
+
+    .tool-content {
+      flex: 1;
+
+      h4 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: $hubspot-dark;
+        margin-bottom: 0.25rem;
+      }
+
+      p {
+        font-size: 0.875rem;
+        color: #718096;
+        margin-bottom: 0.75rem;
+      }
+
+      .tool-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+
+        .stats-label {
+          color: #718096;
+        }
+
+        .stats-value {
+          font-weight: 600;
+          color: $hubspot-orange;
+        }
+      }
+    }
+
+    .arrow-icon {
+      color: $hubspot-orange;
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+  }
+
+  // Campaigns Table
+  .campaigns-table {
+    margin: 0;
+
+    th {
+      font-weight: 500;
+      color: #718096;
+      border-top: none;
+      padding: 1rem 1.5rem;
+      background-color: $hubspot-light;
+    }
+
+    td {
+      padding: 1rem 1.5rem;
+      vertical-align: middle;
+    }
+
+    .campaign-name {
+      color: $hubspot-orange;
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        color: darken($hubspot-orange, 10%);
+      }
+    }
+
+    .campaign-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+
+      i {
+        color: $hubspot-blue;
+      }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+
+      &.active {
+        background-color: rgba(56, 161, 105, 0.1);
+        color: #38a169;
+      }
+
+      &.scheduled {
+        background-color: rgba($hubspot-orange, 0.1);
+        color: $hubspot-orange;
+      }
+
+      &.completed {
+        background-color: rgba(66, 153, 225, 0.1);
+        color: #4299e1;
+      }
+
+      &.draft {
+        background-color: rgba(113, 128, 150, 0.1);
+        color: #718096;
+      }
+    }
+
+    .performance-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.875rem;
+
+      .stat {
+        color: #718096;
+      }
+    }
+  }
+
+  // Activity List
+  .activity-list {
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid $hubspot-light;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+
+        &.email {
+          background-color: rgba($hubspot-orange, 0.1);
+          color: $hubspot-orange;
+        }
+
+        &.form {
+          background-color: rgba(56, 161, 105, 0.1);
+          color: #38a169;
+        }
+
+        &.page {
+          background-color: rgba(66, 153, 225, 0.1);
+          color: #4299e1;
+        }
+
+        &.workflow {
+          background-color: rgba(159, 122, 234, 0.1);
+          color: #9f7aea;
+        }
+
+        i {
+          font-size: 1rem;
+        }
+      }
+
+      .activity-content {
+        flex: 1;
+
+        .activity-description {
+          color: $hubspot-dark;
+          margin-bottom: 0.25rem;
+        }
+
+        .activity-meta {
+          font-size: 0.875rem;
+          color: #718096;
+
+          .user {
+            font-weight: 500;
+            margin-right: 0.5rem;
+          }
+
+          .time {
+            &:before {
+              content: '•';
+              margin: 0 0.5rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Button styles
+  .btn-primary {
+    background-color: $hubspot-orange;
+    border-color: $hubspot-orange;
+
+    &:hover {
+      background-color: darken($hubspot-orange, 5%);
+      border-color: darken($hubspot-orange, 5%);
+    }
+
+    i {
+      margin-right: 0.5rem;
+    }
+  }
+
+  .btn-outline-primary {
+    color: $hubspot-orange;
+    border-color: $hubspot-orange;
+
+    &:hover {
+      background-color: $hubspot-orange;
+      border-color: $hubspot-orange;
+      color: #fff;
+    }
+
+    i {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .marketing-hub {
+    .page-header {
+      .header-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+
+    .metric-card {
+      .metric-value {
+        font-size: 1.5rem;
+      }
+    }
+
+    .tool-card {
+      padding: 1rem;
+
+      .tool-icon {
+        width: 40px;
+        height: 40px;
+
+        i {
+          font-size: 1.25rem;
+        }
+      }
+    }
+
+    .performance-stats {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+  }
+}

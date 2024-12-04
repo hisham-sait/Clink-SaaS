@@ -1,0 +1,202 @@
+<div class="operations-hub">
+  <!-- Page Header -->
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Operations Hub</h1>
+        <p class="text-muted">Manage data sync and workflow automation</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline-primary me-2">
+          <i class="bi bi-arrow-repeat"></i>
+          Sync Data
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg"></i>
+          Create Workflow
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operation Metrics -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3" *ngFor="let metric of operationMetrics">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">{{ metric.title }}</span>
+          <i [class]="metric.icon"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ metric.value }}</h3>
+          <div class="metric-details">
+            <span [class]="'trend ' + metric.trend">
+              <i [class]="metric.trend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ metric.change }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="row g-4">
+    <!-- Left Column -->
+    <div class="col-12 col-xl-8">
+      <!-- Active Workflows -->
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Active Workflows</h5>
+          <div class="header-actions">
+            <button class="btn btn-link me-2">
+              <i class="bi bi-funnel"></i>
+              Filter
+            </button>
+            <button class="btn btn-link">
+              View All
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover workflows-table">
+              <thead>
+                <tr>
+                  <th>Workflow Name</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Enrolled</th>
+                  <th>Completed</th>
+                  <th>Last Run</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let workflow of activeWorkflows">
+                  <td>
+                    <a href="#" class="workflow-name">{{ workflow.name }}</a>
+                  </td>
+                  <td>{{ workflow.type }}</td>
+                  <td>
+                    <span class="status-badge" [class]="getStatusClass(workflow.status)">
+                      {{ workflow.status }}
+                    </span>
+                  </td>
+                  <td>{{ workflow.enrolled }}</td>
+                  <td>{{ workflow.completed }}</td>
+                  <td>{{ workflow.lastRun | date:'MMM d, h:mm a' }}</td>
+                  <td>
+                    <button class="btn btn-link btn-sm">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Sources -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Data Sources</h5>
+          <button class="btn btn-link">
+            Add Source
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover sources-table">
+              <thead>
+                <tr>
+                  <th>Source Name</th>
+                  <th>Status</th>
+                  <th>Records</th>
+                  <th>Last Sync</th>
+                  <th>Type</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let source of dataSources">
+                  <td>{{ source.name }}</td>
+                  <td>
+                    <span class="status-badge" [class]="getStatusClass(source.status)">
+                      {{ source.status }}
+                    </span>
+                  </td>
+                  <td>{{ source.records | number }}</td>
+                  <td>{{ source.lastSync | date:'MMM d, h:mm a' }}</td>
+                  <td>
+                    <span class="sync-type">
+                      <i class="bi" [class.bi-arrow-left-right]="source.type === 'Two-way'" [class.bi-arrow-right]="source.type === 'One-way'"></i>
+                      {{ source.type }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-link btn-sm">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-12 col-xl-4">
+      <!-- Operation Tools -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Operation Tools</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="tools-list">
+            <div class="tool-item" *ngFor="let tool of operationTools" [routerLink]="tool.route">
+              <div class="tool-icon">
+                <i [class]="tool.icon"></i>
+              </div>
+              <div class="tool-content">
+                <h6>{{ tool.title }}</h6>
+                <p>{{ tool.description }}</p>
+                <div class="tool-stats">
+                  <span class="stats-label">{{ tool.stats.label }}</span>
+                  <span class="stats-value">{{ tool.stats.value }}</span>
+                </div>
+              </div>
+              <i class="bi bi-chevron-right arrow-icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Recent Activity</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let activity of recentActivity">
+              <div class="activity-icon" [class]="activity.type">
+                <i [class]="getActivityIcon(activity.type)"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-description">{{ activity.description }}</div>
+                <div class="activity-meta">
+                  <span class="user">{{ activity.user }}</span>
+                  <span class="time">{{ activity.time }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

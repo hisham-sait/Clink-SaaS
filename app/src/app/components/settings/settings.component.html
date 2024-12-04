@@ -1,0 +1,94 @@
+<div class="settings-page">
+  <!-- Page Header -->
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Settings</h1>
+        <p class="text-muted">Manage your account and application settings</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Grid -->
+  <div class="row g-4">
+    <!-- Settings Sections -->
+    <div class="col-12">
+      <div class="settings-grid">
+        <div class="settings-section" *ngFor="let section of settingsSections">
+          <div class="section-header">
+            <div class="section-icon">
+              <i [class]="section.icon"></i>
+            </div>
+            <h2>{{ section.title }}</h2>
+          </div>
+          <div class="settings-list">
+            <div class="setting-item" *ngFor="let setting of section.settings" (click)="onSettingClick(section.title, setting.name)">
+              <div class="setting-content">
+                <h3>{{ setting.name }}</h3>
+                <p>{{ setting.description }}</p>
+              </div>
+              <div class="setting-action">
+                <i class="bi bi-chevron-right"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="col-12">
+      <div class="card info-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-info-circle text-primary me-2"></i>
+            <h5 class="mb-0">Need Help?</h5>
+          </div>
+          <p class="mb-3">
+            Visit our help center for detailed guides and documentation on configuring your settings.
+          </p>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary">
+              <i class="bi bi-book me-2"></i>
+              Documentation
+            </button>
+            <button class="btn btn-outline-primary">
+              <i class="bi bi-headset me-2"></i>
+              Contact Support
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Version Information -->
+    <div class="col-12">
+      <div class="version-info">
+        <div class="d-flex align-items-center justify-content-between text-muted">
+          <span>Version 1.0.0</span>
+          <a href="#" class="text-muted text-decoration-none">
+            Release Notes
+            <i class="bi bi-box-arrow-up-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Changes Button (Fixed) -->
+  <div class="save-changes-bar">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-between align-items-center">
+        <span>You have unsaved changes</span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary">
+            Discard Changes
+          </button>
+          <button class="btn btn-primary">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,28 +1,62 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { AccountingComponent } from './components/accounting/accounting.component';
-import { ProjectsComponent } from './components/projects/projects.component';
-import { PayrollComponent } from './components/payroll/payroll.component';
-import { ExpensesComponent } from './components/expenses/expenses.component';
-import { AnalyticsComponent } from './components/analytics/analytics.component';
-import { BankingComponent } from './components/banking/banking.component';
-import { InvoicingComponent } from './components/invoicing/invoicing.component';
-import { BillsComponent } from './components/bills/bills.component';
-import { FilesComponent } from './components/files/files.component';
-import { ContactsComponent } from './components/contacts/contacts.component';
+import { BOOKS_ROUTES } from './components/books/books.routes';
+import { CRM_ROUTES } from './components/crm/crm.routes';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'accounting', component: AccountingComponent },
-  { path: 'projects', component: ProjectsComponent },
-  { path: 'payroll', component: PayrollComponent },
-  { path: 'expenses', component: ExpensesComponent },
-  { path: 'reports', component: AnalyticsComponent },
-  { path: 'banking', component: BankingComponent },
-  { path: 'invoicing', component: InvoicingComponent },
-  { path: 'bills', component: BillsComponent },
-  { path: 'files', component: FilesComponent },
-  { path: 'contacts', component: ContactsComponent },
-  { path: '**', redirectTo: 'dashboard' } // Fallback route
+  // Default redirect
+  { 
+    path: '', 
+    redirectTo: '/books/dashboard', 
+    pathMatch: 'full',
+    data: { 
+      title: 'Dashboard',
+      breadcrumb: 'Dashboard'
+    }
+  },
+
+  // Books Module Routes
+  ...BOOKS_ROUTES,
+
+  // CRM Module Routes
+  ...CRM_ROUTES,
+
+  // Settings Route (lazy loaded)
+  {
+    path: 'settings',
+    loadComponent: () => import('./components/settings/settings.component')
+      .then(m => m.SettingsComponent),
+    data: { 
+      title: 'Settings',
+      breadcrumb: 'Settings'
+    }
+  },
+
+  // Help & Support Route
+  {
+    path: 'help',
+    redirectTo: '/settings',
+    pathMatch: 'full',
+    data: { 
+      title: 'Help & Support',
+      breadcrumb: 'Help'
+    }
+  },
+
+  // 404 Not Found Route
+  { 
+    path: '404', 
+    loadComponent: () => import('./components/shared/not-found/not-found.component')
+      .then(m => m.NotFoundComponent),
+    data: { 
+      title: 'Page Not Found',
+      breadcrumb: '404'
+    }
+  },
+
+  // Fallback route - redirects all unknown paths to 404
+  { 
+    path: '**', 
+    redirectTo: '/404',
+    pathMatch: 'full'
+  }
 ];

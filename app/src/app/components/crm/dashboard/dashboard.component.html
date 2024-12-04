@@ -1,0 +1,132 @@
+<div class="crm-dashboard">
+  <!-- Page Header -->
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>CRM Dashboard</h1>
+        <p class="text-muted">Overview of your customer relationship management</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline-primary me-2">
+          <i class="bi bi-person-plus"></i>
+          Add Contact
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg"></i>
+          Create Deal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3" *ngFor="let metric of metrics">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">{{ metric.title }}</span>
+          <i [class]="metric.icon"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ metric.value }}</h3>
+          <div class="metric-details">
+            <span [class]="'trend ' + metric.trend">
+              <i [class]="metric.trend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ metric.change }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="row g-4">
+    <!-- Left Column -->
+    <div class="col-12 col-xl-8">
+      <!-- Hub Features -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">HubSpot Features</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            <div class="col-12 col-md-6" *ngFor="let feature of hubFeatures">
+              <div class="hub-feature-card" [routerLink]="feature.route">
+                <div class="feature-icon">
+                  <i [class]="feature.icon"></i>
+                </div>
+                <div class="feature-content">
+                  <h4>{{ feature.title }}</h4>
+                  <p>{{ feature.description }}</p>
+                </div>
+                <i class="bi bi-chevron-right arrow-icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Recent Activity</h5>
+          <button class="btn btn-link">View All</button>
+        </div>
+        <div class="card-body p-0">
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let activity of recentActivity">
+              <div class="activity-icon" [class]="activity.type">
+                <i [class]="getActivityIcon(activity.type)"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-description">{{ activity.description }}</div>
+                <div class="activity-meta">
+                  <span class="user">{{ activity.user }}</span>
+                  <span class="time">{{ activity.time }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-12 col-xl-4">
+      <!-- Tasks Due -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Tasks Due</h5>
+          <button class="btn btn-link">
+            <i class="bi bi-plus-lg"></i>
+            Add Task
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="task-list">
+            <div class="task-item" *ngFor="let task of tasksDue">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="task-{{ task.title }}">
+                <label class="form-check-label" for="task-{{ task.title }}">
+                  <div class="task-content">
+                    <div class="task-title">{{ task.title }}</div>
+                    <div class="task-meta">
+                      <span class="task-type">{{ task.type }}</span>
+                      <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
+                        {{ task.priority }}
+                      </span>
+                    </div>
+                    <div class="task-due">
+                      Due: {{ task.dueDate | date:'MMM d, y' }}
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

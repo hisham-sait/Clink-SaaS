@@ -1,45 +1,123 @@
 <div class="app-container">
-  <!-- Sidebar -->
-  <app-sidebar></app-sidebar>
+  <!-- Mobile Header -->
+  <div class="mobile-header" *ngIf="isMobile">
+    <button class="menu-toggle" (click)="toggleSidebar()">
+      <i class="bi" [class.bi-list]="!isSidebarExpanded" [class.bi-x-lg]="isSidebarExpanded"></i>
+    </button>
+    <img src="assets/logo.png" alt="Bradán" class="mobile-logo">
+    <div class="mobile-actions">
+      <button class="mobile-action-btn" (click)="toggleNotifications()">
+        <i class="bi bi-bell"></i>
+        <span class="notification-badge" *ngIf="notificationCount > 0">
+          {{ notificationCount }}
+        </span>
+      </button>
+      <button class="mobile-action-btn" (click)="toggleUserMenu()">
+        <img [src]="userAvatar" [alt]="userName" class="user-avatar">
+      </button>
+    </div>
+  </div>
 
-  <div class="main-content">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light">
-      <div class="container-fluid px-4">
-        <div class="d-flex align-items-center">
-          <span class="navbar-brand">
-            <i class="bi bi-building"></i>
-            Bradán Accountants
-          </span>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-          <button class="btn btn-link">
-            <i class="bi bi-question-circle"></i>
-          </button>
-          <button class="btn btn-link">
-            <i class="bi bi-bell"></i>
-          </button>
-          <div class="vr mx-2"></div>
-          <button class="btn btn-link d-flex align-items-center gap-2">
-            <i class="bi bi-person-circle"></i>
-            <span class="d-none d-md-inline">Account</span>
+  <!-- Sidebar -->
+  <app-sidebar
+    [isExpanded]="isSidebarExpanded"
+    [isMobile]="isMobile"
+    (toggleSidebar)="toggleSidebar()">
+  </app-sidebar>
+
+  <!-- Main Content -->
+  <main class="main-content" [class.sidebar-expanded]="isSidebarExpanded">
+    <!-- Desktop Header -->
+    <header class="desktop-header" *ngIf="!isMobile">
+      <div class="header-search">
+        <div class="search-input">
+          <i class="bi bi-search"></i>
+          <input 
+            type="text" 
+            placeholder="Search..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearch($event)"
+            (focus)="isSearchActive = true"
+            (blur)="isSearchActive = false">
+          <button 
+            class="clear-search" 
+            *ngIf="searchQuery" 
+            (click)="clearSearch()">
+            <i class="bi bi-x-lg"></i>
           </button>
         </div>
       </div>
-    </nav>
 
-    <!-- Main Content Area -->
-    <div class="content-wrapper">
-      <div class="container-fluid px-4 py-4">
-        <router-outlet></router-outlet>
+      <div class="header-actions">
+        <!-- Theme Toggle -->
+        <button class="action-btn" (click)="toggleTheme()">
+          <i class="bi" [class.bi-moon-fill]="!isDarkMode" [class.bi-sun-fill]="isDarkMode"></i>
+        </button>
+
+        <!-- Notifications -->
+        <button class="action-btn" (click)="toggleNotifications()" data-notifications>
+          <i class="bi bi-bell"></i>
+          <span class="notification-badge" *ngIf="notificationCount > 0">
+            {{ notificationCount }}
+          </span>
+        </button>
+
+        <!-- User Menu -->
+        <div class="user-menu">
+          <button class="user-btn" (click)="toggleUserMenu()">
+            <img [src]="userAvatar" [alt]="userName" class="user-avatar">
+            <span class="user-name">{{ userName }}</span>
+            <i class="bi bi-chevron-down"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <!-- User Menu Dropdown -->
+  <div class="user-dropdown" [class.show]="isUserMenuOpen">
+    <div class="user-info">
+      <img [src]="userAvatar" [alt]="userName" class="user-avatar">
+      <div class="user-details">
+        <span class="user-name">{{ userName }}</span>
+        <span class="user-email">{{ user.email }}</span>
       </div>
     </div>
+    <div class="dropdown-divider"></div>
+    <ul class="dropdown-menu">
+      <li>
+        <a routerLink="/settings" (click)="toggleUserMenu()">
+          <i class="bi bi-gear"></i>
+          Settings
+        </a>
+      </li>
+      <li>
+        <a href="#" (click)="toggleUserMenu()">
+          <i class="bi bi-box-arrow-right"></i>
+          Sign Out
+        </a>
+      </li>
+    </ul>
+  </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="container-fluid px-4">
-        <span class="text-muted">© 2024 Bradán Accountants. All rights reserved.</span>
+  <!-- Notifications Panel -->
+  <div class="notifications-panel" [class.show]="isNotificationsPanelOpen">
+    <div class="panel-header">
+      <h3>Notifications</h3>
+      <button class="close-btn" (click)="toggleNotifications()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="panel-content">
+      <div class="empty-state" *ngIf="!notificationCount">
+        <i class="bi bi-bell-slash"></i>
+        <p>No new notifications</p>
       </div>
-    </footer>
+    </div>
   </div>
 </div>

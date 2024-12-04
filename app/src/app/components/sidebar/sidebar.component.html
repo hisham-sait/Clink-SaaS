@@ -1,32 +1,173 @@
-<div class="sidebar" [class.collapsed]="isCollapsed">
+<div class="sidebar" [class.expanded]="isExpanded">
+  <!-- Sidebar Header -->
   <div class="sidebar-header">
-    <div class="brand">
-      <i class="bi bi-building"></i>
-      <span class="brand-text" [class.d-none]="isCollapsed">Bradán</span>
+    <div class="logo-container">
+      <img src="assets/logo.png" alt="Bradán">
+      <span class="logo-text">Bradán</span>
     </div>
-    <button class="toggle-btn" (click)="toggleSidebar()">
-      <i class="bi" [class.bi-chevron-left]="!isCollapsed" [class.bi-chevron-right]="isCollapsed"></i>
-    </button>
   </div>
 
-  <div class="sidebar-content">
-    <nav class="sidebar-nav">
-      <div class="nav-group">
-        <a *ngFor="let item of menuItems" 
-           [routerLink]="item.route" 
-           routerLinkActive="active" 
-           class="nav-link">
-          <i [class]="item.icon"></i>
-          <span class="nav-text" [class.d-none]="isCollapsed">{{ item.title }}</span>
-        </a>
+  <!-- Navigation Container with Scroll -->
+  <div class="nav-container">
+    <!-- Books Section -->
+    <div class="nav-section">
+      <div class="section-header">
+        <span>BOOKS</span>
       </div>
-    </nav>
+      <ul class="nav-items">
+        <li>
+          <a routerLink="/books/dashboard" routerLinkActive="active">
+            <i class="bi bi-grid"></i>
+            <span class="nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/accounting" routerLinkActive="active">
+            <i class="bi bi-journal-text"></i>
+            <span class="nav-label">Accounting</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/banking" routerLinkActive="active">
+            <i class="bi bi-bank"></i>
+            <span class="nav-label">Banking</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/invoicing" routerLinkActive="active">
+            <i class="bi bi-receipt"></i>
+            <span class="nav-label">Invoicing</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/bills" routerLinkActive="active">
+            <i class="bi bi-cash-stack"></i>
+            <span class="nav-label">Bills</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/expenses" routerLinkActive="active">
+            <i class="bi bi-wallet2"></i>
+            <span class="nav-label">Expenses</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/payroll" routerLinkActive="active">
+            <i class="bi bi-people"></i>
+            <span class="nav-label">Payroll</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/projects" routerLinkActive="active">
+            <i class="bi bi-kanban"></i>
+            <span class="nav-label">Projects</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/reports" routerLinkActive="active">
+            <i class="bi bi-bar-chart"></i>
+            <span class="nav-label">Reports</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/files" routerLinkActive="active">
+            <i class="bi bi-folder"></i>
+            <span class="nav-label">Files</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/books/contacts" routerLinkActive="active">
+            <i class="bi bi-person-lines-fill"></i>
+            <span class="nav-label">Contacts</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- CRM Section -->
+    <div class="nav-section">
+      <div class="section-header">
+        <span>CRM</span>
+      </div>
+      <ul class="nav-items">
+        <li>
+          <a routerLink="/crm/dashboard" routerLinkActive="active">
+            <i class="bi bi-grid"></i>
+            <span class="nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/contacts" routerLinkActive="active">
+            <i class="bi bi-person"></i>
+            <span class="nav-label">Contacts</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/companies" routerLinkActive="active">
+            <i class="bi bi-building"></i>
+            <span class="nav-label">Companies</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/marketing" routerLinkActive="active">
+            <i class="bi bi-megaphone"></i>
+            <span class="nav-label">Marketing Hub</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/sales" routerLinkActive="active">
+            <i class="bi bi-graph-up"></i>
+            <span class="nav-label">Sales Hub</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/service" routerLinkActive="active">
+            <i class="bi bi-headset"></i>
+            <span class="nav-label">Service Hub</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/operations" routerLinkActive="active">
+            <i class="bi bi-gear"></i>
+            <span class="nav-label">Operations Hub</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/crm/cms" routerLinkActive="active">
+            <i class="bi bi-window"></i>
+            <span class="nav-label">CMS Hub</span>
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
 
-  <div class="sidebar-footer">
-    <a class="nav-link">
-      <i class="bi bi-gear"></i>
-      <span class="nav-text" [class.d-none]="isCollapsed">Settings</span>
-    </a>
+  <!-- Bottom Actions -->
+  <div class="bottom-actions">
+    <ul class="nav-items">
+      <li>
+        <a routerLink="/settings" routerLinkActive="active">
+          <i class="bi bi-gear"></i>
+          <span class="nav-label">Settings</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" (click)="onHelpClick($event)">
+          <i class="bi bi-question-circle"></i>
+          <span class="nav-label">Help & Support</span>
+        </a>
+      </li>
+    </ul>
   </div>
+
+  <!-- Toggle Button -->
+  <button class="toggle-button" (click)="toggleExpanded()" *ngIf="!isMobile">
+    <i class="bi" [class.bi-chevron-left]="isExpanded" [class.bi-chevron-right]="!isExpanded"></i>
+  </button>
+</div>
+
+<!-- Mobile Overlay -->
+<div class="sidebar-overlay" 
+     [class.active]="isExpanded && isMobile" 
+     (click)="toggleExpanded()">
 </div>

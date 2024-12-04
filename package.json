@@ -1,0 +1,41 @@
+{
+  "name": "bradan-accountants",
+  "version": "1.0.0",
+  "description": "Modern accounting and CRM platform built with Angular",
+  "scripts": {
+    "start": "bash start.sh",
+    "start:windows": "start.bat",
+    "install:all": "npm run install:api && npm run install:app",
+    "install:api": "cd api && npm install",
+    "install:app": "cd app && npm install",
+    "dev": "bash start.sh",
+    "dev:windows": "start.bat",
+    "build": "cd app && ng build --configuration production",
+    "test": "cd app && ng test",
+    "lint": "cd app && ng lint",
+    "e2e": "cd app && ng e2e",
+    "clean": "rm -rf api/node_modules app/node_modules",
+    "clean:windows": "rmdir /s /q api\\node_modules app\\node_modules"
+  },
+  "keywords": [
+    "accounting",
+    "crm",
+    "angular",
+    "node",
+    "typescript"
+  ],
+  "author": "Bradán Accountants",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/bradan-accountants.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/bradan-accountants/issues"
+  },
+  "homepage": "https://github.com/your-username/bradan-accountants#readme"
+}
