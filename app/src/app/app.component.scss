@@ -1,0 +1,46 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.navbar {
+  .navbar-brand {
+    font-weight: 500;
+    
+    i {
+      margin-right: 0.5rem;
+      color: #0d6efd;
+    }
+  }
+
+  .nav-link {
+    i {
+      margin-right: 0.25rem;
+    }
+  }
+}
+
+.container {
+  flex: 1;
+}
+
+.card {
+  border: none;
+  border-radius: 0.5rem;
+  
+  .card-title {
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  
+  .card-text {
+    color: #6c757d;
+  }
+}
+
+.footer {
+  margin-top: auto;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+}
