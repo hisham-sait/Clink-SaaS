@@ -1,0 +1,129 @@
+<div class="banking-reports">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Banking Reports</h1>
+        <p class="text-muted">Generate and manage banking reports</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-download me-2"></i>
+          Export
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg me-2"></i>
+          New Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Types -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4" *ngFor="let type of reportTypes">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i [class]="type.icon"></i>
+        </div>
+        <div class="feature-content">
+          <h3>{{ type.name }}</h3>
+          <p>{{ type.description }}</p>
+          <button class="btn btn-link px-0" (click)="generateReport(type)">
+            Generate Report
+            <i class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Reports -->
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Recent Reports</h5>
+        <div class="header-actions">
+          <button class="btn btn-link">
+            <i class="bi bi-filter me-2"></i>
+            Filter
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Report Name</th>
+              <th>Type</th>
+              <th>Period</th>
+              <th>Generated</th>
+              <th>Format</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let report of recentReports">
+              <td>{{ report.name }}</td>
+              <td>
+                <span class="account-type" [class]="report.type.toLowerCase()">
+                  {{ report.type }}
+                </span>
+              </td>
+              <td>{{ report.period }}</td>
+              <td>{{ report.generated | date:'MMM d, y' }}</td>
+              <td>
+                <span class="format-badge" [class]="report.format.toLowerCase()">
+                  {{ report.format }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [class]="report.status.toLowerCase()">
+                  {{ report.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm me-2" *ngIf="report.status === 'Ready'"
+                        (click)="downloadReport(report)">
+                  <i class="bi bi-download"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" (click)="viewReport(report)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" (click)="deleteReport(report)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions mt-4">
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="scheduleReport()">
+          <i class="bi bi-calendar-plus me-2"></i>
+          Schedule Report
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="customizeTemplate()">
+          <i class="bi bi-pencil-square me-2"></i>
+          Customize Template
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="manageSubscriptions()">
+          <i class="bi bi-envelope me-2"></i>
+          Manage Subscriptions
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

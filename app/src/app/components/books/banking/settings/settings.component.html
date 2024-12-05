@@ -1,0 +1,194 @@
+<div class="bank-settings">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Bank Settings</h1>
+        <p class="text-muted">Configure your banking preferences</p>
+      </div>
+      <button class="btn btn-primary" (click)="saveSettings()">
+        <i class="bi bi-save me-2"></i>
+        Save Changes
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- General Settings -->
+    <div class="col-12 col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">General Settings</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Default Account</label>
+              <select class="form-select">
+                <option>Main Business Checking</option>
+                <option>Business Savings</option>
+                <option>Payroll Account</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Default Currency</label>
+              <select class="form-select">
+                <option>USD ($)</option>
+                <option>EUR (€)</option>
+                <option>GBP (£)</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Transaction Categories</label>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Auto-categorize transactions</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Create custom categories</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync Settings -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Sync Settings</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Sync Frequency</label>
+              <select class="form-select">
+                <option>Every Hour</option>
+                <option>Every 6 Hours</option>
+                <option>Daily</option>
+                <option>Manual</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Data Retention</label>
+              <select class="form-select">
+                <option>1 Year</option>
+                <option>2 Years</option>
+                <option>5 Years</option>
+                <option>Forever</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Auto-sync on login</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Sync attachments</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Settings -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Security Settings</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Connection Security</label>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Enable two-factor authentication for bank connections</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Require approval for large transactions</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" checked>
+                <label class="form-check-label">Enable transaction alerts</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Large Transaction Threshold</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" value="10000">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Settings -->
+    <div class="col-12 col-lg-4">
+      <!-- Notification Settings -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Notifications</h5>
+        </div>
+        <div class="card-body">
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" checked>
+            <label class="form-check-label">
+              Sync completion notifications
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" checked>
+            <label class="form-check-label">
+              Connection error alerts
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" checked>
+            <label class="form-check-label">
+              Large transaction alerts
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" checked>
+            <label class="form-check-label">
+              Balance alerts
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Settings -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">API Access</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">API Key</label>
+            <div class="input-group">
+              <input type="text" class="form-control" value="****************************" readonly>
+              <button class="btn btn-outline-primary" (click)="regenerateApiKey()">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" checked>
+            <label class="form-check-label">
+              Enable API access
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox">
+            <label class="form-check-label">
+              Allow third-party access
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

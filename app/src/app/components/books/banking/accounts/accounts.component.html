@@ -1,0 +1,192 @@
+<div class="bank-accounts">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Bank Accounts</h1>
+        <p class="text-muted">Manage your bank accounts and balances</p>
+      </div>
+      <button class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>
+        Add Account
+      </button>
+    </div>
+  </div>
+
+  <!-- Account Summary -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Total Balance</span>
+          <i class="bi bi-bank"></i>
+        </div>
+        <div class="metric-body">
+          <div *ngIf="loadingMetrics" class="placeholder-glow">
+            <span class="placeholder col-8"></span>
+          </div>
+          <ng-container *ngIf="!loadingMetrics">
+            <h3 class="metric-value">{{ totalBalance | currency }}</h3>
+            <div class="metric-details">
+              <span class="trend" [class]="balanceTrend">
+                <i [class]="getTrendIcon(balanceTrend)"></i>
+                {{ balanceChange }}
+              </span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Active Accounts</span>
+          <i class="bi bi-credit-card"></i>
+        </div>
+        <div class="metric-body">
+          <div *ngIf="loadingMetrics" class="placeholder-glow">
+            <span class="placeholder col-8"></span>
+          </div>
+          <ng-container *ngIf="!loadingMetrics">
+            <h3 class="metric-value">{{ activeAccounts }}</h3>
+            <div class="metric-details">
+              <span class="trend up">
+                <i class="bi bi-arrow-up"></i>
+                +{{ newAccounts }} this month
+              </span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Pending Transactions</span>
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="metric-body">
+          <div *ngIf="loadingMetrics" class="placeholder-glow">
+            <span class="placeholder col-8"></span>
+          </div>
+          <ng-container *ngIf="!loadingMetrics">
+            <h3 class="metric-value">{{ pendingTransactions }}</h3>
+            <div class="metric-details">
+              <span class="trend" [class]="pendingTrend">
+                <i [class]="getTrendIcon(pendingTrend)"></i>
+                {{ pendingChange }}
+              </span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Bank Accounts -->
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Bank Accounts</h5>
+        <div class="header-actions">
+          <button class="btn btn-link">
+            <i class="bi bi-filter me-2"></i>
+            Filter
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Account Name</th>
+              <th>Account Number</th>
+              <th>Type</th>
+              <th class="text-end">Balance</th>
+              <th>Last Updated</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="7" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngFor="let account of bankAccounts">
+              <td>
+                <div class="d-flex align-items-center">
+                  <i [class]="getAccountIcon(account.type) + ' me-2'" style="font-size: 1.25rem;"></i>
+                  {{ account.name }}
+                </div>
+              </td>
+              <td>{{ account.number }}</td>
+              <td>
+                <span class="account-type" [class]="account.type.toLowerCase()">
+                  {{ account.type }}
+                </span>
+              </td>
+              <td class="text-end">{{ account.balance | currency }}</td>
+              <td>{{ account.lastUpdated | date:'MMM d, y' }}</td>
+              <td>
+                <span class="status-badge" [class]="account.status.toLowerCase()">
+                  {{ account.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm me-2" (click)="viewTransactions(account)" [disabled]="processingAction">
+                  <i class="bi bi-list-ul"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" (click)="editAccount(account)" [disabled]="processingAction">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" (click)="removeAccount(account)" [disabled]="processingAction">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!loading && bankAccounts.length === 0">
+              <td colspan="7" class="text-center py-4">
+                <p class="text-muted mb-0">No bank accounts found</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions mt-4">
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="importTransactions()" [disabled]="processingAction">
+          <i class="bi bi-upload me-2"></i>
+          Import Transactions
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="exportAccounts()" [disabled]="processingAction">
+          <i class="bi bi-download me-2"></i>
+          Export Accounts
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="connectBank()" [disabled]="processingAction">
+          <i class="bi bi-link-45deg me-2"></i>
+          Connect Bank
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

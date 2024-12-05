@@ -1,0 +1,102 @@
+<div class="recurring-invoices">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Recurring Invoices</h1>
+        <p class="text-muted">Manage your recurring invoice schedules</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-filter me-2"></i>
+          Filter
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg me-2"></i>
+          New Recurring Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Active Schedules</h6>
+          <h3 class="mb-0">{{ activeSchedules }}</h3>
+          <small class="text-muted">{{ totalMonthlyRevenue | currency }} monthly revenue</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Due This Month</h6>
+          <h3 class="mb-0">{{ dueThisMonth }}</h3>
+          <small class="text-muted">{{ dueThisMonthAmount | currency }} total</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Next Due Date</h6>
+          <h3 class="mb-0">{{ nextDueDate | date:'MMM d' }}</h3>
+          <small class="text-muted">{{ nextDueAmount | currency }} due</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recurring Invoices List -->
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Client</th>
+              <th>Frequency</th>
+              <th class="text-end">Amount</th>
+              <th>Next Date</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let invoice of recurringInvoices">
+              <td>{{ invoice.name }}</td>
+              <td>{{ invoice.client }}</td>
+              <td>{{ invoice.frequency }}</td>
+              <td class="text-end">{{ invoice.amount | currency }}</td>
+              <td>{{ invoice.nextDate | date:'MMM d, y' }}</td>
+              <td>
+                <span class="status-badge" [class]="invoice.status.toLowerCase()">
+                  {{ invoice.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm me-2" *ngIf="invoice.status === 'Active'"
+                        (click)="pauseSchedule(invoice)">
+                  <i class="bi bi-pause-fill"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" *ngIf="invoice.status === 'Paused'"
+                        (click)="resumeSchedule(invoice)">
+                  <i class="bi bi-play-fill"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" [routerLink]="['/books/invoicing/recurring/edit', invoice.id]">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" (click)="endSchedule(invoice)">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

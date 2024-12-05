@@ -1,0 +1,185 @@
+<div class="create-invoice">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Create Invoice</h1>
+        <p class="text-muted">Create a new invoice for your client</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" routerLink="/books/invoicing">
+          <i class="bi bi-x-lg me-2"></i>
+          Cancel
+        </button>
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-file-earmark me-2"></i>
+          Save as Draft
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-send me-2"></i>
+          Save & Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Invoice Details -->
+    <div class="col-12 col-lg-8">
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Invoice Number</label>
+              <input type="text" class="form-control" value="INV-2024-005" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Invoice Date</label>
+              <input type="date" class="form-control" [value]="today">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-control" [value]="defaultDueDate">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Payment Terms</label>
+              <select class="form-select">
+                <option>Net 30</option>
+                <option>Net 15</option>
+                <option>Due on Receipt</option>
+                <option>Custom</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client Information -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Client Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Select Client</label>
+              <select class="form-select">
+                <option>Select a client...</option>
+                <option>ABC Corporation</option>
+                <option>XYZ Ltd</option>
+                <option>Tech Solutions Inc</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <div class="client-details p-3 bg-light rounded">
+                <div class="mb-2">
+                  <strong>Billing Address</strong>
+                  <p class="mb-0">123 Business Street</p>
+                  <p class="mb-0">Suite 100</p>
+                  <p class="mb-0">New York, NY 10001</p>
+                </div>
+                <div>
+                  <strong>Contact</strong>
+                  <p class="mb-0">John Smith</p>
+                  <p class="mb-0">john&#64;abccorp.com</p>
+                  <p class="mb-0">(555) 123-4567</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Items -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Invoice Items</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead>
+                <tr>
+                  <th style="width: 40%">Description</th>
+                  <th>Quantity</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th style="width: 40px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of invoiceItems">
+                  <td>
+                    <input type="text" class="form-control" [(ngModel)]="item.description">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control" [(ngModel)]="item.quantity"
+                           (ngModelChange)="updateAmount(item)">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control" [(ngModel)]="item.rate"
+                           (ngModelChange)="updateAmount(item)">
+                  </td>
+                  <td>{{ item.amount | currency }}</td>
+                  <td>
+                    <button class="btn btn-link btn-sm text-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="p-3">
+            <button class="btn btn-link" (click)="addItem()">
+              <i class="bi bi-plus-lg me-2"></i>
+              Add Item
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Additional Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" rows="3" 
+              placeholder="Enter any additional notes for your client..."></textarea>
+          </div>
+          <div>
+            <label class="form-label">Terms & Conditions</label>
+            <textarea class="form-control" rows="3"
+              placeholder="Enter your terms and conditions..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Summary -->
+    <div class="col-12 col-lg-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Invoice Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="summary-item d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>{{ subtotal | currency }}</span>
+          </div>
+          <div class="summary-item d-flex justify-content-between mb-2">
+            <span>Tax (10%)</span>
+            <span>{{ tax | currency }}</span>
+          </div>
+          <hr>
+          <div class="summary-item d-flex justify-content-between">
+            <span class="fw-bold">Total</span>
+            <span class="fw-bold">{{ total | currency }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

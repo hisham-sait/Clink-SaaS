@@ -2,14 +2,58 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
+interface Invoice {
+  number: string;
+  client: string;
+  amount: number;
+  issued: string;
+  due: string;
+  status: string;
+}
+
+interface Client {
+  name: string;
+  totalBilled: number;
+  outstanding: number;
+  lastInvoice: string;
+  status: string;
+}
+
 @Component({
   selector: 'app-invoicing',
   templateUrl: './invoicing.component.html',
-  styleUrls: ['./invoicing.component.scss'],
+  styleUrls: ['../books.shared.scss'],
   standalone: true,
   imports: [CommonModule, RouterModule]
 })
 export class InvoicingComponent {
+  invoicingSections = [
+    {
+      title: 'Create Invoice',
+      icon: 'bi bi-plus-lg',
+      description: 'Create a new invoice',
+      link: '/books/invoicing/create'
+    },
+    {
+      title: 'Recurring Invoices',
+      icon: 'bi bi-arrow-repeat',
+      description: 'Manage recurring invoices',
+      link: '/books/invoicing/recurring'
+    },
+    {
+      title: 'Invoice Templates',
+      icon: 'bi bi-file-earmark-text',
+      description: 'Customize invoice templates',
+      link: '/books/invoicing/templates'
+    },
+    {
+      title: 'Invoice Reports',
+      icon: 'bi bi-graph-up',
+      description: 'View invoice analytics',
+      link: '/books/invoicing/reports'
+    }
+  ];
+
   invoiceMetrics = [
     {
       title: 'Total Outstanding',
@@ -40,7 +84,7 @@ export class InvoicingComponent {
     }
   ];
 
-  recentInvoices = [
+  recentInvoices: Invoice[] = [
     {
       number: 'INV-2024-001',
       client: 'ABC Corporation',
@@ -75,7 +119,7 @@ export class InvoicingComponent {
     }
   ];
 
-  topClients = [
+  topClients: Client[] = [
     {
       name: 'ABC Corporation',
       totalBilled: 45800.00,
@@ -103,29 +147,6 @@ export class InvoicingComponent {
       outstanding: 0.00,
       lastInvoice: '2024-01-08',
       status: 'Active'
-    }
-  ];
-
-  quickActions = [
-    {
-      title: 'New Invoice',
-      icon: 'bi bi-plus-lg',
-      action: 'create'
-    },
-    {
-      title: 'Send Reminders',
-      icon: 'bi bi-bell',
-      action: 'remind'
-    },
-    {
-      title: 'Record Payment',
-      icon: 'bi bi-credit-card',
-      action: 'payment'
-    },
-    {
-      title: 'Invoice Settings',
-      icon: 'bi bi-gear',
-      action: 'settings'
     }
   ];
 

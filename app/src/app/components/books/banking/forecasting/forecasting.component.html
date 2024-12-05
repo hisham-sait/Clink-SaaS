@@ -1,0 +1,168 @@
+<div class="financial-forecasting">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Financial Forecasting</h1>
+        <p class="text-muted">Predict and plan your financial future</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-gear me-2"></i>
+          Settings
+        </button>
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg me-2"></i>
+          New Forecast
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecast Summary -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Revenue Forecast</span>
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ revenueForecast | currency }}</h3>
+          <div class="metric-details">
+            <span class="trend" [class]="revenueTrend">
+              <i [class]="revenueTrend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ revenueChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Cash Flow Forecast</span>
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ cashFlowForecast | currency }}</h3>
+          <div class="metric-details">
+            <span class="trend" [class]="cashFlowTrend">
+              <i [class]="cashFlowTrend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ cashFlowChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Accuracy Rate</span>
+          <i class="bi bi-bullseye"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ accuracyRate }}%</h3>
+          <div class="metric-details">
+            <span class="trend" [class]="accuracyTrend">
+              <i [class]="accuracyTrend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ accuracyChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecasts Table -->
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Active Forecasts</h5>
+        <div class="header-actions">
+          <button class="btn btn-link">
+            <i class="bi bi-filter me-2"></i>
+            Filter
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Forecast Name</th>
+              <th>Type</th>
+              <th>Period</th>
+              <th class="text-end">Predicted</th>
+              <th class="text-end">Actual</th>
+              <th>Accuracy</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let forecast of forecasts">
+              <td>{{ forecast.name }}</td>
+              <td>
+                <span class="account-type" [class]="forecast.type.toLowerCase()">
+                  {{ forecast.type }}
+                </span>
+              </td>
+              <td>{{ forecast.period }}</td>
+              <td class="text-end">{{ forecast.predicted | currency }}</td>
+              <td class="text-end">{{ forecast.actual | currency }}</td>
+              <td>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar" [class]="'bg-' + forecast.accuracyColor"
+                       [style.width.%]="forecast.accuracy">
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [class]="forecast.status.toLowerCase()">
+                  {{ forecast.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm me-2" (click)="viewForecast(forecast)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" (click)="editForecast(forecast)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" (click)="deleteForecast(forecast)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions mt-4">
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="runSimulation()">
+          <i class="bi bi-play-circle me-2"></i>
+          Run Simulation
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="exportForecasts()">
+          <i class="bi bi-download me-2"></i>
+          Export Forecasts
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="generateReport()">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Generate Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

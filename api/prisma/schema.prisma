@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BankConnection {
+  id             String          @id @default(uuid())
+  institutionId  String
+  institutionName String
+  provider       String          // "plaid" or "yodlee"
+  status         String          // "connected", "connecting", "error"
+  accessToken    String?         // Encrypted access token from provider
+  itemId         String?         // Provider's item ID
+  lastSynced     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accounts       BankAccount[]
+  transactions   Transaction[]
+  syncLogs       SyncLog[]
+  balanceAlerts  BalanceAlert[]
+  userId         String          // Reference to your User model
+  error          String?         // Store any error messages
+  metadata       Json?           // Additional provider-specific data
+}
+
+model BankAccount {
+  id              String         @id @default(uuid())
+  providerId      String         // Account ID from provider
+  name            String
+  type            String         // checking, savings, etc.
+  subtype         String?
+  balance         Float
+  currency        String
+  lastUpdated     DateTime
+  status          String         // active, inactive, etc.
+  connectionId    String
+  connection      BankConnection @relation(fields: [connectionId], references: [id])
+  transactions    Transaction[]
+  balanceAlerts   BalanceAlert[]
+  reconciliations Reconciliation[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  metadata        Json?          // Additional provider-specific data
+
+  @@index([providerId])
+  @@index([connectionId])
+}
+
+model Transaction {
+  id              String         @id @default(uuid())
+  providerId      String         // Transaction ID from provider
+  accountId       String
+  account         BankAccount    @relation(fields: [accountId], references: [id])
+  connectionId    String
+  connection      BankConnection @relation(fields: [connectionId], references: [id])
+  amount          Float
+  currency        String
+  date            DateTime
+  description     String
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  type            String         // debit or credit
+  status          String         // pending, posted, etc.
+  merchantName    String?
+  checkNumber     String?
+  notes           String?
+  tags           String[]
+  reconciliationId String?
+  reconciliation  Reconciliation? @relation(fields: [reconciliationId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  metadata        Json?          // Additional provider-specific data
+
+  @@index([providerId])
+  @@index([accountId])
+  @@index([connectionId])
+  @@index([date])
+  @@index([categoryId])
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  type         String        // income, expense, transfer
+  color        String?       // For UI display
+  icon         String?       // For UI display
+  parentId     String?       // For subcategories
+  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subcategories Category[]   @relation("CategoryHierarchy")
+  transactions Transaction[]
+  rules        CategoryRule[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([parentId])
+}
+
+model CategoryRule {
+  id          String    @id @default(uuid())
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  pattern     String    // Regex pattern to match transaction description
+  merchantName String?  // Specific merchant to match
+  minAmount   Float?    // Minimum amount to match
+  maxAmount   Float?    // Maximum amount to match
+  priority    Int       // Higher priority rules are checked first
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([categoryId])
+}
+
+model BalanceAlert {
+  id          String        @id @default(uuid())
+  accountId   String
+  account     BankAccount   @relation(fields: [accountId], references: [id])
+  connectionId String
+  connection  BankConnection @relation(fields: [connectionId], references: [id])
+  type        String        // "below", "above"
+  threshold   Float
+  frequency   String        // "once", "always"
+  isActive    Boolean       @default(true)
+  lastTriggered DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([accountId])
+  @@index([connectionId])
+}
+
+model Reconciliation {
+  id          String        @id @default(uuid())
+  accountId   String
+  account     BankAccount   @relation(fields: [accountId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  startBalance Float
+  endBalance  Float
+  status      String        // "in_progress", "completed", "discrepancy"
+  notes       String?
+  transactions Transaction[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([accountId])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model SyncLog {
+  id              String         @id @default(uuid())
+  connectionId    String
+  connection      BankConnection @relation(fields: [connectionId], references: [id])
+  startTime       DateTime       @default(now())
+  endTime         DateTime?
+  status          String         // success, error, in_progress
+  error           String?
+  details         Json?          // Additional sync details
+
+  @@index([connectionId])
+  @@index([startTime])
+}

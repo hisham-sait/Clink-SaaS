@@ -2,6 +2,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TinySidebarComponent } from './components/tiny-sidebar/tiny-sidebar.component';
 
@@ -18,7 +19,7 @@ interface User {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, SidebarComponent, TinySidebarComponent]
+  imports: [CommonModule, RouterModule, FormsModule, NgbModule, SidebarComponent, TinySidebarComponent]
 })
 export class AppComponent implements OnInit {
   // Layout state

@@ -1,0 +1,1300 @@
+// Common Variables
+$primary-color: #13B5EA;
+$text-primary: #2d3748;
+$text-secondary: #6c757d;
+$border-color: #e9ecef;
+$bg-light: #f8f9fa;
+
+// Status Colors
+$success-color: #38a169;
+$danger-color: #e53e3e;
+$warning-color: #b7791f;
+$info-color: #4299e1;
+
+// Mixins
+@mixin card-shadow {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@mixin hover-shadow {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+@mixin badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+// Form Controls
+@mixin form-control {
+  border-color: #e2e8f0;
+  padding: 0.5rem 1rem;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+  }
+}
+
+// Loading Animation
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+// Shared Styles
+:host {
+  display: block;
+}
+
+.page-header {
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Metric Cards
+.metric-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+  @include card-shadow;
+
+  &.loading {
+    .metric-value,
+    .metric-details {
+      background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+      background-size: 1000px 100%;
+      animation: shimmer 2s infinite linear;
+      color: transparent;
+      border-radius: 4px;
+    }
+
+    .metric-value {
+      width: 120px;
+      height: 32px;
+      display: block;
+    }
+
+    .metric-details {
+      width: 100px;
+      height: 24px;
+      display: block;
+    }
+  }
+
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .metric-title {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    i {
+      font-size: 1.25rem;
+      color: $primary-color;
+    }
+  }
+
+  .metric-body {
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-details,
+    .metric-trend {
+      .trend,
+      &.up,
+      &.down,
+      &.neutral {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .trend.up,
+      &.up {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      .trend.down,
+      &.down {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      .trend.neutral,
+      &.neutral {
+        color: $text-secondary;
+        background-color: rgba($text-secondary, 0.1);
+      }
+    }
+  }
+}
+
+// Cards
+.card {
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  @include card-shadow;
+
+  .card-header {
+    background: none;
+    border-bottom: 1px solid $border-color;
+    padding: 1.25rem 1.5rem;
+
+    h5 {
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .header-actions {
+      .btn-link {
+        color: $primary-color;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0;
+
+        &:hover {
+          color: darken($primary-color, 10%);
+        }
+
+        i {
+          font-size: 1.1rem;
+          margin-right: 0.25rem;
+        }
+      }
+    }
+  }
+
+  .card-body {
+    .form-label {
+      font-weight: 500;
+      color: $text-primary;
+    }
+
+    .form-control,
+    .form-select {
+      @include form-control;
+    }
+
+    h6 {
+      font-size: 0.875rem;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+
+  .table {
+    margin: 0;
+
+    th {
+      font-weight: 500;
+      color: $text-secondary;
+      border-top: none;
+      padding: 1rem 1.5rem;
+      background-color: $bg-light;
+    }
+
+    td {
+      padding: 1rem 1.5rem;
+      vertical-align: middle;
+      color: $text-primary;
+
+      .form-control {
+        @include form-control;
+        padding: 0.5rem;
+      }
+    }
+
+    // Status Badges
+    .status-badge {
+      @include badge;
+
+      &.cleared {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.pending {
+        color: $warning-color;
+        background-color: rgba($warning-color, 0.1);
+      }
+
+      &.failed {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+    }
+
+    // Account Types
+    .account-type {
+      @include badge;
+
+      &.income {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.expense {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      &.transfer {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+    }
+
+    .btn-link {
+      color: $text-secondary;
+      padding: 0.25rem;
+
+      &:hover {
+        color: $primary-color;
+
+        &.text-danger {
+          color: $danger-color !important;
+        }
+      }
+    }
+  }
+}
+
+// Quick Actions
+.quick-actions {
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+
+    i {
+      font-size: 1.1rem;
+    }
+  }
+
+  .btn-primary {
+    background-color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background-color: darken($primary-color, 5%);
+      border-color: darken($primary-color, 5%);
+    }
+  }
+
+  .btn-outline-primary {
+    color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background-color: $primary-color;
+      border-color: $primary-color;
+      color: #fff;
+    }
+  }
+}
+
+// Pagination
+.pagination {
+  margin-bottom: 0;
+
+  .page-item {
+    margin: 0 0.125rem;
+
+    .page-link {
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 0.75rem;
+      color: $text-secondary;
+      font-weight: 500;
+      min-width: 32px;
+      text-align: center;
+
+      &:hover {
+        background-color: $bg-light;
+        color: $primary-color;
+      }
+
+      i {
+        font-size: 0.875rem;
+      }
+    }
+
+    &.active .page-link {
+      background-color: $primary-color;
+      color: #fff;
+    }
+
+    &.disabled .page-link {
+      background-color: transparent;
+      color: lighten($text-secondary, 20%);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .table-responsive {
+    margin: 0;
+    border: 0;
+  }
+
+  .header-actions {
+    .btn-link {
+      span {
+        display: none;
+      }
+    }
+  }
+
+  .pagination {
+    .page-item {
+      &:not(.active):not(:first-child):not(:last-child) {
+        display: none;
+      }
+    }
+  }
+}
+
+// Common Variables
+$primary-color: #13B5EA;
+$text-primary: #2d3748;
+$text-secondary: #6c757d;
+$border-color: #e9ecef;
+$bg-light: #f8f9fa;
+
+// Status Colors
+$success-color: #38a169;
+$danger-color: #e53e3e;
+$warning-color: #b7791f;
+$info-color: #4299e1;
+
+// Mixins
+@mixin card-shadow {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@mixin hover-shadow {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+@mixin badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+// Form Controls
+@mixin form-control {
+  border-color: #e2e8f0;
+  padding: 0.5rem 1rem;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+  }
+}
+
+// Loading Animation
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+// Shared Styles
+:host {
+  display: block;
+}
+
+.page-header {
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Metric Cards
+.metric-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+  @include card-shadow;
+
+  &.loading {
+    .metric-value,
+    .metric-details {
+      background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+      background-size: 1000px 100%;
+      animation: shimmer 2s infinite linear;
+      color: transparent;
+      border-radius: 4px;
+    }
+
+    .metric-value {
+      width: 120px;
+      height: 32px;
+      display: block;
+    }
+
+    .metric-details {
+      width: 100px;
+      height: 24px;
+      display: block;
+    }
+  }
+
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .metric-title {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    i {
+      font-size: 1.25rem;
+      color: $primary-color;
+    }
+  }
+
+  .metric-body {
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-details,
+    .metric-trend {
+      .trend,
+      &.up,
+      &.down,
+      &.neutral {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .trend.up,
+      &.up {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      .trend.down,
+      &.down {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      .trend.neutral,
+      &.neutral {
+        color: $text-secondary;
+        background-color: rgba($text-secondary, 0.1);
+      }
+    }
+  }
+}
+
+// Cards
+.card {
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  @include card-shadow;
+
+  .card-header {
+    background: none;
+    border-bottom: 1px solid $border-color;
+    padding: 1.25rem 1.5rem;
+
+    h5 {
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .header-actions {
+      .btn-link {
+        color: $primary-color;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0;
+
+        &:hover {
+          color: darken($primary-color, 10%);
+        }
+
+        i {
+          font-size: 1.1rem;
+          margin-right: 0.25rem;
+        }
+      }
+    }
+  }
+
+  .card-body {
+    .form-label {
+      font-weight: 500;
+      color: $text-primary;
+    }
+
+    .form-control,
+    .form-select {
+      @include form-control;
+    }
+
+    h6 {
+      font-size: 0.875rem;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+
+  .table {
+    margin: 0;
+
+    th {
+      font-weight: 500;
+      color: $text-secondary;
+      border-top: none;
+      padding: 1rem 1.5rem;
+      background-color: $bg-light;
+    }
+
+    td {
+      padding: 1rem 1.5rem;
+      vertical-align: middle;
+      color: $text-primary;
+
+      .form-control {
+        @include form-control;
+        padding: 0.5rem;
+      }
+    }
+
+    // Status Badges
+    .status-badge {
+      @include badge;
+
+      &.cleared {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.pending {
+        color: $warning-color;
+        background-color: rgba($warning-color, 0.1);
+      }
+
+      &.failed {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+    }
+
+    // Account Types
+    .account-type {
+      @include badge;
+
+      &.income {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.expense {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      &.transfer {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+    }
+
+    .btn-link {
+      color: $text-secondary;
+      padding: 0.25rem;
+
+      &:hover {
+        color: $primary-color;
+
+        &.text-danger {
+          color: $danger-color !important;
+        }
+      }
+    }
+  }
+}
+
+// Quick Actions
+.quick-actions {
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+
+    i {
+      font-size: 1.1rem;
+    }
+  }
+
+  .btn-primary {
+    background-color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background-color: darken($primary-color, 5%);
+      border-color: darken($primary-color, 5%);
+    }
+  }
+
+  .btn-outline-primary {
+    color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background-color: $primary-color;
+      border-color: $primary-color;
+      color: #fff;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .table-responsive {
+    margin: 0;
+    border: 0;
+  }
+
+  .header-actions {
+    .btn-link {
+      span {
+        display: none;
+      }
+    }
+  }
+}
+
+// Shared Styles
+:host {
+  display: block;
+}
+
+.page-header {
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Form Check Styles
+.form-check {
+  .form-check-input {
+    &:checked {
+      background-color: $primary-color;
+      border-color: $primary-color;
+    }
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+    }
+  }
+}
+
+// Company Logo
+.company-logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem;
+}
+
+// Email Preview
+.email-preview {
+  font-family: monospace;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+// Common Variables
+$primary-color: #13B5EA;
+$text-primary: #2d3748;
+$text-secondary: #6c757d;
+$border-color: #e9ecef;
+$bg-light: #f8f9fa;
+
+// Status Colors
+$success-color: #38a169;
+$danger-color: #e53e3e;
+$warning-color: #b7791f;
+$info-color: #4299e1;
+
+// Mixins
+@mixin card-shadow {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@mixin hover-shadow {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+@mixin badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+// Form Controls
+@mixin form-control {
+  border-color: #e2e8f0;
+  padding: 0.5rem 1rem;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+  }
+}
+
+// Shared Styles
+:host {
+  display: block;
+}
+
+.page-header {
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Metric Cards
+.metric-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+  @include card-shadow;
+
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .metric-title {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    i {
+      font-size: 1.25rem;
+      color: $primary-color;
+    }
+  }
+
+  .metric-body {
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-details,
+    .metric-trend {
+      .trend,
+      &.up,
+      &.down,
+      &.neutral {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .trend.up,
+      &.up {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      .trend.down,
+      &.down {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      .trend.neutral,
+      &.neutral {
+        color: $text-secondary;
+        background-color: rgba($text-secondary, 0.1);
+      }
+    }
+  }
+}
+
+// Feature Cards, Category Cards, and Report Type Cards
+.feature-card,
+.category-card,
+.report-type-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+  @include card-shadow;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    @include hover-shadow;
+  }
+
+  .feature-icon,
+  .category-icon,
+  .report-icon {
+    margin-bottom: 1rem;
+
+    i {
+      font-size: 2rem;
+      color: $primary-color;
+    }
+  }
+
+  .feature-content,
+  .category-content,
+  .report-content {
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn-link {
+      color: $primary-color;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0;
+
+      &:hover {
+        color: darken($primary-color, 10%);
+      }
+
+      i {
+        transition: transform 0.2s ease;
+      }
+
+      &:hover i {
+        transform: translateX(4px);
+      }
+    }
+  }
+}
+
+// Category Card Specific
+.category-card {
+  cursor: pointer;
+
+  &.active {
+    border: 2px solid $primary-color;
+  }
+
+  .category-content {
+    .template-count {
+      font-size: 0.875rem;
+      color: $primary-color;
+      font-weight: 500;
+    }
+  }
+}
+
+// Cards
+.card {
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  @include card-shadow;
+
+  .card-header {
+    background: none;
+    border-bottom: 1px solid $border-color;
+    padding: 1.25rem 1.5rem;
+
+    h5 {
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .header-actions {
+      .btn-link {
+        color: $primary-color;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0;
+
+        &:hover {
+          color: darken($primary-color, 10%);
+        }
+
+        i {
+          font-size: 1.1rem;
+          margin-right: 0.25rem;
+        }
+      }
+    }
+  }
+
+  .card-body {
+    .form-label {
+      font-weight: 500;
+      color: $text-primary;
+    }
+
+    .form-control,
+    .form-select {
+      @include form-control;
+    }
+
+    h6 {
+      font-size: 0.875rem;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+
+  .table {
+    margin: 0;
+
+    th {
+      font-weight: 500;
+      color: $text-secondary;
+      border-top: none;
+      padding: 1rem 1.5rem;
+      background-color: $bg-light;
+    }
+
+    td {
+      padding: 1rem 1.5rem;
+      vertical-align: middle;
+      color: $text-primary;
+
+      .form-control {
+        @include form-control;
+        padding: 0.5rem;
+      }
+    }
+
+    .template-info {
+      .template-name {
+        font-weight: 500;
+        color: $text-primary;
+      }
+
+      small {
+        font-size: 0.75rem;
+      }
+    }
+
+    // Status Badges
+    .status-badge {
+      @include badge;
+
+      &.active, &.cleared {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.pending, &.processing {
+        color: $warning-color;
+        background-color: rgba($warning-color, 0.1);
+      }
+
+      &.draft {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+
+      &.overdue, &.failed {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      &.sent {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+
+      &.paid {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.archived {
+        color: $text-secondary;
+        background-color: rgba($text-secondary, 0.1);
+      }
+    }
+
+    // Format Badges
+    .format-badge {
+      @include badge;
+
+      &.pdf {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      &.excel {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.csv {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+    }
+
+    // Account Types
+    .account-type {
+      @include badge;
+
+      &.asset {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.liability {
+        color: $danger-color;
+        background-color: rgba($danger-color, 0.1);
+      }
+
+      &.revenue {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+
+      &.expense {
+        color: $warning-color;
+        background-color: rgba($warning-color, 0.1);
+      }
+
+      &.checking {
+        color: $success-color;
+        background-color: rgba($success-color, 0.1);
+      }
+
+      &.savings {
+        color: $info-color;
+        background-color: rgba($info-color, 0.1);
+      }
+
+      &.credit-card {
+        color: $warning-color;
+        background-color: rgba($warning-color, 0.1);
+      }
+    }
+
+    .btn-link {
+      color: $text-secondary;
+      padding: 0.25rem;
+
+      &:hover {
+        color: $primary-color;
+
+        &.text-danger {
+          color: $danger-color !important;
+        }
+      }
+    }
+  }
+}
+
+// Client Details
+.client-details {
+  font-size: 0.875rem;
+
+  strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: $text-primary;
+  }
+
+  p {
+    color: $text-secondary;
+  }
+}
+
+// Summary Items
+.summary-item {
+  font-size: 0.875rem;
+  color: $text-primary;
+
+  .fw-bold {
+    font-size: 1rem;
+  }
+}
+
+// Quick Actions
+.quick-actions {
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+
+    i {
+      font-size: 1.1rem;
+    }
+  }
+
+  .btn-primary {
+    background-color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background-color: darken($primary-color, 5%);
+      border-color: darken($primary-color, 5%);
+    }
+  }
+
+  .btn-outline-primary {
+    color: $primary-color;
+    border-color: $primary-color;
+
+    &:hover {
+      background-color: $primary-color;
+      border-color: $primary-color;
+      color: #fff;
+    }
+  }
+}
+
+// Invoice Link
+.invoice-link {
+  color: $primary-color;
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    color: darken($primary-color, 10%);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .feature-card,
+  .category-card,
+  .report-type-card {
+    .feature-icon,
+    .category-icon,
+    .report-icon {
+      i {
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  .table-responsive {
+    margin: 0;
+    border: 0;
+  }
+
+  .header-actions {
+    .btn-link {
+      span {
+        display: none;
+      }
+    }
+  }
+}
+

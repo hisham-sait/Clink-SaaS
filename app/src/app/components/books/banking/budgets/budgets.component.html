@@ -1,0 +1,162 @@
+<div class="bank-budgets">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Banking Budgets</h1>
+        <p class="text-muted">Plan and track your financial budgets</p>
+      </div>
+      <button class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>
+        New Budget
+      </button>
+    </div>
+  </div>
+
+  <!-- Budget Summary -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Total Budgets</span>
+          <i class="bi bi-wallet2"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ totalBudgets }}</h3>
+          <div class="metric-details">
+            <span class="trend up">
+              <i class="bi bi-arrow-up"></i>
+              {{ budgetsChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Budget Utilization</span>
+          <i class="bi bi-pie-chart"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ utilizationRate }}%</h3>
+          <div class="metric-details">
+            <span class="trend" [class]="utilizationTrend">
+              <i [class]="utilizationTrend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ utilizationChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Budget Alerts</span>
+          <i class="bi bi-bell"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ budgetAlerts }}</h3>
+          <div class="metric-details">
+            <span class="trend" [class]="alertsTrend">
+              <i [class]="alertsTrend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ alertsChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Budgets Table -->
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Active Budgets</h5>
+        <div class="header-actions">
+          <button class="btn btn-link">
+            <i class="bi bi-filter me-2"></i>
+            Filter
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Budget Name</th>
+              <th>Category</th>
+              <th>Period</th>
+              <th class="text-end">Allocated</th>
+              <th class="text-end">Spent</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let budget of budgets">
+              <td>{{ budget.name }}</td>
+              <td>
+                <span class="account-type" [class]="budget.category.toLowerCase()">
+                  {{ budget.category }}
+                </span>
+              </td>
+              <td>{{ budget.period }}</td>
+              <td class="text-end">{{ budget.allocated | currency }}</td>
+              <td class="text-end">{{ budget.spent | currency }}</td>
+              <td>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar" [class]="'bg-' + budget.progressColor"
+                       [style.width.%]="budget.progress">
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [class]="budget.status.toLowerCase()">
+                  {{ budget.status }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm me-2" (click)="viewBudget(budget)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" (click)="editBudget(budget)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" (click)="deleteBudget(budget)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions mt-4">
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="copyBudget()">
+          <i class="bi bi-files me-2"></i>
+          Copy Budget
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="exportBudgets()">
+          <i class="bi bi-download me-2"></i>
+          Export Budgets
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="generateReport()">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Generate Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

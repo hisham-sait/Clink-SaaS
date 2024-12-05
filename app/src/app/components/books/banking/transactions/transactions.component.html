@@ -1,0 +1,235 @@
+<div class="bank-transactions">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Bank Transactions</h1>
+        <p class="text-muted">View and manage your bank transactions</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" (click)="importTransactions()" [disabled]="processingAction">
+          <i class="bi bi-upload me-2"></i>
+          Import
+        </button>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <i class="bi bi-plus-lg me-2"></i>
+          Add Transaction
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null" aria-label="Close"></button>
+  </div>
+
+  <!-- Transaction Summary -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="metric-card" [class.loading]="loadingMetrics">
+        <div class="metric-header">
+          <span class="metric-title">Total Inflow</span>
+          <i class="bi bi-arrow-down-circle"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ totalInflow | currency }}</h3>
+          <div class="metric-details">
+            <span class="trend up">
+              <i class="bi bi-arrow-up"></i>
+              {{ inflowChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card" [class.loading]="loadingMetrics">
+        <div class="metric-header">
+          <span class="metric-title">Total Outflow</span>
+          <i class="bi bi-arrow-up-circle"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ totalOutflow | currency }}</h3>
+          <div class="metric-details">
+            <span class="trend down">
+              <i class="bi bi-arrow-down"></i>
+              {{ outflowChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="metric-card" [class.loading]="loadingMetrics">
+        <div class="metric-header">
+          <span class="metric-title">Pending</span>
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="metric-body">
+          <h3 class="metric-value">{{ pendingTransactions }}</h3>
+          <div class="metric-details">
+            <span class="trend" [class]="pendingTrend">
+              <i [class]="pendingTrend === 'up' ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+              {{ pendingChange }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Recent Transactions</h5>
+        <div class="header-actions">
+          <button class="btn btn-link" (click)="openFilterModal()">
+            <i class="bi bi-filter me-2"></i>
+            Filter
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading transactions...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!loading && transactions.length === 0" class="text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted"></i>
+        <p class="mt-3 text-muted">No transactions found</p>
+        <p class="text-muted">Import transactions or add them manually</p>
+      </div>
+
+      <!-- Transactions List -->
+      <div *ngIf="!loading && transactions.length > 0" class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Reference</th>
+              <th>Account</th>
+              <th>Category</th>
+              <th class="text-end">Amount</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let transaction of transactions">
+              <td>{{ transaction.date | date:'MMM d, y' }}</td>
+              <td>{{ transaction.description }}</td>
+              <td>{{ transaction.reference }}</td>
+              <td>{{ transaction.account }}</td>
+              <td>
+                <span class="account-type" [class]="transaction.category.toLowerCase()">
+                  {{ transaction.category }}
+                </span>
+              </td>
+              <td class="text-end" [class.text-success]="transaction.amount > 0" 
+                  [class.text-danger]="transaction.amount < 0">
+                {{ transaction.amount | currency }}
+              </td>
+              <td>
+                <span class="status-badge" [class]="transaction.status">
+                  {{ transaction.status | titlecase }}
+                </span>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link btn-sm me-2" (click)="viewTransaction(transaction)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-link btn-sm me-2" (click)="editTransaction(transaction)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" (click)="deleteTransaction(transaction)"
+                        [disabled]="processingAction">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+          <div class="text-muted small">
+            Showing {{ (currentPage - 1) * pageSize + 1 }} to 
+            {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} transactions
+          </div>
+          <nav aria-label="Transaction navigation">
+            <ul class="pagination mb-0">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <button class="page-link" (click)="previousPage()" [disabled]="currentPage === 1">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+              </li>
+              <li class="page-item" *ngFor="let page of getPageNumbers()" 
+                  [class.active]="page === currentPage">
+                <button class="page-link" (click)="goToPage(page)">{{ page }}</button>
+              </li>
+              <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <button class="page-link" (click)="nextPage()" [disabled]="currentPage === totalPages">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions mt-4">
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="reconcileTransactions()"
+                [disabled]="loading || processingAction">
+          <i class="bi bi-check-all me-2"></i>
+          Reconcile
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="exportTransactions()"
+                [disabled]="loading || processingAction">
+          <i class="bi bi-download me-2"></i>
+          Export
+        </button>
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" (click)="generateReport()"
+                [disabled]="loading || processingAction">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Generate Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Transaction Modal -->
+  <app-create-transaction-modal *ngIf="showCreateModal"
+                              [accounts]="accounts"
+                              [categories]="categories"
+                              (saved)="onTransactionCreated()"
+                              (cancelled)="onCreateModalCancelled()">
+  </app-create-transaction-modal>
+
+  <!-- Filter Modal -->
+  <app-transaction-filter *ngIf="showFilterModal"
+                         [accounts]="accounts"
+                         [categories]="categories"
+                         [currentFilter]="currentFilter"
+                         (filterApplied)="onFilterApplied($event)"
+                         (filterCleared)="onFilterCleared()"
+                         (cancelled)="onFilterCancelled()">
+  </app-transaction-filter>
+</div>
