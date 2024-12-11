@@ -1,0 +1,122 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Carbon Dashboard</h1>
+    <button class="btn btn-primary">
+      <i class="bi bi-download me-2"></i>Export Report
+    </button>
+  </div>
+
+  <!-- Key Metrics Cards -->
+  <div class="row g-4 mb-4">
+    <!-- Total Emissions -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-cloud text-success fs-4"></i>
+            </div>
+            <h6 class="card-title mb-0">Total Emissions</h6>
+          </div>
+          <h2 class="mb-2">{{totalEmissions}} tCO2e</h2>
+          <p class="text-muted mb-0">Total carbon emissions this year</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offset Progress -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-tree text-primary fs-4"></i>
+            </div>
+            <h6 class="card-title mb-0">Offset Progress</h6>
+          </div>
+          <h2 class="mb-2">{{offsetProgress}}%</h2>
+          <p class="text-muted mb-0">Carbon offset target achieved</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sustainability Score -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+              <i class="bi bi-star text-warning fs-4"></i>
+            </div>
+            <h6 class="card-title mb-0">Sustainability Score</h6>
+          </div>
+          <h2 class="mb-2">{{sustainabilityScore}}/100</h2>
+          <p class="text-muted mb-0">Overall sustainability rating</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-4">
+    <!-- Emissions by Category -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-4">Emissions by Category</h6>
+          <div class="chart-placeholder bg-light rounded p-4 text-center">
+            <i class="bi bi-pie-chart fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Pie chart showing emission categories</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Trends -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-4">Monthly Trends</h6>
+          <div class="chart-placeholder bg-light rounded p-4 text-center">
+            <i class="bi bi-graph-up fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Line chart showing monthly trends</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-4">Quick Actions</h6>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-plus-circle me-2"></i>Record Emission
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-success w-100">
+                <i class="bi bi-file-earmark-text me-2"></i>Generate Report
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-warning w-100">
+                <i class="bi bi-gear me-2"></i>Update Goals
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-info w-100">
+                <i class="bi bi-calculator me-2"></i>Carbon Calculator
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

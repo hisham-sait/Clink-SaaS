@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
-type SectionType = 'books' | 'crm' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'carbon' | 'settings' | 'help';
 
 @Component({
   selector: 'app-sidebar',

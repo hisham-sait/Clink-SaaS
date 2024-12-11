@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { BOOKS_ROUTES } from './components/books/books.routes';
 import { CRM_ROUTES } from './components/crm/crm.routes';
+import { CARBON_ROUTES } from './components/carbon/carbon.routes';
 
 export const routes: Routes = [
   // Default redirect
@@ -19,6 +20,9 @@ export const routes: Routes = [
 
   // CRM Module Routes
   ...CRM_ROUTES,
+
+  // Carbon Module Routes
+  ...CARBON_ROUTES,
 
   // Settings Route (lazy loaded)
   {

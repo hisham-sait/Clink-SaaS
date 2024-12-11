@@ -142,6 +142,51 @@
       </ul>
     </div>
 
+    <!-- Carbon Section -->
+    <div class="nav-section" *ngIf="activeSection === 'carbon'">
+      <div class="section-header">
+        <span>CARBON</span>
+      </div>
+      <ul class="nav-items">
+        <li>
+          <a routerLink="/carbon/dashboard" routerLinkActive="active">
+            <i class="bi bi-grid"></i>
+            <span class="nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/carbon/emissions" routerLinkActive="active">
+            <i class="bi bi-cloud"></i>
+            <span class="nav-label">Emissions</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/carbon/reports" routerLinkActive="active">
+            <i class="bi bi-file-earmark-text"></i>
+            <span class="nav-label">Reports</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/carbon/offsets" routerLinkActive="active">
+            <i class="bi bi-tree"></i>
+            <span class="nav-label">Offsets</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/carbon/goals" routerLinkActive="active">
+            <i class="bi bi-bullseye"></i>
+            <span class="nav-label">Goals</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/carbon/settings" routerLinkActive="active">
+            <i class="bi bi-gear"></i>
+            <span class="nav-label">Settings</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
     <!-- Settings Section -->
     <div class="nav-section" *ngIf="activeSection === 'settings'">
       <div class="section-header">

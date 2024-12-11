@@ -1,0 +1,194 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Carbon Settings</h1>
+    <button class="btn btn-primary" (click)="saveSettings()">
+      <i class="bi bi-save me-2"></i>Save Changes
+    </button>
+  </div>
+
+  <div class="row g-4">
+    <!-- General Settings -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-gear text-primary fs-4"></i>
+            </div>
+            <h5 class="card-title mb-0">General Settings</h5>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Measurement Unit</label>
+            <select class="form-select" [(ngModel)]="settings.general.measurementUnit">
+              <option value="tCO2e">Tonnes CO2e</option>
+              <option value="kgCO2e">Kilograms CO2e</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Reporting Period</label>
+            <select class="form-select" [(ngModel)]="settings.general.reportingPeriod">
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+              <option value="Yearly">Yearly</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Default Currency</label>
+            <select class="form-select" [(ngModel)]="settings.general.defaultCurrency">
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Time Zone</label>
+            <select class="form-select" [(ngModel)]="settings.general.timeZone">
+              <option value="UTC">UTC</option>
+              <option value="GMT">GMT</option>
+              <option value="EST">EST</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bell text-warning fs-4"></i>
+            </div>
+            <h5 class="card-title mb-0">Notifications</h5>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" 
+                   [(ngModel)]="settings.notifications.emailAlerts"
+                   id="emailAlerts">
+            <label class="form-check-label" for="emailAlerts">
+              Email Alerts
+            </label>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" 
+                   [(ngModel)]="settings.notifications.monthlyReports"
+                   id="monthlyReports">
+            <label class="form-check-label" for="monthlyReports">
+              Monthly Reports
+            </label>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" 
+                   [(ngModel)]="settings.notifications.goalAlerts"
+                   id="goalAlerts">
+            <label class="form-check-label" for="goalAlerts">
+              Goal Alerts
+            </label>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" 
+                   [(ngModel)]="settings.notifications.offsetReminders"
+                   id="offsetReminders">
+            <label class="form-check-label" for="offsetReminders">
+              Offset Reminders
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Targets -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bullseye text-success fs-4"></i>
+            </div>
+            <h5 class="card-title mb-0">Targets</h5>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Annual Reduction Goal (%)</label>
+            <input type="number" class="form-control" 
+                   [(ngModel)]="settings.targets.annualReductionGoal">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Offset Target (%)</label>
+            <input type="number" class="form-control" 
+                   [(ngModel)]="settings.targets.offsetTarget">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Baseline Year</label>
+            <input type="number" class="form-control" 
+                   [(ngModel)]="settings.targets.baselineYear">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integrations -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-4">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-plug text-info fs-4"></i>
+            </div>
+            <h5 class="card-title mb-0">Integrations</h5>
+          </div>
+
+          <!-- Connected Integrations -->
+          <h6 class="mb-3">Connected</h6>
+          <div class="list-group mb-4">
+            <div class="list-group-item border-0 bg-light rounded mb-2" 
+                 *ngFor="let integration of settings.integrations.enabled">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{integration.name}}</h6>
+                  <small class="text-success">
+                    <i class="bi bi-check-circle me-1"></i>{{integration.status}}
+                  </small>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" 
+                        (click)="disconnectIntegration(integration.name)">
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Available Integrations -->
+          <h6 class="mb-3">Available</h6>
+          <div class="list-group">
+            <div class="list-group-item border-0 bg-light rounded mb-2" 
+                 *ngFor="let integration of settings.integrations.available">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{integration.name}}</h6>
+                  <small class="text-muted">{{integration.status}}</small>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" 
+                        (click)="connectIntegration(integration.name)">
+                  Connect
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

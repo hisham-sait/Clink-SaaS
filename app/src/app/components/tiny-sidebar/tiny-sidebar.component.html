@@ -20,6 +20,15 @@
           <span class="tooltip">CRM</span>
         </a>
       </li>
+      <li>
+        <a (mouseenter)="onSectionHover('carbon')"
+           (mouseleave)="onSectionLeave()"
+           (click)="selectSection('carbon')" 
+           [class.active]="activeSection === 'carbon'">
+          <i class="bi bi-cloud"></i>
+          <span class="tooltip">Carbon</span>
+        </a>
+      </li>
     </ul>
   </div>
 
