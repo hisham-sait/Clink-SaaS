@@ -1,0 +1,290 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-3">Document Filing</h2>
+      <p class="text-muted">Manage compliance documents, templates, and filing activities</p>
+    </div>
+    <div class="col-auto">
+      <div class="btn-group">
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg me-2"></i>New Document
+        </button>
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-plus-lg me-2"></i>Add Template
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Documents</h6>
+            <i class="bi bi-file-text fs-4 text-primary"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.totalDocuments}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">In Review</h6>
+            <i class="bi bi-eye fs-4 text-warning"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.pendingReview}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Approved</h6>
+            <i class="bi bi-check-circle fs-4 text-success"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.approvedDocuments}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Deadlines</h6>
+            <i class="bi bi-calendar-event fs-4 text-danger"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.upcomingDeadlines}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Templates</h6>
+            <i class="bi bi-file-earmark-text fs-4 text-info"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.totalTemplates}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Activities</h6>
+            <i class="bi bi-activity fs-4 text-primary"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.recentActivities}}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Documents</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Document Details</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let doc of documents">
+                  <td>
+                    <div class="fw-medium">{{doc.title}}</div>
+                    <small class="text-muted">{{doc.description}}</small>
+                    <div class="mt-1">
+                      <small class="text-muted me-2">
+                        <i class="bi bi-person-circle me-1"></i>{{doc.assignedTo}}
+                      </small>
+                      <small class="text-muted me-2">
+                        <i class="bi bi-building me-1"></i>{{doc.authority}}
+                      </small>
+                      <small class="text-muted">
+                        <i class="bi bi-hdd me-1"></i>{{formatFileSize(doc.size)}}
+                      </small>
+                    </div>
+                    <div class="mt-1">
+                      <span class="badge bg-light text-dark me-1" *ngFor="let tag of doc.tags">
+                        {{tag}}
+                      </span>
+                    </div>
+                  </td>
+                  <td>{{doc.type}}</td>
+                  <td>
+                    <span [class]="getCategoryClass(doc.category)">{{doc.category}}</span>
+                  </td>
+                  <td>
+                    <div [class.text-danger]="isOverdue(doc.dueDate)"
+                         [class.text-warning]="isDueSoon(doc.dueDate)">
+                      {{doc.dueDate | date:'mediumDate'}}
+                      <div class="small">
+                        {{calculateDaysRemaining(doc.dueDate)}} days remaining
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(doc.status)">{{doc.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Document">
+                        <i class="bi bi-file-text"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Download">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Document Templates</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Template Details</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Version</th>
+                  <th scope="col">Usage</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let template of templates">
+                  <td>
+                    <div class="fw-medium">{{template.title}}</div>
+                    <small class="text-muted">{{template.description}}</small>
+                    <div class="mt-1">
+                      <small class="text-muted">
+                        Last updated: {{template.lastUpdated | date:'mediumDate'}}
+                      </small>
+                    </div>
+                  </td>
+                  <td>{{template.type}}</td>
+                  <td>
+                    <span [class]="getCategoryClass(template.category)">{{template.category}}</span>
+                  </td>
+                  <td>v{{template.version}}</td>
+                  <td>
+                    <span class="badge bg-primary">{{template.usageCount}} uses</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="Use Template">
+                        <i class="bi bi-plus-lg"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Download">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activities -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Recent Activities</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Activity Details</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">User</th>
+                  <th scope="col">Changes</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let activity of activities">
+                  <td>
+                    <div class="fw-medium">{{getDocumentTitle(activity.documentId)}}</div>
+                    <small class="text-muted">{{activity.notes}}</small>
+                  </td>
+                  <td>{{activity.type}}</td>
+                  <td>{{activity.date | date:'mediumDate'}}</td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-person-circle me-2"></i>
+                      {{activity.user}}
+                    </div>
+                  </td>
+                  <td>
+                    <div *ngIf="activity.changes">
+                      <small class="text-muted" *ngFor="let change of activity.changes">
+                        <i class="bi bi-dot me-1"></i>{{change}}
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

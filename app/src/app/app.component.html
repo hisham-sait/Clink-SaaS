@@ -15,8 +15,6 @@
     [userName]="userName"
     [activeSection]="activeSection"
     (sectionChange)="onSectionChange($event)"
-    (sectionHover)="onSectionHover($event)"
-    (sectionLeave)="onSectionLeave()"
     (themeToggle)="toggleTheme()"
     (notificationsToggle)="toggleNotifications()"
     (userMenuToggle)="toggleUserMenu()">
@@ -27,9 +25,7 @@
     [isExpanded]="isSidebarExpanded"
     [isMobile]="isMobile"
     [activeSection]="activeSection"
-    (toggleSidebar)="toggleSidebar()"
-    (mouseenter)="onSectionHover(activeSection)"
-    (mouseleave)="onSectionLeave()">
+    (toggleSidebar)="toggleSidebar()">
   </app-sidebar>
 
   <!-- Main Content -->

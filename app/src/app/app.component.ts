@@ -6,7 +6,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TinySidebarComponent } from './components/tiny-sidebar/tiny-sidebar.component';
 
-type SectionType = 'books' | 'crm' | 'carbon' | 'tax' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'settings' | 'help';
 
 interface User {
   name: string;
@@ -23,7 +23,7 @@ interface User {
 })
 export class AppComponent implements OnInit {
   // Layout state
-  isSidebarExpanded = false;
+  isSidebarExpanded = true;
   isMobile = window.innerWidth <= 768;
   activeSection: SectionType = 'books';
 
@@ -43,9 +43,6 @@ export class AppComponent implements OnInit {
   // Dropdowns
   isUserMenuOpen = false;
   isNotificationsPanelOpen = false;
-
-  // Hover timer
-  private hoverTimer: any;
 
   @HostListener('window:resize', ['$event'])
   onResize() {
@@ -71,24 +68,7 @@ export class AppComponent implements OnInit {
 
   // Section handling
   onSectionChange(section: SectionType) {
-    if (this.activeSection === section) {
-      this.isSidebarExpanded = !this.isSidebarExpanded;
-    } else {
-      this.activeSection = section;
-      this.isSidebarExpanded = true;
-    }
-  }
-
-  onSectionHover(section: SectionType) {
-    clearTimeout(this.hoverTimer);
     this.activeSection = section;
-    this.isSidebarExpanded = true;
-  }
-
-  onSectionLeave() {
-    this.hoverTimer = setTimeout(() => {
-      this.isSidebarExpanded = false;
-    }, 300); // 300ms delay before hiding
   }
 
   // Toggle functions

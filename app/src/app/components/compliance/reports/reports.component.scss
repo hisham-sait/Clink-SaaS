@@ -1,0 +1,307 @@
+:host {
+  display: block;
+  height: 100%;
+  background-color: #f8f9fa;
+}
+
+.card {
+  transition: transform 0.2s ease-in-out;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    padding: 1.25rem;
+    
+    h5 {
+      color: #495057;
+      font-weight: 600;
+    }
+  }
+}
+
+// Table styles
+.table {
+  margin-bottom: 0;
+  
+  th {
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+    background-color: #f8f9fa;
+    padding: 1rem;
+  }
+  
+  td {
+    padding: 1rem;
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    transition: background-color 0.2s ease-in-out;
+    
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+  }
+}
+
+// Statistics card styles
+.card-body {
+  .fs-4 {
+    opacity: 0.8;
+  }
+
+  h3 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #212529;
+  }
+}
+
+// Badge styles
+.badge {
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+// Button styles
+.btn-group {
+  .btn {
+    padding: 0.375rem 0.5rem;
+    
+    &:focus {
+      box-shadow: none;
+    }
+    
+    .bi {
+      font-size: 1rem;
+    }
+  }
+}
+
+// Icon styles
+.bi {
+  &.bi-file-text {
+    color: #0d6efd;  // primary color
+  }
+  
+  &.bi-hourglass-split {
+    color: #ffc107;  // warning color
+  }
+  
+  &.bi-check-circle {
+    color: #198754;  // success color
+  }
+  
+  &.bi-calendar-event {
+    color: #dc3545;  // danger color
+  }
+  
+  &.bi-exclamation-diamond {
+    color: #0dcaf0;  // info color
+  }
+  
+  &.bi-exclamation-circle {
+    color: #dc3545;  // danger color
+  }
+}
+
+// Trend icon styles
+.bi-arrow-up-circle-fill,
+.bi-arrow-down-circle-fill,
+.bi-dash-circle-fill {
+  font-size: 1.1rem;
+}
+
+// Severity styles
+.severity-indicator {
+  font-weight: 500;
+  
+  &.high {
+    color: #dc3545;
+  }
+  
+  &.medium {
+    color: #ffc107;
+  }
+  
+  &.low {
+    color: #0dcaf0;
+  }
+}
+
+// Due date styles
+.due-date {
+  &.overdue {
+    color: #dc3545;
+    font-weight: 500;
+  }
+  
+  &.due-soon {
+    color: #ffc107;
+    font-weight: 500;
+  }
+  
+  .days-remaining {
+    font-size: 0.875rem;
+  }
+}
+
+// Report type styles
+.report-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  
+  .bi {
+    font-size: 1.1rem;
+  }
+}
+
+// Frequency badge styles
+.frequency-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: rgba(108, 117, 125, 0.1);
+  color: #6c757d;
+  font-size: 0.875rem;
+  font-weight: 500;
+  
+  .bi {
+    font-size: 1rem;
+  }
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+  
+  &:hover {
+    background: #a8a8a8;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 1rem !important;
+  }
+  
+  .table {
+    th, td {
+      padding: 0.75rem;
+    }
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  .btn-group {
+    .btn {
+      padding: 0.25rem 0.375rem;
+    }
+  }
+}
+
+// Animation for status changes
+.badge {
+  transition: background-color 0.3s ease-in-out;
+}
+
+// Tooltip styles
+[title] {
+  position: relative;
+  cursor: pointer;
+}
+
+// Finding styles
+.finding-item {
+  .finding-title {
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .finding-description {
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+  
+  .finding-recommendation {
+    color: #198754;
+    font-size: 0.875rem;
+    
+    .bi {
+      font-size: 1rem;
+    }
+  }
+}
+
+// Metric value styles
+.metric-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  .value {
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .unit {
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+}
+
+// Header button group styles
+.header-actions {
+  .btn-group {
+    .btn {
+      &:first-child {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      
+      &:last-child {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+    }
+  }
+}
+
+// Period indicator styles
+.period-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  font-size: 0.875rem;
+  font-weight: 500;
+  
+  .bi {
+    font-size: 1rem;
+  }
+}

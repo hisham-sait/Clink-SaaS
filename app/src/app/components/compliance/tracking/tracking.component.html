@@ -1,0 +1,324 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-3">Compliance Tracking</h2>
+      <p class="text-muted">Monitor and track compliance tasks, milestones, and risks</p>
+    </div>
+    <div class="col-auto">
+      <div class="btn-group">
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg me-2"></i>New Task
+        </button>
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-plus-lg me-2"></i>Add Milestone
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Total Tasks</h6>
+            <i class="bi bi-list-task fs-4 text-primary"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.totalTasks}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Completed</h6>
+            <i class="bi bi-check-circle fs-4 text-success"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.completedTasks}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Overdue</h6>
+            <i class="bi bi-exclamation-circle fs-4 text-danger"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.overdueTasks}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Progress</h6>
+            <i class="bi bi-graph-up fs-4 text-info"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.averageProgress}}%</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Milestones</h6>
+            <i class="bi bi-flag fs-4 text-warning"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.upcomingMilestones}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Open Risks</h6>
+            <i class="bi bi-shield-exclamation fs-4 text-danger"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.openRisks}}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Compliance Tasks</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Task Details</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Priority</th>
+                  <th scope="col">Assigned To</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Progress</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let task of tasks">
+                  <td>
+                    <div class="fw-medium">{{task.title}}</div>
+                    <small class="text-muted">{{task.description}}</small>
+                    <div class="mt-1">
+                      <small class="text-muted me-2" *ngFor="let dep of task.dependencies">
+                        <i class="bi bi-arrow-right-short"></i>{{dep}}
+                      </small>
+                    </div>
+                  </td>
+                  <td>{{task.category}}</td>
+                  <td>
+                    <span [class]="getPriorityClass(task.priority)">{{task.priority}}</span>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-person-circle me-2"></i>
+                      {{task.assignedTo}}
+                    </div>
+                  </td>
+                  <td>
+                    <div [class.text-danger]="isOverdue(task.dueDate)"
+                         [class.text-warning]="isDueSoon(task.dueDate)">
+                      {{task.dueDate | date:'mediumDate'}}
+                      <div class="small">
+                        {{calculateDaysRemaining(task.dueDate)}} days remaining
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="progress" style="height: 6px; width: 100px;">
+                      <div class="progress-bar" 
+                           [ngClass]="{
+                             'bg-success': task.progress >= 75,
+                             'bg-warning': task.progress >= 25 && task.progress < 75,
+                             'bg-danger': task.progress < 25
+                           }"
+                           [style.width]="task.progress + '%'">
+                      </div>
+                    </div>
+                    <small class="text-muted">{{task.progress}}%</small>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(task.status)">{{task.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Update Progress">
+                        <i class="bi bi-arrow-up-circle"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milestones -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Milestones</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Milestone Details</th>
+                  <th scope="col">Owner</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Progress</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let milestone of milestones">
+                  <td>
+                    <div class="fw-medium">{{milestone.title}}</div>
+                    <small class="text-muted">{{milestone.description}}</small>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-person-circle me-2"></i>
+                      {{milestone.owner}}
+                    </div>
+                  </td>
+                  <td>
+                    <div [class.text-danger]="isOverdue(milestone.dueDate)"
+                         [class.text-warning]="isDueSoon(milestone.dueDate)">
+                      {{milestone.dueDate | date:'mediumDate'}}
+                      <div class="small">
+                        {{calculateDaysRemaining(milestone.dueDate)}} days remaining
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="progress" style="height: 6px; width: 100px;">
+                      <div class="progress-bar" 
+                           [ngClass]="{
+                             'bg-success': milestone.progress >= 75,
+                             'bg-warning': milestone.progress >= 25 && milestone.progress < 75,
+                             'bg-danger': milestone.progress < 25
+                           }"
+                           [style.width]="milestone.progress + '%'">
+                      </div>
+                    </div>
+                    <small class="text-muted">{{milestone.progress}}%</small>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(milestone.status)">{{milestone.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Update Progress">
+                        <i class="bi bi-arrow-up-circle"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Alerts -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Risk Alerts</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Risk Details</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Level</th>
+                  <th scope="col">Assigned To</th>
+                  <th scope="col">Identified Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let risk of riskAlerts">
+                  <td>
+                    <div class="fw-medium">{{risk.title}}</div>
+                    <small class="text-muted">{{risk.description}}</small>
+                    <div class="mt-1 text-muted small">
+                      <i class="bi bi-shield-check me-1"></i>{{risk.mitigation}}
+                    </div>
+                  </td>
+                  <td>{{risk.category}}</td>
+                  <td>
+                    <span [class]="getPriorityClass(risk.level)">{{risk.level}}</span>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-person-circle me-2"></i>
+                      {{risk.assignedTo}}
+                    </div>
+                  </td>
+                  <td>{{risk.identifiedDate | date:'mediumDate'}}</td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(risk.status)">{{risk.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Update Status">
+                        <i class="bi bi-arrow-up-circle"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

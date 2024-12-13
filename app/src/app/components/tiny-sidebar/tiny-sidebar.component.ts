@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-type SectionType = 'books' | 'crm' | 'carbon' | 'tax' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'settings' | 'help';
 
 @Component({
   selector: 'app-tiny-sidebar',
@@ -18,22 +18,11 @@ export class TinySidebarComponent {
   @Input() activeSection: SectionType = 'books';
 
   @Output() sectionChange = new EventEmitter<SectionType>();
-  @Output() sectionHover = new EventEmitter<SectionType>();
-  @Output() sectionLeave = new EventEmitter<void>();
   @Output() themeToggle = new EventEmitter<void>();
   @Output() notificationsToggle = new EventEmitter<void>();
   @Output() userMenuToggle = new EventEmitter<void>();
 
-  onSectionHover(section: SectionType) {
-    this.sectionHover.emit(section);
-  }
-
-  onSectionLeave() {
-    this.sectionLeave.emit();
-  }
-
   selectSection(section: SectionType) {
-    this.activeSection = section;
     this.sectionChange.emit(section);
   }
 

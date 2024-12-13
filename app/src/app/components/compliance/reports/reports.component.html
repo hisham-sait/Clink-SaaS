@@ -1,0 +1,293 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-3">Compliance Reports</h2>
+      <p class="text-muted">Generate and manage compliance reports, metrics, and findings</p>
+    </div>
+    <div class="col-auto">
+      <div class="btn-group">
+        <button class="btn btn-primary">
+          <i class="bi bi-plus-lg me-2"></i>New Report
+        </button>
+        <button class="btn btn-outline-primary">
+          <i class="bi bi-download me-2"></i>Export
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Reports</h6>
+            <i class="bi bi-file-text fs-4 text-primary"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.totalReports}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Pending</h6>
+            <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.pendingReports}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Submitted</h6>
+            <i class="bi bi-check-circle fs-4 text-success"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.submittedReports}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Deadlines</h6>
+            <i class="bi bi-calendar-event fs-4 text-danger"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.upcomingDeadlines}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Findings</h6>
+            <i class="bi bi-exclamation-diamond fs-4 text-info"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.totalFindings}}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title mb-0">Open Issues</h6>
+            <i class="bi bi-exclamation-circle fs-4 text-danger"></i>
+          </div>
+          <h3 class="mb-0">{{statistics.openFindings}}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Reports</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Report Details</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Frequency</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let report of reports">
+                  <td>
+                    <div class="fw-medium">{{report.title}}</div>
+                    <small class="text-muted">{{report.description}}</small>
+                    <div class="mt-1">
+                      <small class="text-muted me-2">
+                        <i class="bi bi-person-circle me-1"></i>{{report.assignedTo}}
+                      </small>
+                      <small class="text-muted me-2">
+                        <i class="bi bi-building me-1"></i>{{report.authority}}
+                      </small>
+                      <small class="text-muted">
+                        <i class="bi bi-calendar3 me-1"></i>{{report.period}}
+                      </small>
+                    </div>
+                  </td>
+                  <td>{{report.type}}</td>
+                  <td>{{report.frequency}}</td>
+                  <td>
+                    <div [class.text-danger]="isOverdue(report.dueDate)"
+                         [class.text-warning]="isDueSoon(report.dueDate)">
+                      {{report.dueDate | date:'mediumDate'}}
+                      <div class="small">
+                        {{calculateDaysRemaining(report.dueDate)}} days remaining
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(report.status)">{{report.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Report">
+                        <i class="bi bi-file-text"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Download">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Report Metrics</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Metric Details</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Value</th>
+                  <th scope="col">Target</th>
+                  <th scope="col">Trend</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let metric of metrics">
+                  <td>
+                    <div class="fw-medium">{{metric.name}}</div>
+                    <small class="text-muted">{{metric.notes}}</small>
+                  </td>
+                  <td>{{metric.category}}</td>
+                  <td>{{metric.value}} {{metric.unit}}</td>
+                  <td>{{metric.target}} {{metric.unit}}</td>
+                  <td>
+                    <i class="bi" [ngClass]="{
+                      'bi-arrow-up-circle-fill text-success': metric.trend === 'up',
+                      'bi-arrow-down-circle-fill text-danger': metric.trend === 'down',
+                      'bi-dash-circle-fill text-warning': metric.trend === 'stable'
+                    }"></i>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(metric.status)">{{metric.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Findings -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0">Report Findings</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Finding Details</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Severity</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let finding of findings">
+                  <td>
+                    <div class="fw-medium">{{finding.title}}</div>
+                    <small class="text-muted">{{finding.description}}</small>
+                    <div class="mt-1">
+                      <small class="text-muted me-2">
+                        <i class="bi bi-person-circle me-1"></i>{{finding.assignedTo}}
+                      </small>
+                      <small class="text-muted">
+                        <i class="bi bi-lightbulb me-1"></i>{{finding.recommendation}}
+                      </small>
+                    </div>
+                  </td>
+                  <td>{{finding.category}}</td>
+                  <td>
+                    <span [class]="getSeverityClass(finding.severity)">{{finding.severity}}</span>
+                  </td>
+                  <td>
+                    <div [class.text-danger]="isOverdue(finding.dueDate)"
+                         [class.text-warning]="isDueSoon(finding.dueDate)">
+                      {{finding.dueDate | date:'mediumDate'}}
+                      <div class="small">
+                        {{calculateDaysRemaining(finding.dueDate)}} days remaining
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusClass(finding.status)">{{finding.status}}</span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" title="Update Status">
+                        <i class="bi bi-arrow-up-circle"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

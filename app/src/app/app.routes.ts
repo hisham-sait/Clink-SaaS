@@ -3,6 +3,7 @@ import { BOOKS_ROUTES } from './components/books/books.routes';
 import { CRM_ROUTES } from './components/crm/crm.routes';
 import { CARBON_ROUTES } from './components/carbon/carbon.routes';
 import { TAX_ROUTES } from './components/tax/tax.routes';
+import { COMPLIANCE_ROUTES } from './components/compliance/compliance.routes';
 
 export const routes: Routes = [
   // Default redirect
@@ -27,6 +28,9 @@ export const routes: Routes = [
 
   // Tax Module Routes
   ...TAX_ROUTES,
+
+  // Compliance Module Routes
+  ...COMPLIANCE_ROUTES,
 
   // Settings Route (lazy loaded)
   {

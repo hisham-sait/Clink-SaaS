@@ -3,39 +3,38 @@
   <div class="top-section">
     <ul class="nav-items">
       <li>
-        <a (mouseenter)="onSectionHover('books')" 
-           (mouseleave)="onSectionLeave()"
-           (click)="selectSection('books')" 
+        <a (click)="selectSection('books')" 
            [class.active]="activeSection === 'books'">
           <i class="bi bi-journal-text"></i>
           <span class="tooltip">Books</span>
         </a>
       </li>
       <li>
-        <a (mouseenter)="onSectionHover('crm')"
-           (mouseleave)="onSectionLeave()"
-           (click)="selectSection('crm')" 
+        <a (click)="selectSection('crm')" 
            [class.active]="activeSection === 'crm'">
           <i class="bi bi-people"></i>
           <span class="tooltip">CRM</span>
         </a>
       </li>
       <li>
-        <a (mouseenter)="onSectionHover('tax')"
-           (mouseleave)="onSectionLeave()"
-           (click)="selectSection('tax')" 
-           [class.active]="activeSection === 'tax'">
-          <i class="bi bi-calculator"></i>
-          <span class="tooltip">Tax</span>
+        <a (click)="selectSection('compliance')" 
+           [class.active]="activeSection === 'compliance'">
+          <i class="bi bi-shield-check"></i>
+          <span class="tooltip">Compliance</span>
         </a>
       </li>
       <li>
-        <a (mouseenter)="onSectionHover('carbon')"
-           (mouseleave)="onSectionLeave()"
-           (click)="selectSection('carbon')" 
+        <a (click)="selectSection('carbon')" 
            [class.active]="activeSection === 'carbon'">
           <i class="bi bi-cloud"></i>
           <span class="tooltip">Carbon</span>
+        </a>
+      </li>
+      <li>
+        <a (click)="selectSection('tax')" 
+           [class.active]="activeSection === 'tax'">
+          <i class="bi bi-calculator"></i>
+          <span class="tooltip">Tax</span>
         </a>
       </li>
     </ul>
@@ -69,9 +68,7 @@
       </li>
       <!-- Settings -->
       <li>
-        <a (mouseenter)="onSectionHover('settings')"
-           (mouseleave)="onSectionLeave()"
-           (click)="selectSection('settings')" 
+        <a (click)="selectSection('settings')" 
            [class.active]="activeSection === 'settings'">
           <i class="bi bi-gear"></i>
           <span class="tooltip">Settings</span>
@@ -79,9 +76,7 @@
       </li>
       <!-- Help -->
       <li>
-        <a (mouseenter)="onSectionHover('help')"
-           (mouseleave)="onSectionLeave()"
-           (click)="selectSection('help')" 
+        <a (click)="selectSection('help')" 
            [class.active]="activeSection === 'help'">
           <i class="bi bi-question-circle"></i>
           <span class="tooltip">Help</span>
