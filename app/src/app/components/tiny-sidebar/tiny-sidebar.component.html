@@ -21,6 +21,15 @@
         </a>
       </li>
       <li>
+        <a (mouseenter)="onSectionHover('tax')"
+           (mouseleave)="onSectionLeave()"
+           (click)="selectSection('tax')" 
+           [class.active]="activeSection === 'tax'">
+          <i class="bi bi-calculator"></i>
+          <span class="tooltip">Tax</span>
+        </a>
+      </li>
+      <li>
         <a (mouseenter)="onSectionHover('carbon')"
            (mouseleave)="onSectionLeave()"
            (click)="selectSection('carbon')" 

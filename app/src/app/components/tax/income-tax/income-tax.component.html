@@ -1,0 +1,162 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="bi bi-person-badge me-2"></i>Income Tax</h2>
+      <p class="text-muted">Personal and Business Income Tax Management</p>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        New Tax Return
+      </button>
+    </div>
+  </div>
+
+  <!-- Tax Years Overview -->
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-calendar-check me-2"></i>
+            Tax Returns
+          </h5>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Tax Year</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                  <th class="text-end">Preliminary Tax</th>
+                  <th class="text-end">Final Liability</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let year of taxYears">
+                  <td>{{ year.year }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="year.status === 'Filed' ? 'bg-success' : 'bg-warning'">
+                      {{ year.status }}
+                    </span>
+                  </td>
+                  <td>{{ year.dueDate }}</td>
+                  <td class="text-end">€{{ year.preliminaryTax.toFixed(2) }}</td>
+                  <td class="text-end">{{ year.finalLiability ? '€' + year.finalLiability.toFixed(2) : '-' }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary me-2">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tax Rates -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-percent me-2"></i>
+            Tax Rates 2023
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let rate of taxRates">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ rate.band }}</strong>
+                  <div class="text-muted small">{{ rate.type }}</div>
+                </div>
+                <span class="badge bg-primary">{{ rate.rate }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tax Credits -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-credit-card me-2"></i>
+            Tax Credits
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let credit of taxCredits">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>{{ credit.type }}</span>
+                <strong>€{{ credit.amount }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tax Reliefs -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-shield-check me-2"></i>
+            Available Reliefs
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let relief of reliefs">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>{{ relief.type }}</span>
+                <span class="badge bg-success">{{ relief.rate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-lightning me-2"></i>
+            Quick Actions
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-calculator me-2"></i>
+                Tax Calculator
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Form 11
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-calendar-plus me-2"></i>
+                Schedule Payment
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-box-arrow-up-right me-2"></i>
+                ROS Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

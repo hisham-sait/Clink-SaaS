@@ -6,7 +6,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TinySidebarComponent } from './components/tiny-sidebar/tiny-sidebar.component';
 
-type SectionType = 'books' | 'crm' | 'carbon' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'carbon' | 'tax' | 'settings' | 'help';
 
 interface User {
   name: string;

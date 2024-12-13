@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-type SectionType = 'books' | 'crm' | 'carbon' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'carbon' | 'tax' | 'settings' | 'help';
 
 @Component({
   selector: 'app-tiny-sidebar',

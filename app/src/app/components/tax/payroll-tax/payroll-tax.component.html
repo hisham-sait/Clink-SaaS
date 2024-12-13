@@ -1,0 +1,249 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="bi bi-people me-2"></i>Payroll Tax</h2>
+      <p class="text-muted">PAYE, PRSI & USC Management</p>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        New P30 Return
+      </button>
+    </div>
+  </div>
+
+  <!-- Payroll Summary Card -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-calculator me-2"></i>
+            Payroll Summary
+            <span class="ms-2 badge bg-primary">{{ payrollSummary.payrollDate }}</span>
+          </h5>
+          <div class="row">
+            <div class="col-md">
+              <div class="summary-item">
+                <span class="label">Total Employees</span>
+                <span class="value">{{ payrollSummary.totalEmployees }}</span>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="summary-item">
+                <span class="label">PAYE</span>
+                <span class="value">€{{ payrollSummary.monthlyPAYE.toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="summary-item">
+                <span class="label">PRSI</span>
+                <span class="value">€{{ payrollSummary.monthlyPRSI.toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="summary-item">
+                <span class="label">USC</span>
+                <span class="value">€{{ payrollSummary.monthlyUSC.toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="summary-item">
+                <span class="label">Total Deductions</span>
+                <span class="value highlight">€{{ payrollSummary.totalDeductions.toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Recent Payments -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-receipt me-2"></i>
+            Recent Payments
+          </h5>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Due Date</th>
+                  <th class="text-end">PAYE</th>
+                  <th class="text-end">PRSI</th>
+                  <th class="text-end">USC</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let payment of recentPayments">
+                  <td>{{ payment.period }}</td>
+                  <td>{{ payment.dueDate }}</td>
+                  <td class="text-end">€{{ payment.paye.toFixed(2) }}</td>
+                  <td class="text-end">€{{ payment.prsi.toFixed(2) }}</td>
+                  <td class="text-end">€{{ payment.usc.toFixed(2) }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="payment.status === 'Paid' ? 'bg-success' : 'bg-warning'">
+                      {{ payment.status }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary me-2">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tax Bands -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-bar-chart-steps me-2"></i>
+            Tax Bands
+          </h5>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th>Threshold</th>
+                  <th class="text-end">Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let band of taxBands">
+                  <td>{{ band.category }}</td>
+                  <td>{{ band.type }}</td>
+                  <td>{{ band.threshold }}</td>
+                  <td class="text-end">
+                    <span class="badge bg-primary">{{ band.rate }}%</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- USC Rates -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-percent me-2"></i>
+            USC Rates
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let rate of uscRates">
+              <div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ rate.band }}</strong>
+                  <span class="badge bg-primary">{{ rate.rate }}%</span>
+                </div>
+                <div class="text-muted small mt-1">{{ rate.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRSI Rates -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-shield me-2"></i>
+            PRSI Rates
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let rate of prsiRates">
+              <div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ rate.type }}</strong>
+                  <span class="badge bg-primary">{{ rate.rate }}%</span>
+                </div>
+                <div class="text-muted small mt-1">{{ rate.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Deadlines -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-calendar-event me-2"></i>
+            Key Deadlines
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let deadline of deadlines">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>{{ deadline.event }}</strong>
+                  <div class="text-muted small">{{ deadline.description }}</div>
+                </div>
+                <span class="badge bg-primary">{{ deadline.date }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-lightning me-2"></i>
+            Quick Actions
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-calculator me-2"></i>
+                Payroll Calculator
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                P30 Form
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-calendar-plus me-2"></i>
+                Schedule Payment
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-box-arrow-up-right me-2"></i>
+                ROS Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

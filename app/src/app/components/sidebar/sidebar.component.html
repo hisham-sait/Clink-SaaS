@@ -187,6 +187,51 @@
       </ul>
     </div>
 
+    <!-- Tax Section -->
+    <div class="nav-section" *ngIf="activeSection === 'tax'">
+      <div class="section-header">
+        <span>TAX</span>
+      </div>
+      <ul class="nav-items">
+        <li>
+          <a routerLink="/tax/dashboard" routerLinkActive="active">
+            <i class="bi bi-grid"></i>
+            <span class="nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/tax/vat" routerLinkActive="active">
+            <i class="bi bi-receipt"></i>
+            <span class="nav-label">VAT</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/tax/income-tax" routerLinkActive="active">
+            <i class="bi bi-person-badge"></i>
+            <span class="nav-label">Income Tax</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/tax/corporation-tax" routerLinkActive="active">
+            <i class="bi bi-building"></i>
+            <span class="nav-label">Corporation Tax</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/tax/capital-gains" routerLinkActive="active">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span class="nav-label">Capital Gains</span>
+          </a>
+        </li>
+        <li>
+          <a routerLink="/tax/payroll-tax" routerLinkActive="active">
+            <i class="bi bi-people"></i>
+            <span class="nav-label">Payroll Tax</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
     <!-- Settings Section -->
     <div class="nav-section" *ngIf="activeSection === 'settings'">
       <div class="section-header">

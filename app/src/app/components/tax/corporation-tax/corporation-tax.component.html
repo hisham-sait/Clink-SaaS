@@ -1,0 +1,210 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="bi bi-building me-2"></i>Corporation Tax</h2>
+      <p class="text-muted">Corporate Tax Management & Compliance</p>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        New CT1 Return
+      </button>
+    </div>
+  </div>
+
+  <!-- Company Info Card -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            Company Information
+          </h5>
+          <div class="row">
+            <div class="col-md-3">
+              <div class="info-item">
+                <span class="label">Tax Number</span>
+                <span class="value">{{ companyInfo.taxNumber }}</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="info-item">
+                <span class="label">Accounting Period</span>
+                <span class="value">{{ companyInfo.accountingPeriod }}</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="info-item">
+                <span class="label">Residency</span>
+                <span class="value">{{ companyInfo.residency }}</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="info-item">
+                <span class="label">Status</span>
+                <span class="value">
+                  <span class="badge bg-success">{{ companyInfo.status }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Tax Returns -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-file-text me-2"></i>
+            Corporation Tax Returns
+          </h5>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                  <th class="text-end">Preliminary Tax</th>
+                  <th class="text-end">Final Liability</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let return of taxReturns">
+                  <td>{{ return.year }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="return.status === 'Filed' ? 'bg-success' : 'bg-warning'">
+                      {{ return.status }}
+                    </span>
+                  </td>
+                  <td>{{ return.dueDate }}</td>
+                  <td class="text-end">€{{ return.preliminaryTax.toFixed(2) }}</td>
+                  <td class="text-end">{{ return.finalLiability ? '€' + return.finalLiability.toFixed(2) : '-' }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary me-2">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Deadlines -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-calendar-event me-2"></i>
+            Key Deadlines
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let deadline of deadlines">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>{{ deadline.event }}</strong>
+                  <div class="text-muted small">{{ deadline.description }}</div>
+                </div>
+                <span class="badge bg-primary">{{ deadline.date }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Tax Rates -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-percent me-2"></i>
+            Tax Rates
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let rate of taxRates">
+              <div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ rate.type }}</strong>
+                  <span class="badge bg-primary">{{ rate.rate }}%</span>
+                </div>
+                <div class="text-muted small mt-1">{{ rate.note }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tax Reliefs -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-shield-check me-2"></i>
+            Available Reliefs
+          </h5>
+          <div class="list-group list-group-flush">
+            <div class="list-group-item border-0" *ngFor="let relief of reliefs">
+              <div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ relief.type }}</strong>
+                  <span class="badge bg-success">{{ relief.rate }}</span>
+                </div>
+                <div class="text-muted small mt-1">{{ relief.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center mb-3">
+            <i class="bi bi-lightning me-2"></i>
+            Quick Actions
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-calculator me-2"></i>
+                Tax Calculator
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                CT1 Form
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-calendar-plus me-2"></i>
+                Schedule Payment
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-primary w-100">
+                <i class="bi bi-box-arrow-up-right me-2"></i>
+                ROS Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
