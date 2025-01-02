@@ -4,6 +4,7 @@ import { CRM_ROUTES } from './components/crm/crm.routes';
 import { CARBON_ROUTES } from './components/carbon/carbon.routes';
 import { TAX_ROUTES } from './components/tax/tax.routes';
 import { COMPLIANCE_ROUTES } from './components/compliance/compliance.routes';
+import { STATUTORY_ROUTES } from './components/statutory/statutory.routes';
 
 export const routes: Routes = [
   // Default redirect
@@ -31,6 +32,9 @@ export const routes: Routes = [
 
   // Compliance Module Routes
   ...COMPLIANCE_ROUTES,
+
+  // Statutory Module Routes
+  ...STATUTORY_ROUTES,
 
   // Settings Route (lazy loaded)
   {

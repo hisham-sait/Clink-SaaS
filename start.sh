@@ -69,15 +69,31 @@ start_process() {
     fi
 }
 
-# Start API server
-start_process "API Server" "api" "npm run dev"
-
-# Wait a moment for API to initialize
-echo -e "${YELLOW}Waiting for API to initialize...${NC}"
-sleep 3
+# Kill any existing processes on port 4200
+echo -e "${YELLOW}Checking for existing processes...${NC}"
+if command_exists "lsof"; then
+    lsof -ti:4200 | xargs kill -9 2>/dev/null
+elif command_exists "netstat"; then
+    # For Windows
+    for /f "tokens=5" %a in ('netstat -aon ^| findstr :4200') do taskkill /F /PID %a 2>NUL
+fi
 
 # Start Angular development server
-start_process "Angular Development Server" "app" "ng serve"
+cd app || error_exit "Could not change to app directory"
+echo -e "${YELLOW}Starting Angular Development Server...${NC}"
+ng serve --port 4200 &
+ANGULAR_PID=$!
+
+# Wait for Angular to be ready
+echo -e "${YELLOW}Waiting for Angular to initialize...${NC}"
+sleep 5
+
+# Check if Angular started successfully
+if ! kill -0 $ANGULAR_PID 2>/dev/null; then
+    error_exit "Angular server failed to start"
+fi
+
+cd ..
 
 echo -e "${GREEN}Startup complete!${NC}"
 echo -e "${YELLOW}API server running on http://localhost:3000${NC}"

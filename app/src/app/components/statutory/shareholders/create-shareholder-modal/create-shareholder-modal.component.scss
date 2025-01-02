@@ -1,0 +1,41 @@
+@import '../../statutory.shared.scss';
+
+:host {
+  display: block;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.btn-group {
+  .btn {
+    flex: 1;
+  }
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.invalid-feedback {
+  font-size: 0.875rem;
+}
+
+.individual-fields,
+.corporate-fields {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

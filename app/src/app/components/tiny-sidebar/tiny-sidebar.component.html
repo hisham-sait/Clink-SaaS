@@ -3,38 +3,57 @@
   <div class="top-section">
     <ul class="nav-items">
       <li>
-        <a (click)="selectSection('books')" 
+        <a (click)="selectSection('books')"
+           [routerLink]="['/books/dashboard']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'books'">
           <i class="bi bi-journal-text"></i>
           <span class="tooltip">Books</span>
         </a>
       </li>
       <li>
-        <a (click)="selectSection('crm')" 
+        <a (click)="selectSection('crm')"
+           [routerLink]="['/crm/dashboard']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'crm'">
           <i class="bi bi-people"></i>
           <span class="tooltip">CRM</span>
         </a>
       </li>
       <li>
-        <a (click)="selectSection('compliance')" 
+        <a (click)="selectSection('compliance')"
+           [routerLink]="['/compliance/dashboard']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'compliance'">
           <i class="bi bi-shield-check"></i>
           <span class="tooltip">Compliance</span>
         </a>
       </li>
       <li>
-        <a (click)="selectSection('carbon')" 
+        <a (click)="selectSection('carbon')"
+           [routerLink]="['/carbon/dashboard']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'carbon'">
           <i class="bi bi-cloud"></i>
           <span class="tooltip">Carbon</span>
         </a>
       </li>
       <li>
-        <a (click)="selectSection('tax')" 
+        <a (click)="selectSection('tax')"
+           [routerLink]="['/tax/dashboard']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'tax'">
           <i class="bi bi-calculator"></i>
           <span class="tooltip">Tax</span>
+        </a>
+      </li>
+      <li>
+        <a (click)="selectSection('statutory')"
+           [routerLink]="['/statutory/dashboard']"
+           routerLinkActive="active"
+           [class.active]="activeSection === 'statutory'">
+          <i class="bi bi-journal-bookmark"></i>
+          <span class="tooltip">Statutory</span>
         </a>
       </li>
     </ul>
@@ -62,13 +81,15 @@
       <!-- User Menu -->
       <li>
         <a (click)="toggleUserMenu()">
-          <img [src]="userAvatar" [alt]="userName" class="user-avatar">
+          <i [class]="userAvatar" class="user-avatar"></i>
           <span class="tooltip">Profile</span>
         </a>
       </li>
       <!-- Settings -->
       <li>
-        <a (click)="selectSection('settings')" 
+        <a (click)="selectSection('settings')"
+           [routerLink]="['/settings']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'settings'">
           <i class="bi bi-gear"></i>
           <span class="tooltip">Settings</span>
@@ -76,7 +97,9 @@
       </li>
       <!-- Help -->
       <li>
-        <a (click)="selectSection('help')" 
+        <a (click)="selectSection('help')"
+           [routerLink]="['/help']"
+           routerLinkActive="active"
            [class.active]="activeSection === 'help'">
           <i class="bi bi-question-circle"></i>
           <span class="tooltip">Help</span>

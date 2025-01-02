@@ -1,0 +1,146 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h1 class="mb-0">Board Minutes Register</h1>
+      <p class="text-muted">Record and manage board meetings and resolutions</p>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-4">Record Board Meeting</h5>
+          <form [formGroup]="meetingForm" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label class="form-label">Meeting Date</label>
+              <input type="date" class="form-control" formControlName="date">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Location</label>
+              <input type="text" class="form-control" formControlName="location" placeholder="Enter meeting location">
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Start Time</label>
+                <input type="time" class="form-control" formControlName="startTime">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">End Time</label>
+                <input type="time" class="form-control" formControlName="endTime">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Chairperson</label>
+              <input type="text" class="form-control" formControlName="chairperson" placeholder="Enter chairperson name">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Quorum Details</label>
+              <input type="text" class="form-control" formControlName="quorum" placeholder="Enter quorum details">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Directors Present</label>
+              <textarea class="form-control" formControlName="attendees" rows="3" placeholder="List all attending directors"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Apologies</label>
+              <textarea class="form-control" formControlName="apologies" rows="2" placeholder="List directors who sent apologies (optional)"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Agenda</label>
+              <textarea class="form-control" formControlName="agenda" rows="4" placeholder="Enter meeting agenda"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Discussions</label>
+              <textarea class="form-control" formControlName="discussions" rows="6" placeholder="Enter meeting discussions"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Decisions</label>
+              <textarea class="form-control" formControlName="decisions" rows="4" placeholder="Enter decisions made"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Actions</label>
+              <textarea class="form-control" formControlName="actions" rows="4" placeholder="Enter action items and assignments"></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Resolution Numbers</label>
+              <input type="text" class="form-control" formControlName="resolutionNumbers" placeholder="Enter resolution reference numbers">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Next Meeting Date (Optional)</label>
+              <input type="date" class="form-control" formControlName="nextMeetingDate">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" [disabled]="!meetingForm.valid">
+              Record Meeting
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-4">Board Meetings</h5>
+          
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Location</th>
+                  <th>Duration</th>
+                  <th>Chairperson</th>
+                  <th>Decisions</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let meeting of meetings; let i = index">
+                  <td>{{ formatDate(meeting.date) }}</td>
+                  <td>{{ meeting.location }}</td>
+                  <td>{{ getDuration(meeting.startTime, meeting.endTime) }}</td>
+                  <td>{{ meeting.chairperson }}</td>
+                  <td>
+                    <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                      {{ meeting.decisions }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-primary me-1" (click)="downloadMinutes(meeting)">
+                        <i class="bi bi-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" (click)="removeMeeting(i)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="meetings.length === 0">
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    No board meetings recorded yet
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

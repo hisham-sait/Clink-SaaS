@@ -1,0 +1,147 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h1 class="mb-0">Share Allotments Register</h1>
+      <p class="text-muted">Record and manage share allotments and returns</p>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-4">Create Allotment</h5>
+          <form [formGroup]="allotmentForm" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-control" formControlName="date">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Share Class</label>
+              <select class="form-select" formControlName="shareClass">
+                <option value="">Select share class</option>
+                <option *ngFor="let type of shareClasses" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Number of Shares</label>
+                <input type="number" class="form-control" formControlName="numberOfShares" placeholder="Enter number">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Currency</label>
+                <select class="form-select" formControlName="currency">
+                  <option *ngFor="let curr of currencies" [value]="curr">{{ curr }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nominal Value</label>
+                <input type="number" class="form-control" formControlName="nominalValue" placeholder="Enter value">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Issue Price</label>
+                <input type="number" class="form-control" formControlName="issuePrice" placeholder="Enter price">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Allottee</label>
+              <input type="text" class="form-control" formControlName="allottee" placeholder="Enter allottee name">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Certificate Number</label>
+              <input type="text" class="form-control" formControlName="certificateNumber" placeholder="Enter certificate number">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Resolution Date</label>
+              <input type="date" class="form-control" formControlName="resolutionDate">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Resolution Number</label>
+              <input type="text" class="form-control" formControlName="resolutionNumber" placeholder="Enter resolution number">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Return Filing Date</label>
+              <input type="date" class="form-control" formControlName="returnFilingDate">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Return Number</label>
+              <input type="text" class="form-control" formControlName="returnNumber" placeholder="Enter return number">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" [disabled]="!allotmentForm.valid">
+              Create Allotment
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-4">Allotments</h5>
+          
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Share Class</th>
+                  <th>Number</th>
+                  <th>Issue Price</th>
+                  <th>Total Value</th>
+                  <th>Allottee</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let allotment of allotments; let i = index">
+                  <td>{{ formatDate(allotment.date) }}</td>
+                  <td>{{ allotment.shareClass }}</td>
+                  <td>{{ allotment.numberOfShares }}</td>
+                  <td>{{ formatCurrency(allotment.issuePrice, allotment.currency) }}</td>
+                  <td>{{ formatCurrency(calculateTotalValue(allotment), allotment.currency) }}</td>
+                  <td>{{ allotment.allottee }}</td>
+                  <td>
+                    <span class="badge" [class.bg-success]="allotment.paymentStatus === 'Paid'" [class.bg-danger]="allotment.paymentStatus === 'Unpaid'">
+                      {{ allotment.paymentStatus }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button *ngIf="allotment.paymentStatus === 'Unpaid'" class="btn btn-sm btn-outline-success me-1" (click)="updatePaymentStatus(i)">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" (click)="removeAllotment(i)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="allotments.length === 0">
+                  <td colspan="8" class="text-center py-4 text-muted">
+                    No allotments recorded yet
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

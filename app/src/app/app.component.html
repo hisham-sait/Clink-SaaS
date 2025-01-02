@@ -4,7 +4,7 @@
     <button class="menu-toggle" (click)="toggleSidebar()">
       <i class="bi" [class.bi-list]="!isSidebarExpanded" [class.bi-x-lg]="isSidebarExpanded"></i>
     </button>
-    <img src="assets/logo.png" alt="Bradán" class="mobile-logo">
+    <i class="bi bi-building mobile-logo"></i>
   </div>
 
   <!-- Tiny Sidebar -->
@@ -39,7 +39,7 @@
   <!-- User Menu Dropdown -->
   <div class="user-dropdown" [class.show]="isUserMenuOpen">
     <div class="user-info">
-      <img [src]="userAvatar" [alt]="userName" class="user-avatar">
+      <i [class]="userAvatar" class="user-avatar"></i>
       <div class="user-details">
         <span class="user-name">{{ userName }}</span>
         <span class="user-email">{{ user.email }}</span>

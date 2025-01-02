@@ -1,0 +1,141 @@
+@import '../statutory.shared.scss';
+
+.shareholders {
+  .shareholder-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--bs-light);
+    color: var(--bs-primary);
+    font-size: 1.2rem;
+  }
+
+  .badge {
+    text-transform: capitalize;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+
+    &.bg-success {
+      background-color: var(--bs-success-bg-subtle) !important;
+      color: var(--bs-success);
+    }
+
+    &.bg-warning {
+      background-color: var(--bs-warning-bg-subtle) !important;
+      color: var(--bs-warning);
+    }
+
+    &.bg-danger {
+      background-color: var(--bs-danger-bg-subtle) !important;
+      color: var(--bs-danger);
+    }
+  }
+
+  .btn-group {
+    .btn-link {
+      color: var(--bs-gray-600);
+      padding: 0.25rem 0.5rem;
+      font-size: 1.1rem;
+
+      &:hover {
+        color: var(--bs-primary);
+      }
+
+      &.text-danger:hover {
+        color: var(--bs-danger) !important;
+      }
+    }
+  }
+
+  .table {
+    th {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--bs-gray-600);
+      border-top: none;
+    }
+
+    td {
+      vertical-align: middle;
+    }
+
+    tfoot {
+      font-size: 0.9375rem;
+    }
+  }
+
+  .activity-list {
+    .activity-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--bs-gray-200);
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .activity-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+
+        &.addition {
+          background-color: var(--bs-success-bg-subtle);
+          color: var(--bs-success);
+        }
+
+        &.transfer {
+          background-color: var(--bs-warning-bg-subtle);
+          color: var(--bs-warning);
+        }
+
+        &.update {
+          background-color: var(--bs-info-bg-subtle);
+          color: var(--bs-info);
+        }
+
+        &.removal {
+          background-color: var(--bs-danger-bg-subtle);
+          color: var(--bs-danger);
+        }
+      }
+
+      .activity-content {
+        flex: 1;
+
+        .activity-description {
+          margin-bottom: 0.25rem;
+          color: var(--bs-gray-900);
+        }
+
+        .activity-meta {
+          font-size: 0.8125rem;
+          color: var(--bs-gray-600);
+
+          .user {
+            font-weight: 500;
+            margin-right: 0.5rem;
+          }
+
+          .time {
+            &::before {
+              content: '•';
+              margin-right: 0.5rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}

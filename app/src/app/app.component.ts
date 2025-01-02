@@ -6,7 +6,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TinySidebarComponent } from './components/tiny-sidebar/tiny-sidebar.component';
 
-type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'statutory' | 'settings' | 'help';
 
 interface User {
   name: string;
@@ -34,7 +34,7 @@ export class AppComponent implements OnInit {
   user: User = {
     name: 'John Doe',
     email: 'john.doe@example.com',
-    avatar: 'assets/images/avatar.png'
+    avatar: 'bi bi-person-circle'
   };
 
   // Notifications

@@ -8,8 +8,9 @@ import { CarbonSidebarComponent } from '../carbon/carbon-sidebar/carbon-sidebar.
 import { TaxSidebarComponent } from '../tax/tax-sidebar/tax-sidebar.component';
 import { SettingsSidebarComponent } from '../settings/settings-sidebar/settings-sidebar.component';
 import { HelpSidebarComponent } from '../help/help-sidebar/help-sidebar.component';
+import { StatutorySidebarComponent } from '../statutory/statutory-sidebar/statutory-sidebar.component';
 
-type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'settings' | 'help';
+type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'statutory' | 'settings' | 'help';
 
 @Component({
   selector: 'app-sidebar',
@@ -25,7 +26,8 @@ type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'settings
     CarbonSidebarComponent,
     TaxSidebarComponent,
     SettingsSidebarComponent,
-    HelpSidebarComponent
+    HelpSidebarComponent,
+    StatutorySidebarComponent
   ]
 })
 export class SidebarComponent {
@@ -46,6 +48,7 @@ export class SidebarComponent {
       compliance: 'bi-shield-check',
       carbon: 'bi-cloud',
       tax: 'bi-calculator',
+      statutory: 'bi-journal-bookmark',
       settings: 'bi-gear',
       help: 'bi-question-circle'
     };
@@ -59,6 +62,7 @@ export class SidebarComponent {
       compliance: 'Compliance',
       carbon: 'Carbon',
       tax: 'Tax',
+      statutory: 'Statutory',
       settings: 'Settings',
       help: 'Help'
     };
