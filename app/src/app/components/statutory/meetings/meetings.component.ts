@@ -1,132 +1,433 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
+import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { Router } from '@angular/router';
+import { CreateMeetingModalComponent } from './modal/create-meeting-modal.component';
+import { EditMeetingModalComponent } from './modal/edit-meeting-modal.component';
+import { ViewMeetingModalComponent } from './modal/view-meeting-modal.component';
+import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 interface Meeting {
-  date: string;
-  type: 'AGM' | 'EGM' | 'Board Meeting';
-  location: string;
+  meetingId: string;
+  meetingDate: string;
+  meetingType: 'AGM' | 'EGM' | 'Class Meeting';
+  venue: string;
   startTime: string;
   endTime: string;
-  attendees: string;
-  agenda: string;
-  resolutions: string;
-  minutes: string;
   chairperson: string;
-  quorum: string;
-  resolutionNumbers: string;
-  nextMeetingDate?: string;
+  attendees: string[];
+  agenda: string;
+  resolutions: {
+    title: string;
+    type: 'Ordinary' | 'Special';
+    description: string;
+    outcome: 'Passed' | 'Rejected' | 'Pending';
+  }[];
+  quorum: {
+    required: number;
+    present: number;
+    achieved: boolean;
+  };
+  minutes: string;
+  status: 'Draft' | 'Final' | 'Signed';
+  attachments?: string[];
+  notes?: string;
+}
+
+interface Activity {
+  type: 'added' | 'updated' | 'removed' | 'status_changed';
+  description: string;
+  user: string;
+  time: string;
 }
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './meetings.component.html',
-  styleUrls: ['./meetings.component.scss']
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    NgbModule,
+    CreateMeetingModalComponent,
+    EditMeetingModalComponent,
+    ViewMeetingModalComponent,
+    ConfirmModalComponent
+  ],
+  template: `
+    <div class="container-fluid p-4">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-2">General Meetings Minutes</h1>
+          <p class="text-muted mb-0">Record and manage company general meetings and resolutions</p>
+        </div>
+        <div>
+          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddMeetingModal()">
+            <i class="bi bi-plus-lg"></i>
+            <span>Add Meeting</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Total Meetings</span>
+                <i class="bi bi-calendar-event fs-4 text-primary"></i>
+              </div>
+              <h3 class="mb-0">{{ meetings.length }}</h3>
+              <small class="text-muted">Recorded meetings</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Resolutions</span>
+                <i class="bi bi-file-text fs-4 text-primary"></i>
+              </div>
+              <h3 class="mb-0">{{ getTotalResolutions() }}</h3>
+              <small class="text-muted">Total resolutions</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Passed</span>
+                <i class="bi bi-check-circle fs-4 text-primary"></i>
+              </div>
+              <h3 class="mb-0">{{ getPassedResolutionsPercentage() }}%</h3>
+              <small class="text-muted">Resolution success rate</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Quorum</span>
+                <i class="bi bi-people fs-4 text-primary"></i>
+              </div>
+              <h3 class="mb-0">{{ getQuorumAchievedPercentage() }}%</h3>
+              <small class="text-muted">Quorum achievement rate</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meetings Table -->
+      <div class="card mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+          <h5 class="mb-0">Meetings</h5>
+          <button class="btn btn-light btn-sm d-inline-flex align-items-center gap-2 border" (click)="toggleShowAll()">
+            <i [class]="showAll ? 'bi bi-funnel' : 'bi bi-funnel-fill'" class="text-primary"></i>
+            <span>{{ showAll ? 'Show Recent Only' : 'Show All Meetings' }}</span>
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="text-uppercase small fw-semibold text-secondary">ID</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Type</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Date</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Chairperson</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Quorum</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Status</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let meeting of getFilteredMeetings()">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-event text-secondary"></i>
+                    <a href="#" class="text-decoration-none" (click)="viewMeeting(meeting, $event)">
+                      {{ meeting.meetingId }}
+                    </a>
+                  </div>
+                </td>
+                <td>{{ meeting.meetingType }}</td>
+                <td>{{ formatDate(meeting.meetingDate) }}</td>
+                <td>{{ meeting.chairperson }}</td>
+                <td>
+                  <span [class]="'badge ' + (meeting.quorum.achieved ? 'text-bg-success' : 'text-bg-danger')">
+                    {{ meeting.quorum.present }}/{{ meeting.quorum.required }}
+                  </span>
+                </td>
+                <td>
+                  <span [class]="'badge ' + getStatusClass(meeting.status)">
+                    {{ meeting.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-link btn-sm text-body px-2" (click)="viewMeeting(meeting)" title="View Details">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-link btn-sm text-body px-2" (click)="editMeeting(meeting)" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-link btn-sm text-danger px-2" (click)="removeMeeting(meeting)" title="Remove">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="getFilteredMeetings().length === 0">
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <i class="bi bi-info-circle me-2"></i>
+                  No meetings found
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Activities -->
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+          <h5 class="mb-0">Recent Activities</h5>
+          <button class="btn btn-link p-0 text-decoration-none">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            <div class="list-group-item px-0" *ngFor="let activity of recentActivities">
+              <div class="d-flex align-items-start gap-3">
+                <div class="bg-light rounded p-2">
+                  <i [class]="getActivityIcon(activity.type)"></i>
+                </div>
+                <div>
+                  <p class="mb-1">{{ activity.description }}</p>
+                  <div class="d-flex align-items-center gap-2 small">
+                    <span class="text-primary">{{ activity.user }}</span>
+                    <span class="text-muted">{{ activity.time }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="text-center py-4 text-muted" *ngIf="recentActivities.length === 0">
+              <i class="bi bi-info-circle me-2"></i>
+              No recent activities
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 })
-export class MeetingsComponent implements OnInit {
-  meetingForm: FormGroup;
+export class MeetingsComponent {
   meetings: Meeting[] = [];
+  showAll = false;
+  recentActivities: Activity[] = [];
 
-  meetingTypes = [
-    'AGM',
-    'EGM',
-    'Board Meeting'
-  ];
-
-  constructor(private fb: FormBuilder) {
-    this.meetingForm = this.fb.group({
-      date: ['', Validators.required],
-      type: ['', Validators.required],
-      location: ['', Validators.required],
-      startTime: ['', Validators.required],
-      endTime: ['', Validators.required],
-      attendees: ['', Validators.required],
-      agenda: ['', Validators.required],
-      resolutions: ['', Validators.required],
-      minutes: ['', Validators.required],
-      chairperson: ['', Validators.required],
-      quorum: ['', Validators.required],
-      resolutionNumbers: ['', Validators.required],
-      nextMeetingDate: ['']
-    });
+  constructor(
+    private modalService: NgbModal,
+    private router: Router
+  ) {
+    this.loadData();
   }
 
-  ngOnInit(): void {
+  private loadData(): void {
     const savedMeetings = localStorage.getItem('meetings');
     if (savedMeetings) {
       this.meetings = JSON.parse(savedMeetings);
     }
-  }
 
-  onSubmit(): void {
-    if (this.meetingForm.valid) {
-      this.meetings.push(this.meetingForm.value);
-      this.meetingForm.reset();
-      localStorage.setItem('meetings', JSON.stringify(this.meetings));
+    const savedActivities = localStorage.getItem('meetingActivities');
+    if (savedActivities) {
+      this.recentActivities = JSON.parse(savedActivities);
     }
   }
 
-  removeMeeting(index: number): void {
-    this.meetings.splice(index, 1);
-    localStorage.setItem('meetings', JSON.stringify(this.meetings));
+  openAddMeetingModal(): void {
+    const modalRef = this.modalService.open(CreateMeetingModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.result.then(
+      (newMeeting: Meeting) => {
+        this.meetings.push(newMeeting);
+        localStorage.setItem('meetings', JSON.stringify(this.meetings));
+
+        this.addActivity({
+          type: 'added',
+          description: `New ${newMeeting.meetingType} (${newMeeting.meetingId}) created`,
+          user: 'System',
+          time: new Date().toLocaleString()
+        });
+      },
+      () => {} // Modal dismissed
+    );
+  }
+
+  viewMeeting(meeting: Meeting, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    
+    const modalRef = this.modalService.open(ViewMeetingModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+    
+    modalRef.componentInstance.meeting = {...meeting};
+    
+    modalRef.result.then(
+      (result: { action: string; meeting: Meeting }) => {
+        if (result?.action === 'edit') {
+          this.editMeeting(result.meeting);
+        }
+      },
+      () => {} // Modal dismissed
+    );
+  }
+
+  editMeeting(meeting: Meeting): void {
+    const modalRef = this.modalService.open(EditMeetingModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+    
+    modalRef.componentInstance.meeting = {...meeting};
+    
+    modalRef.result.then(
+      (updatedMeeting: Meeting) => {
+        const index = this.meetings.indexOf(meeting);
+        this.meetings[index] = updatedMeeting;
+        localStorage.setItem('meetings', JSON.stringify(this.meetings));
+
+        const statusChanged = meeting.status !== updatedMeeting.status;
+        this.addActivity({
+          type: statusChanged ? 'status_changed' : 'updated',
+          description: statusChanged 
+            ? `${updatedMeeting.meetingId} status changed to ${updatedMeeting.status}`
+            : `${updatedMeeting.meetingId} details updated`,
+          user: 'System',
+          time: new Date().toLocaleString()
+        });
+      },
+      () => {} // Modal dismissed
+    );
+  }
+
+  removeMeeting(meeting: Meeting): void {
+    const modalRef = this.modalService.open(ConfirmModalComponent, {
+      size: 'sm',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.title = 'Confirm Removal';
+    modalRef.componentInstance.message = `Are you sure you want to remove meeting ${meeting.meetingId}?`;
+    modalRef.componentInstance.confirmButtonText = 'Remove';
+    modalRef.componentInstance.confirmButtonClass = 'btn-danger';
+
+    modalRef.result.then(
+      (result) => {
+        if (result === true) {
+          const index = this.meetings.indexOf(meeting);
+          this.meetings.splice(index, 1);
+          localStorage.setItem('meetings', JSON.stringify(this.meetings));
+
+          this.addActivity({
+            type: 'removed',
+            description: `${meeting.meetingId} removed from meetings register`,
+            user: 'System',
+            time: new Date().toLocaleString()
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString('en-GB');
   }
 
-  formatTime(time: string): string {
-    return new Date(`1970-01-01T${time}`).toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'Draft':
+        return 'text-bg-warning';
+      case 'Final':
+        return 'text-bg-info';
+      case 'Signed':
+        return 'text-bg-success';
+      default:
+        return 'text-bg-secondary';
+    }
   }
 
-  getDuration(startTime: string, endTime: string): string {
-    const start = new Date(`1970-01-01T${startTime}`);
-    const end = new Date(`1970-01-01T${endTime}`);
-    const diff = end.getTime() - start.getTime();
-    const hours = Math.floor(diff / 3600000);
-    const minutes = Math.floor((diff % 3600000) / 60000);
-    return `${hours}h ${minutes}m`;
+  toggleShowAll(): void {
+    this.showAll = !this.showAll;
   }
 
-  downloadMinutes(meeting: Meeting): void {
-    const content = `
-Meeting Minutes
---------------
-Date: ${this.formatDate(meeting.date)}
-Type: ${meeting.type}
-Location: ${meeting.location}
-Time: ${this.formatTime(meeting.startTime)} - ${this.formatTime(meeting.endTime)}
-Duration: ${this.getDuration(meeting.startTime, meeting.endTime)}
-Chairperson: ${meeting.chairperson}
-Quorum: ${meeting.quorum}
+  getFilteredMeetings(): Meeting[] {
+    if (!this.showAll) {
+      // Show meetings from the last 3 months
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      return this.meetings.filter(m => new Date(m.meetingDate) >= threeMonthsAgo);
+    }
+    return this.meetings;
+  }
 
-Attendees:
-${meeting.attendees}
+  getTotalResolutions(): number {
+    return this.meetings.reduce((sum, m) => sum + m.resolutions.length, 0);
+  }
 
-Agenda:
-${meeting.agenda}
+  getPassedResolutionsPercentage(): number {
+    const totalResolutions = this.meetings.reduce((sum, m) => sum + m.resolutions.length, 0);
+    if (totalResolutions === 0) return 0;
 
-Resolutions:
-${meeting.resolutions}
-Resolution Numbers: ${meeting.resolutionNumbers}
+    const passedResolutions = this.meetings.reduce((sum, m) => 
+      sum + m.resolutions.filter(r => r.outcome === 'Passed').length, 0);
 
-Minutes:
-${meeting.minutes}
+    return Math.round((passedResolutions / totalResolutions) * 100);
+  }
 
-${meeting.nextMeetingDate ? `Next Meeting Date: ${this.formatDate(meeting.nextMeetingDate)}` : ''}
-    `.trim();
+  getQuorumAchievedPercentage(): number {
+    if (this.meetings.length === 0) return 0;
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `minutes_${meeting.date}_${meeting.type.toLowerCase().replace(' ', '_')}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const achievedCount = this.meetings.filter(m => m.quorum.achieved).length;
+    return Math.round((achievedCount / this.meetings.length) * 100);
+  }
+
+  getActivityIcon(type: string): string {
+    switch (type) {
+      case 'added':
+        return 'bi bi-plus-circle';
+      case 'updated':
+        return 'bi bi-pencil';
+      case 'removed':
+        return 'bi bi-trash';
+      case 'status_changed':
+        return 'bi bi-arrow-repeat';
+      default:
+        return 'bi bi-activity';
+    }
+  }
+
+  private addActivity(activity: Activity): void {
+    this.recentActivities.unshift(activity);
+    if (this.recentActivities.length > 10) {
+      this.recentActivities.pop();
+    }
+    localStorage.setItem('meetingActivities', JSON.stringify(this.recentActivities));
   }
 }

@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
-import { BOOKS_ROUTES } from './components/books/books.routes';
-import { CRM_ROUTES } from './components/crm/crm.routes';
-import { CARBON_ROUTES } from './components/carbon/carbon.routes';
-import { TAX_ROUTES } from './components/tax/tax.routes';
-import { COMPLIANCE_ROUTES } from './components/compliance/compliance.routes';
-import { STATUTORY_ROUTES } from './components/statutory/statutory.routes';
+import { BOOKS_ROUTES } from './shared/routes/books.routes';
+import { CRM_ROUTES } from './shared/routes/crm.routes';
+import { CARBON_ROUTES } from './shared/routes/carbon.routes';
+import { TAX_ROUTES } from './shared/routes/tax.routes';
+import { COMPLIANCE_ROUTES } from './shared/routes/compliance.routes';
+import { STATUTORY_ROUTES } from './shared/routes/statutory.routes';
 
 export const routes: Routes = [
   // Default redirect
