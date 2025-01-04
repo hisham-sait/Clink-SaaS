@@ -3,21 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface BeneficialOwner {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  natureOfControl: string[];
-  ownershipPercentage: number;
-  registrationDate: string;
-  status: 'Active' | 'Inactive';
-  description?: string;
-}
+import { BeneficialOwner } from '../../statutory.types';
 
 @Component({
   selector: 'app-create-owner-modal',

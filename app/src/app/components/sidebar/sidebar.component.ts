@@ -6,9 +6,9 @@ import { BooksSidebarComponent } from '../books/books-sidebar/books-sidebar.comp
 import { CrmSidebarComponent } from '../crm/crm-sidebar/crm-sidebar.component';
 import { CarbonSidebarComponent } from '../carbon/carbon-sidebar/carbon-sidebar.component';
 import { TaxSidebarComponent } from '../tax/tax-sidebar/tax-sidebar.component';
-import { SettingsSidebarComponent } from '../settings/settings-sidebar/settings-sidebar.component';
+import { SettingsSidebarComponent } from '../settings/settings-sidebar.component';
 import { HelpSidebarComponent } from '../help/help-sidebar/help-sidebar.component';
-import { StatutorySidebarComponent } from '../statutory/statutory-sidebar/statutory-sidebar.component';
+import { StatutorySidebarComponent } from '../statutory/statutory-sidebar.component';
 
 type SectionType = 'books' | 'crm' | 'compliance' | 'carbon' | 'tax' | 'statutory' | 'settings' | 'help';
 

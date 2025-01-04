@@ -3,32 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Meeting {
-  meetingId: string;
-  meetingDate: string;
-  meetingType: 'AGM' | 'EGM' | 'Class Meeting';
-  venue: string;
-  startTime: string;
-  endTime: string;
-  chairperson: string;
-  attendees: string[];
-  agenda: string;
-  resolutions: {
-    title: string;
-    type: 'Ordinary' | 'Special';
-    description: string;
-    outcome: 'Passed' | 'Rejected' | 'Pending';
-  }[];
-  quorum: {
-    required: number;
-    present: number;
-    achieved: boolean;
-  };
-  minutes: string;
-  status: 'Draft' | 'Final' | 'Signed';
-  attachments?: string[];
-  notes?: string;
-}
+import { Meeting } from '../../statutory.types';
 
 @Component({
   selector: 'app-edit-meeting-modal',

@@ -2,21 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Allotment {
-  allotmentId: string;
-  allotmentDate: string;
-  shareClass: string;
-  numberOfShares: number;
-  pricePerShare: number;
-  currency: string;
-  allottee: string;
-  paymentStatus: 'Paid' | 'Unpaid' | 'Partially Paid';
-  amountPaid?: number;
-  paymentDate?: string;
-  certificateNumber?: string;
-  status: 'Active' | 'Cancelled';
-  notes?: string;
-}
+import { Allotment } from '../../statutory.types';
 
 @Component({
   selector: 'app-view-allotment-modal',

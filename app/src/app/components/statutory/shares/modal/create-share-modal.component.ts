@@ -3,18 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Share {
-  class: string;
-  type: 'Ordinary' | 'Preferential' | 'Deferred';
-  nominalValue: number;
-  currency: string;
-  votingRights: boolean;
-  dividendRights: boolean;
-  transferable: boolean;
-  totalIssued: number;
-  status: 'Active' | 'Inactive';
-  description?: string;
-}
+import { Share } from '../../statutory.types';
 
 @Component({
   selector: 'app-create-share-modal',

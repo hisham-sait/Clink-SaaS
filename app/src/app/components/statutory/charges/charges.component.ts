@@ -8,27 +8,7 @@ import { EditChargeModalComponent } from './modal/edit-charge-modal.component';
 import { ViewChargeModalComponent } from './modal/view-charge-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface Charge {
-  chargeId: string;
-  chargeType: string;
-  dateCreated: string;
-  amount: number;
-  currency: string;
-  chargor: string;
-  chargee: string;
-  description: string;
-  propertyCharged: string;
-  registrationDate: string;
-  status: 'Active' | 'Satisfied' | 'Released';
-  satisfactionDate?: string;
-}
-
-interface Activity {
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  description: string;
-  user: string;
-  time: string;
-}
+import { Charge, Activity } from '../statutory.types';
 
 @Component({
   selector: 'app-charges',

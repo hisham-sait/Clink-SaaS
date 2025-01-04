@@ -8,45 +8,7 @@ import { EditBoardMinuteModalComponent } from './modal/edit-board-minute-modal.c
 import { ViewBoardMinuteModalComponent } from './modal/view-board-minute-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface BoardMinute {
-  minuteId: string;
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
-  attendees: string[];
-  agenda: string;
-  discussions: {
-    topic: string;
-    details: string;
-    decisions: string[];
-    actionItems?: {
-      task: string;
-      assignee: string;
-      dueDate: string;
-      status: 'Pending' | 'In Progress' | 'Completed';
-    }[];
-  }[];
-  resolutions: {
-    title: string;
-    description: string;
-    proposedBy: string;
-    secondedBy: string;
-    outcome: 'Passed' | 'Rejected' | 'Deferred';
-  }[];
-  minutes: string;
-  status: 'Draft' | 'Final' | 'Signed';
-  attachments?: string[];
-  notes?: string;
-}
-
-interface Activity {
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  description: string;
-  user: string;
-  time: string;
-}
+import { BoardMinute, Activity } from '../statutory.types';
 
 @Component({
   selector: 'app-board-minutes',

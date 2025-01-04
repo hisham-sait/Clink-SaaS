@@ -8,28 +8,7 @@ import { EditAllotmentModalComponent } from './modal/edit-allotment-modal.compon
 import { ViewAllotmentModalComponent } from './modal/view-allotment-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface Allotment {
-  allotmentId: string;
-  allotmentDate: string;
-  shareClass: string;
-  numberOfShares: number;
-  pricePerShare: number;
-  currency: string;
-  allottee: string;
-  paymentStatus: 'Paid' | 'Unpaid' | 'Partially Paid';
-  amountPaid?: number;
-  paymentDate?: string;
-  certificateNumber?: string;
-  status: 'Active' | 'Cancelled';
-  notes?: string;
-}
-
-interface Activity {
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  description: string;
-  user: string;
-  time: string;
-}
+import { Allotment, Activity } from '../statutory.types';
 
 @Component({
   selector: 'app-allotments',

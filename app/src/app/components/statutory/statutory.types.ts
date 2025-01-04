@@ -1,0 +1,178 @@
+// Common Types
+export type DirectorStatus = 'Active' | 'Resigned';
+type Status = 'Active' | 'Inactive';
+type DocumentStatus = 'Draft' | 'Final' | 'Signed';
+
+// Director Interfaces
+export interface Director {
+  id: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  address: string;
+  appointmentDate: string;
+  resignationDate?: string;
+  directorType: string;
+  occupation: string;
+  otherDirectorships: string;
+  shareholding: string;
+  status: DirectorStatus;
+  companyId: string;
+}
+
+// Shareholder Interfaces
+export interface Shareholder {
+  title: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  address: string;
+  email: string;
+  phone: string;
+  shares: {
+    ordinary: number;
+    preferential: number;
+  };
+  dateAcquired: string;
+  status: Status;
+}
+
+// Share Interfaces
+export interface Share {
+  class: string;
+  type: 'Ordinary' | 'Preferential' | 'Deferred';
+  nominalValue: number;
+  currency: string;
+  votingRights: boolean;
+  dividendRights: boolean;
+  transferable: boolean;
+  totalIssued: number;
+  status: Status;
+  description?: string;
+}
+
+// Beneficial Owner Interfaces
+export interface BeneficialOwner {
+  title: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  address: string;
+  email: string;
+  phone: string;
+  natureOfControl: string[];
+  ownershipPercentage: number;
+  registrationDate: string;
+  status: Status;
+  description?: string;
+}
+
+// Charge Interfaces
+export interface Charge {
+  chargeId: string;
+  chargeType: string;
+  dateCreated: string;
+  amount: number;
+  currency: string;
+  chargor: string;
+  chargee: string;
+  description: string;
+  propertyCharged: string;
+  registrationDate: string;
+  status: 'Active' | 'Satisfied' | 'Released';
+  satisfactionDate?: string;
+}
+
+// Allotment Interfaces
+export interface Allotment {
+  allotmentId: string;
+  allotmentDate: string;
+  shareClass: string;
+  numberOfShares: number;
+  pricePerShare: number;
+  currency: string;
+  allottee: string;
+  paymentStatus: 'Paid' | 'Unpaid' | 'Partially Paid';
+  amountPaid?: number;
+  paymentDate?: string;
+  certificateNumber?: string;
+  status: Status;
+  notes?: string;
+}
+
+// Meeting Interfaces
+export interface Resolution {
+  title: string;
+  type?: 'Ordinary' | 'Special';
+  description: string;
+  outcome: 'Passed' | 'Rejected' | 'Pending' | 'Deferred';
+  proposedBy?: string;
+  secondedBy?: string;
+}
+
+export interface Meeting {
+  meetingId: string;
+  meetingDate: string;
+  meetingType: 'AGM' | 'EGM' | 'Class Meeting';
+  venue: string;
+  startTime: string;
+  endTime: string;
+  chairperson: string;
+  attendees: string[];
+  agenda: string;
+  resolutions: Resolution[];
+  quorum: {
+    required: number;
+    present: number;
+    achieved: boolean;
+  };
+  minutes: string;
+  status: DocumentStatus;
+  attachments?: string[];
+  notes?: string;
+}
+
+// Board Minute Interfaces
+export interface ActionItem {
+  task: string;
+  assignee: string;
+  dueDate: string;
+  status: 'Pending' | 'In Progress' | 'Completed';
+}
+
+export interface Discussion {
+  topic: string;
+  details: string;
+  decisions: string[];
+  actionItems?: ActionItem[];
+}
+
+export interface BoardMinute {
+  minuteId: string;
+  meetingDate: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  chairperson: string;
+  attendees: string[];
+  agenda: string;
+  discussions: Discussion[];
+  resolutions: Resolution[];
+  minutes: string;
+  status: DocumentStatus;
+  attachments?: string[];
+  notes?: string;
+}
+
+// Activity Interface
+export interface Activity {
+  type: 'appointment' | 'resignation' | 'update' | 'removal' | 
+        'added' | 'updated' | 'removed' | 'status_changed';
+  description: string;
+  user: string;
+  time: string;
+}

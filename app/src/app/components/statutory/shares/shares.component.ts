@@ -8,25 +8,7 @@ import { EditShareModalComponent } from './modal/edit-share-modal.component';
 import { ViewShareModalComponent } from './modal/view-share-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface Share {
-  class: string;
-  type: 'Ordinary' | 'Preferential' | 'Deferred';
-  nominalValue: number;
-  currency: string;
-  votingRights: boolean;
-  dividendRights: boolean;
-  transferable: boolean;
-  totalIssued: number;
-  status: 'Active' | 'Inactive';
-  description?: string;
-}
-
-interface Activity {
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  description: string;
-  user: string;
-  time: string;
-}
+import { Share, Activity } from '../statutory.types';
 
 @Component({
   selector: 'app-shares',

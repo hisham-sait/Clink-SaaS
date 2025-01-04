@@ -12,7 +12,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => 
-          import('../../components/statutory/dashboard/dashboard.component').then(m => m.DashboardComponent),
+          import('./dashboard.component').then(m => m.DashboardComponent),
         data: {
           title: 'Statutory Dashboard',
           breadcrumb: 'Dashboard',
@@ -22,7 +22,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'directors',
         loadComponent: () => 
-          import('../../components/statutory/directors/directors.component').then(m => m.DirectorsComponent),
+          import('./directors/directors.component').then(m => m.DirectorsComponent),
         data: {
           title: 'Directors & Secretaries Register',
           breadcrumb: 'Directors & Secretaries',
@@ -32,7 +32,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'shareholders',
         loadComponent: () => 
-          import('../../components/statutory/shareholders/shareholders.component').then(m => m.ShareholdersComponent),
+          import('./shareholders/shareholders.component').then(m => m.ShareholdersComponent),
         data: {
           title: 'Members Register',
           breadcrumb: 'Members',
@@ -42,7 +42,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'shares',
         loadComponent: () => 
-          import('../../components/statutory/shares/shares.component').then(m => m.SharesComponent),
+          import('./shares/shares.component').then(m => m.SharesComponent),
         data: {
           title: 'Share Register',
           breadcrumb: 'Shares',
@@ -52,7 +52,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'beneficial-owners',
         loadComponent: () => 
-          import('../../components/statutory/beneficial-owners/beneficial-owners.component').then(m => m.BeneficialOwnersComponent),
+          import('./beneficial-owners/beneficial-owners.component').then(m => m.BeneficialOwnersComponent),
         data: {
           title: 'Beneficial Owners Register',
           breadcrumb: 'Beneficial Owners',
@@ -62,7 +62,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'charges',
         loadComponent: () => 
-          import('../../components/statutory/charges/charges.component').then(m => m.ChargesComponent),
+          import('./charges/charges.component').then(m => m.ChargesComponent),
         data: {
           title: 'Charges Register',
           breadcrumb: 'Charges',
@@ -72,7 +72,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'allotments',
         loadComponent: () => 
-          import('../../components/statutory/allotments/allotments.component').then(m => m.AllotmentsComponent),
+          import('./allotments/allotments.component').then(m => m.AllotmentsComponent),
         data: {
           title: 'Share Allotments Register',
           breadcrumb: 'Allotments',
@@ -82,7 +82,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'meetings',
         loadComponent: () => 
-          import('../../components/statutory/meetings/meetings.component').then(m => m.MeetingsComponent),
+          import('./meetings/meetings.component').then(m => m.MeetingsComponent),
         data: {
           title: 'General Meetings Minutes',
           breadcrumb: 'General Meetings',
@@ -92,7 +92,7 @@ export const STATUTORY_ROUTES: Routes = [
       {
         path: 'board-minutes',
         loadComponent: () => 
-          import('../../components/statutory/board-minutes/board-minutes.component').then(m => m.BoardMinutesComponent),
+          import('./board-minutes/board-minutes.component').then(m => m.BoardMinutesComponent),
         data: {
           title: 'Board Minutes Register',
           breadcrumb: 'Board Minutes',

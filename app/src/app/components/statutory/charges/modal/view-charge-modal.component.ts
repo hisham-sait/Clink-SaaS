@@ -2,20 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Charge {
-  chargeId: string;
-  chargeType: string;
-  dateCreated: string;
-  amount: number;
-  currency: string;
-  chargor: string;
-  chargee: string;
-  description: string;
-  propertyCharged: string;
-  registrationDate: string;
-  status: 'Active' | 'Satisfied' | 'Released';
-  satisfactionDate?: string;
-}
+import { Charge } from '../../statutory.types';
 
 @Component({
   selector: 'app-view-charge-modal',

@@ -2,21 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Director {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  appointmentDate: string;
-  resignationDate?: string;
-  directorType: string;
-  occupation: string;
-  otherDirectorships: string;
-  shareholding: string;
-  status: 'Active' | 'Resigned';
-}
+import { Director } from '../../statutory.types';
 
 @Component({
   selector: 'app-view-director-modal',

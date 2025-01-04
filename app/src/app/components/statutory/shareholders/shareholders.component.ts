@@ -8,29 +8,7 @@ import { EditShareholderModalComponent } from './modal/edit-shareholder-modal.co
 import { ViewShareholderModalComponent } from './modal/view-shareholder-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface Shareholder {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  shares: {
-    ordinary: number;
-    preferential: number;
-  };
-  dateAcquired: string;
-  status: 'Active' | 'Inactive';
-}
-
-interface Activity {
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  description: string;
-  user: string;
-  time: string;
-}
+import { Shareholder, Activity } from '../statutory.types';
 
 @Component({
   selector: 'app-shareholders',

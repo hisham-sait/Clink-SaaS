@@ -4,7 +4,8 @@ import { CRM_ROUTES } from './shared/routes/crm.routes';
 import { CARBON_ROUTES } from './shared/routes/carbon.routes';
 import { TAX_ROUTES } from './shared/routes/tax.routes';
 import { COMPLIANCE_ROUTES } from './shared/routes/compliance.routes';
-import { STATUTORY_ROUTES } from './shared/routes/statutory.routes';
+import { STATUTORY_ROUTES } from './components/statutory/statutory.routes';
+import { SETTINGS_ROUTES } from './components/settings/settings.routes';
 
 export const routes: Routes = [
   // Default redirect
@@ -18,34 +19,13 @@ export const routes: Routes = [
     }
   },
 
-  // Books Module Routes
   ...BOOKS_ROUTES,
-
-  // CRM Module Routes
   ...CRM_ROUTES,
-
-  // Carbon Module Routes
   ...CARBON_ROUTES,
-
-  // Tax Module Routes
   ...TAX_ROUTES,
-
-  // Compliance Module Routes
   ...COMPLIANCE_ROUTES,
-
-  // Statutory Module Routes
   ...STATUTORY_ROUTES,
-
-  // Settings Route (lazy loaded)
-  {
-    path: 'settings',
-    loadComponent: () => import('./components/settings/settings.component')
-      .then(m => m.SettingsComponent),
-    data: { 
-      title: 'Settings',
-      breadcrumb: 'Settings'
-    }
-  },
+  ...SETTINGS_ROUTES,
 
   // Help & Support Route
   {

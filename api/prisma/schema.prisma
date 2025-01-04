@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -164,4 +167,303 @@ model SyncLog {
 
   @@index([connectionId])
   @@index([startTime])
+}
+
+enum Status {
+  Active
+  Inactive
+}
+
+enum DocumentStatus {
+  Draft
+  Final
+  Signed
+}
+
+enum DirectorStatus {
+  Active
+  Resigned
+}
+
+enum ShareType {
+  Ordinary
+  Preferential
+  Deferred
+}
+
+enum PaymentStatus {
+  Paid
+  Unpaid
+  Partially_Paid
+}
+
+enum ResolutionType {
+  Ordinary
+  Special
+}
+
+enum ResolutionOutcome {
+  Passed
+  Rejected
+  Pending
+  Deferred
+}
+
+enum MeetingType {
+  AGM
+  EGM
+  Class_Meeting
+}
+
+enum ActionItemStatus {
+  Pending
+  In_Progress
+  Completed
+}
+
+enum ActivityType {
+  appointment
+  resignation
+  update
+  removal
+  added
+  updated
+  removed
+  status_changed
+}
+
+model Director {
+  id               String        @id @default(cuid())
+  title            String
+  firstName        String
+  lastName         String
+  dateOfBirth      DateTime
+  nationality      String
+  address          String
+  appointmentDate  DateTime
+  resignationDate  DateTime?
+  directorType     String
+  occupation       String
+  otherDirectorships String
+  shareholding     String
+  status           DirectorStatus
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  companyId        String
+  company          Company       @relation(fields: [companyId], references: [id])
+}
+
+model Shareholder {
+  id           String    @id @default(cuid())
+  title        String
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime
+  nationality  String
+  address      String
+  email        String
+  phone        String
+  ordinaryShares Int
+  preferentialShares Int
+  dateAcquired DateTime
+  status       Status
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id])
+}
+
+model Share {
+  id            String    @id @default(cuid())
+  class         String
+  type          ShareType
+  nominalValue  Float
+  currency      String
+  votingRights  Boolean
+  dividendRights Boolean
+  transferable  Boolean
+  totalIssued   Int
+  status        Status
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+}
+
+model BeneficialOwner {
+  id                 String   @id @default(cuid())
+  title              String
+  firstName          String
+  lastName           String
+  dateOfBirth        DateTime
+  nationality        String
+  address            String
+  email              String
+  phone              String
+  natureOfControl    String[]
+  ownershipPercentage Float
+  registrationDate   DateTime
+  status             Status
+  description        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+}
+
+model Charge {
+  id              String   @id @default(cuid())
+  chargeId        String   @unique
+  chargeType      String
+  dateCreated     DateTime
+  amount          Float
+  currency        String
+  chargor         String
+  chargee         String
+  description     String
+  propertyCharged String
+  registrationDate DateTime
+  status          String // Active, Satisfied, Released
+  satisfactionDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+}
+
+model Allotment {
+  id              String        @id @default(cuid())
+  allotmentId     String        @unique
+  allotmentDate   DateTime
+  shareClass      String
+  numberOfShares  Int
+  pricePerShare   Float
+  currency        String
+  allottee        String
+  paymentStatus   PaymentStatus
+  amountPaid      Float?
+  paymentDate     DateTime?
+  certificateNumber String?
+  status          Status
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  companyId       String
+  company         Company       @relation(fields: [companyId], references: [id])
+}
+
+model Resolution {
+  id          String            @id @default(cuid())
+  title       String
+  type        ResolutionType?
+  description String
+  outcome     ResolutionOutcome
+  proposedBy  String?
+  secondedBy  String?
+  meetingId   String?
+  meeting     Meeting?          @relation(fields: [meetingId], references: [id])
+  boardMinuteId String?
+  boardMinute BoardMinute?      @relation(fields: [boardMinuteId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model Meeting {
+  id          String       @id @default(cuid())
+  meetingId   String       @unique
+  meetingDate DateTime
+  meetingType MeetingType
+  venue       String
+  startTime   DateTime
+  endTime     DateTime
+  chairperson String
+  attendees   String[]
+  agenda      String
+  resolutions Resolution[]
+  quorumRequired Int
+  quorumPresent Int
+  quorumAchieved Boolean
+  minutes     String
+  status      DocumentStatus
+  attachments String[]
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id])
+}
+
+model ActionItem {
+  id           String          @id @default(cuid())
+  task         String
+  assignee     String
+  dueDate      DateTime
+  status       ActionItemStatus
+  discussionId String
+  discussion   Discussion      @relation(fields: [discussionId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Discussion {
+  id          String       @id @default(cuid())
+  topic       String
+  details     String
+  decisions   String[]
+  actionItems ActionItem[]
+  boardMinuteId String
+  boardMinute BoardMinute  @relation(fields: [boardMinuteId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model BoardMinute {
+  id          String       @id @default(cuid())
+  minuteId    String       @unique
+  meetingDate DateTime
+  startTime   DateTime
+  endTime     DateTime
+  venue       String
+  chairperson String
+  attendees   String[]
+  agenda      String
+  discussions Discussion[]
+  resolutions Resolution[]
+  minutes     String
+  status      DocumentStatus
+  attachments String[]
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id])
+}
+
+model Activity {
+  id          String      @id @default(cuid())
+  type        ActivityType
+  description String
+  user        String
+  time        DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id])
+}
+
+model Company {
+  id              String            @id @default(cuid())
+  name            String
+  directors       Director[]
+  shareholders    Shareholder[]
+  shares          Share[]
+  beneficialOwners BeneficialOwner[]
+  charges         Charge[]
+  allotments      Allotment[]
+  meetings        Meeting[]
+  boardMinutes    BoardMinute[]
+  activities      Activity[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }

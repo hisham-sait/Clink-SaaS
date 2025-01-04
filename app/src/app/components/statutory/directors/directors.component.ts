@@ -1,36 +1,24 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { Subject, Observable, from, of } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap } from 'rxjs/operators';
+
 import { CreateDirectorModalComponent } from './modal/create-director-modal.component';
 import { EditDirectorModalComponent } from './modal/edit-director-modal.component';
 import { ViewDirectorModalComponent } from './modal/view-director-modal.component';
 import { ResignDirectorModalComponent } from './modal/resign-director-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface Director {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  appointmentDate: string;
-  resignationDate?: string;
-  directorType: string;
-  occupation: string;
-  otherDirectorships: string;
-  shareholding: string;
-  status: 'Active' | 'Resigned';
-}
-
-interface Activity {
-  type: 'appointment' | 'resignation' | 'update' | 'removal';
-  description: string;
-  user: string;
-  time: string;
-}
+import {
+  DirectorService,
+  CompanyService,
+  ActivityService
+} from '../../../services/statutory';
+import { Director, Activity } from '../statutory.types';
+import type { Company } from '../../../services/statutory/company.service';
 
 @Component({
   selector: 'app-directors',
@@ -47,204 +35,286 @@ interface Activity {
   ],
   template: `
     <div class="container-fluid p-4">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3 mb-2">Directors Register</h1>
-          <p class="text-muted mb-0">Record and manage company directors and their appointments</p>
-        </div>
-        <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddDirectorModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Director</span>
-          </button>
+      <!-- Error Alert -->
+      <div class="alert alert-danger alert-dismissible fade show" role="alert" *ngIf="error">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = null"></button>
+      </div>
+
+      <!-- Loading State -->
+      <div class="text-center py-5" *ngIf="loading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
-      <!-- Metrics -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted">Active Directors</span>
-                <i class="bi bi-people fs-4 text-primary"></i>
-              </div>
-              <h3 class="mb-0">{{ getActiveDirectorsCount() }}</h3>
-              <small class="text-muted">Currently serving directors</small>
-            </div>
+      <!-- Content (only show when not loading) -->
+      <ng-container *ngIf="!loading">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="h3 mb-2">Directors Register</h1>
+            <p class="text-muted mb-0">Record and manage company directors and their appointments</p>
+          </div>
+          <div>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddDirectorModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Director</span>
+            </button>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted">Executive Directors</span>
-                <i class="bi bi-person-badge fs-4 text-primary"></i>
-              </div>
-              <h3 class="mb-0">{{ getExecutiveDirectorsCount() }}</h3>
-              <small class="text-muted">Executive & Managing Directors</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted">Non-Executive Directors</span>
-                <i class="bi bi-person-check fs-4 text-primary"></i>
-              </div>
-              <h3 class="mb-0">{{ getNonExecutiveDirectorsCount() }}</h3>
-              <small class="text-muted">Independent & Non-Executive Directors</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted">Average Tenure</span>
-                <i class="bi bi-calendar-check fs-4 text-primary"></i>
-              </div>
-              <h3 class="mb-0">{{ getAverageTenure() }}</h3>
-              <small class="text-muted">years</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Directors Table -->
-      <div class="card mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0">Current Directors</h5>
-          <button class="btn btn-light btn-sm d-inline-flex align-items-center gap-2 border" (click)="toggleShowAllDirectors()">
-            <i [class]="showAllDirectors ? 'bi bi-funnel' : 'bi bi-funnel-fill'" class="text-primary"></i>
-            <span>{{ showAllDirectors ? 'Show Active Only' : 'Show All Directors' }}</span>
-          </button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="bg-light">
-              <tr>
-                <th class="text-uppercase small fw-semibold text-secondary">Name</th>
-                <th class="text-uppercase small fw-semibold text-secondary">Type</th>
-                <th class="text-uppercase small fw-semibold text-secondary">Appointed</th>
-                <th class="text-uppercase small fw-semibold text-secondary">Service</th>
-                <th class="text-uppercase small fw-semibold text-secondary">Shareholding</th>
-                <th class="text-uppercase small fw-semibold text-secondary">Status</th>
-                <th class="text-uppercase small fw-semibold text-secondary">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let director of getFilteredDirectors()">
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-circle text-secondary"></i>
-                    <a href="#" class="text-decoration-none" (click)="viewDirector(director, $event)">
-                      {{ getFullName(director) }}
-                    </a>
-                  </div>
-                </td>
-                <td>{{ director.directorType }}</td>
-                <td>{{ formatDate(director.appointmentDate) }}</td>
-                <td>{{ getServiceDuration(director.appointmentDate, director.resignationDate) }}</td>
-                <td>{{ director.shareholding || 'None' }}</td>
-                <td>
-                  <span [class]="'badge ' + (director.status === 'Active' ? 'text-bg-success' : 'text-bg-secondary')">
-                    {{ director.status }}
-                  </span>
-                </td>
-                <td>
-                  <div class="btn-group">
-                    <button class="btn btn-link btn-sm text-body px-2" (click)="viewDirector(director)" title="View Details">
-                      <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-link btn-sm text-body px-2" (click)="editDirector(director)" title="Edit">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-link btn-sm text-body px-2" *ngIf="director.status === 'Active'" (click)="markAsResigned(director)" title="Mark as Resigned">
-                      <i class="bi bi-person-dash"></i>
-                    </button>
-                    <button class="btn btn-link btn-sm text-danger px-2" (click)="removeDirector(director)" title="Remove">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr *ngIf="getFilteredDirectors().length === 0">
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <i class="bi bi-info-circle me-2"></i>
-                  No directors found
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Recent Activities -->
-      <div class="card">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0">Recent Activities</h5>
-          <button class="btn btn-link p-0 text-decoration-none">
-            <i class="bi bi-arrow-clockwise me-1"></i>
-            <span>Refresh</span>
-          </button>
-        </div>
-        <div class="card-body">
-          <div class="list-group list-group-flush">
-            <div class="list-group-item px-0" *ngFor="let activity of recentActivities">
-              <div class="d-flex align-items-start gap-3">
-                <div class="bg-light rounded p-2">
-                  <i [class]="getActivityIcon(activity.type)"></i>
+        <!-- Metrics -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Active Directors</span>
+                  <i class="bi bi-people fs-4 text-primary"></i>
                 </div>
-                <div>
-                  <p class="mb-1">{{ activity.description }}</p>
-                  <div class="d-flex align-items-center gap-2 small">
-                    <span class="text-primary">{{ activity.user }}</span>
-                    <span class="text-muted">{{ activity.time }}</span>
-                  </div>
-                </div>
+                <h3 class="mb-0">{{ getActiveDirectorsCount() }}</h3>
+                <small class="text-muted">Currently serving directors</small>
               </div>
             </div>
-            <div class="text-center py-4 text-muted" *ngIf="recentActivities.length === 0">
-              <i class="bi bi-info-circle me-2"></i>
-              No recent activities
+          </div>
+
+          <div class="col-md-3">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Executive Directors</span>
+                  <i class="bi bi-person-badge fs-4 text-primary"></i>
+                </div>
+                <h3 class="mb-0">{{ getExecutiveDirectorsCount() }}</h3>
+                <small class="text-muted">Executive & Managing Directors</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Non-Executive Directors</span>
+                  <i class="bi bi-person-check fs-4 text-primary"></i>
+                </div>
+                <h3 class="mb-0">{{ getNonExecutiveDirectorsCount() }}</h3>
+                <small class="text-muted">Independent & Non-Executive Directors</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted">Average Tenure</span>
+                  <i class="bi bi-calendar-check fs-4 text-primary"></i>
+                </div>
+                <h3 class="mb-0">{{ getAverageTenure() }}</h3>
+                <small class="text-muted">years</small>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <!-- Directors Table -->
+        <div class="card mb-4">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">Current Directors</h5>
+            <button class="btn btn-light btn-sm d-inline-flex align-items-center gap-2 border" (click)="toggleShowAllDirectors()">
+              <i [class]="showAllDirectors ? 'bi bi-funnel' : 'bi bi-funnel-fill'" class="text-primary"></i>
+              <span>{{ showAllDirectors ? 'Show Active Only' : 'Show All Directors' }}</span>
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="bg-light">
+                <tr>
+                  <th class="text-uppercase small fw-semibold text-secondary">Name</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Type</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Appointed</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Service</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Shareholding</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Status</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let director of getFilteredDirectors()">
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-person-circle text-secondary"></i>
+                      <a href="#" class="text-decoration-none" (click)="viewDirector(director, $event)">
+                        {{ getFullName(director) }}
+                      </a>
+                    </div>
+                  </td>
+                  <td>{{ director.directorType }}</td>
+                  <td>{{ formatDate(director.appointmentDate) }}</td>
+                  <td>{{ getServiceDuration(director.appointmentDate, director.resignationDate) }}</td>
+                  <td>{{ director.shareholding || 'None' }}</td>
+                  <td>
+                    <span [class]="'badge ' + (director.status === 'Active' ? 'text-bg-success' : 'text-bg-secondary')">
+                      {{ director.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-link btn-sm text-body px-2" (click)="viewDirector(director)" title="View Details">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-link btn-sm text-body px-2" (click)="editDirector(director)" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-link btn-sm text-body px-2" *ngIf="director.status === 'Active'" (click)="markAsResigned(director)" title="Mark as Resigned">
+                        <i class="bi bi-person-dash"></i>
+                      </button>
+                      <button class="btn btn-link btn-sm text-danger px-2" (click)="removeDirector(director)" title="Remove">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="getFilteredDirectors().length === 0">
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No directors found
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">Recent Activities</h5>
+            <button class="btn btn-link p-0 text-decoration-none" (click)="refreshData()">
+              <i class="bi bi-arrow-clockwise me-1"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <div class="list-group-item px-0" *ngFor="let activity of recentActivities">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="bg-light rounded p-2">
+                    <i [class]="getActivityIcon(activity.type)"></i>
+                  </div>
+                  <div>
+                    <p class="mb-1">{{ activity.description }}</p>
+                    <div class="d-flex align-items-center gap-2 small">
+                      <span class="text-primary">{{ activity.user }}</span>
+                      <span class="text-muted">{{ activity.time }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-center py-4 text-muted" *ngIf="recentActivities.length === 0">
+                <i class="bi bi-info-circle me-2"></i>
+                No recent activities
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
     </div>
   `
 })
-export class DirectorsComponent {
+export class DirectorsComponent implements OnInit, OnDestroy {
   directors: Director[] = [];
   showAllDirectors = false;
   recentActivities: Activity[] = [];
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
+  private currentCompanyId: string | null = null;
 
   constructor(
     private modalService: NgbModal,
-    private router: Router
-  ) {
-    this.loadData();
+    private router: Router,
+    private directorService: DirectorService,
+    private companyService: CompanyService,
+    private activityService: ActivityService
+  ) {}
+
+  ngOnInit(): void {
+    // Subscribe to company changes
+    this.companyService.currentCompany$
+      .pipe(
+        takeUntil(this.destroy$),
+        switchMap(company => {
+          if (!company) {
+            throw new Error('No company selected');
+          }
+          this.currentCompanyId = company.id;
+          return this.loadData(company.id);
+        }),
+        catchError(error => {
+          console.error('Error in company subscription:', error);
+          this.error = 'Please select a company to view directors.';
+          return of(null);
+        })
+      )
+      .subscribe();
   }
 
-  private loadData(): void {
-    const savedDirectors = localStorage.getItem('directors');
-    if (savedDirectors) {
-      this.directors = JSON.parse(savedDirectors);
-    }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
-    const savedActivities = localStorage.getItem('directorActivities');
-    if (savedActivities) {
-      this.recentActivities = JSON.parse(savedActivities);
+  loadData(companyId: string): Observable<[Director[], { activities: Activity[] }]> {
+    this.loading = true;
+    this.error = null;
+
+    // Load directors and activities in parallel
+    const directors$ = this.directorService.getDirectors(companyId);
+    const activities$ = this.activityService.getEntityActivities(companyId, 'director', '', {
+      limit: 10
+    });
+
+    return new Observable(subscriber => {
+      Promise.all([
+        directors$.toPromise(),
+        activities$.toPromise()
+      ])
+        .then(([directors, activitiesResponse]) => {
+          if (directors && activitiesResponse) {
+            this.directors = directors;
+            this.recentActivities = activitiesResponse.activities || [];
+            subscriber.next([directors, activitiesResponse]);
+          }
+        })
+        .catch(error => {
+          const errorMsg = error.error?.message || 'Failed to load directors. Please try again.';
+          console.error('Error loading data:', error);
+          this.error = errorMsg;
+          subscriber.error(error);
+        })
+        .finally(() => {
+          this.loading = false;
+          subscriber.complete();
+        });
+    });
+  }
+
+  refreshData(): void {
+    if (this.currentCompanyId) {
+      this.loadData(this.currentCompanyId).subscribe();
     }
   }
 
   openAddDirectorModal(): void {
+    const company = this.companyService.getCurrentCompany();
+    if (!company) {
+      this.error = 'Please select a company first';
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateDirectorModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -252,21 +322,33 @@ export class DirectorsComponent {
 
     modalRef.result.then(
       (newDirector: Director) => {
-        this.directors.push(newDirector);
-        localStorage.setItem('directors', JSON.stringify(this.directors));
-
-        this.addActivity({
-          type: 'appointment',
-          description: `${this.getFullName(newDirector)} appointed as ${newDirector.directorType}`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+        this.directorService.createDirector(company.id, newDirector)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to create director. Please try again.';
+              console.error('Error creating director:', error);
+              this.error = errorMsg;
+              return of(null);
+            })
+          )
+          .subscribe(director => {
+            if (director) {
+              this.directors.push(director);
+              this.loadData(company.id).subscribe();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
   }
 
   removeDirector(director: Director): void {
+    const company = this.companyService.getCurrentCompany();
+    if (!company) {
+      this.error = 'Please select a company first';
+      return;
+    }
+
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
@@ -280,16 +362,20 @@ export class DirectorsComponent {
     modalRef.result.then(
       (result) => {
         if (result === true) {
-          const index = this.directors.indexOf(director);
-          this.directors.splice(index, 1);
-          localStorage.setItem('directors', JSON.stringify(this.directors));
-
-          this.addActivity({
-            type: 'removal',
-            description: `${this.getFullName(director)} removed from directors register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+          this.directorService.deleteDirector(company.id, director.id)
+            .pipe(
+              catchError(error => {
+                const errorMsg = error.error?.message || 'Failed to remove director. Please try again.';
+                console.error('Error removing director:', error);
+                this.error = errorMsg;
+                return of(null);
+              })
+            )
+            .subscribe(() => {
+              const index = this.directors.indexOf(director);
+              this.directors.splice(index, 1);
+              this.loadData(company.id).subscribe();
+            });
         }
       },
       () => {} // Modal dismissed
@@ -305,6 +391,12 @@ export class DirectorsComponent {
   }
 
   markAsResigned(director: Director): void {
+    const company = this.companyService.getCurrentCompany();
+    if (!company) {
+      this.error = 'Please select a company first';
+      return;
+    }
+
     const modalRef = this.modalService.open(ResignDirectorModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -314,16 +406,23 @@ export class DirectorsComponent {
     
     modalRef.result.then(
       (updatedDirector: Director & { resignationReason: string }) => {
-        const index = this.directors.indexOf(director);
-        this.directors[index] = updatedDirector;
-        localStorage.setItem('directors', JSON.stringify(this.directors));
-
-        this.addActivity({
-          type: 'resignation',
-          description: `${this.getFullName(updatedDirector)} resigned from position. Reason: ${updatedDirector.resignationReason}`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+        const resignationDate = updatedDirector.resignationDate || new Date().toISOString();
+        this.directorService.resignDirector(company.id, director.id, resignationDate)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to resign director. Please try again.';
+              console.error('Error resigning director:', error);
+              this.error = errorMsg;
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              const index = this.directors.indexOf(director);
+              this.directors[index] = result;
+              this.loadData(company.id).subscribe();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -411,6 +510,12 @@ export class DirectorsComponent {
     if (event) {
       event.preventDefault();
     }
+
+    const company = this.companyService.getCurrentCompany();
+    if (!company) {
+      this.error = 'Please select a company first';
+      return;
+    }
     
     const modalRef = this.modalService.open(EditDirectorModalComponent, {
       size: 'lg',
@@ -422,16 +527,22 @@ export class DirectorsComponent {
     
     modalRef.result.then(
       (updatedDirector: Director) => {
-        const index = this.directors.indexOf(director);
-        this.directors[index] = updatedDirector;
-        localStorage.setItem('directors', JSON.stringify(this.directors));
-
-        this.addActivity({
-          type: 'update',
-          description: `${this.getFullName(updatedDirector)}'s details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+        this.directorService.updateDirector(company.id, director.id, updatedDirector)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to update director. Please try again.';
+              console.error('Error updating director:', error);
+              this.error = errorMsg;
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              const index = this.directors.indexOf(director);
+              this.directors[index] = result;
+              this.loadData(company.id).subscribe();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -450,13 +561,5 @@ export class DirectorsComponent {
       default:
         return 'bi bi-activity';
     }
-  }
-
-  private addActivity(activity: Activity): void {
-    this.recentActivities.unshift(activity);
-    if (this.recentActivities.length > 10) {
-      this.recentActivities.pop();
-    }
-    localStorage.setItem('directorActivities', JSON.stringify(this.recentActivities));
   }
 }

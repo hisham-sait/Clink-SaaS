@@ -3,22 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Shareholder {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  shares: {
-    ordinary: number;
-    preferential: number;
-  };
-  dateAcquired: string;
-  status: 'Active' | 'Inactive';
-}
+import { Shareholder } from '../../statutory.types';
 
 @Component({
   selector: 'app-edit-shareholder-modal',

@@ -8,28 +8,7 @@ import { EditOwnerModalComponent } from './modal/edit-owner-modal.component';
 import { ViewOwnerModalComponent } from './modal/view-owner-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-interface BeneficialOwner {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  natureOfControl: string[];
-  ownershipPercentage: number;
-  registrationDate: string;
-  status: 'Active' | 'Inactive';
-  description?: string;
-}
-
-interface Activity {
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  description: string;
-  user: string;
-  time: string;
-}
+import { BeneficialOwner, Activity } from '../statutory.types';
 
 @Component({
   selector: 'app-beneficial-owners',

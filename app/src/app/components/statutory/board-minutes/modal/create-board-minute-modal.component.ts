@@ -3,38 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface BoardMinute {
-  minuteId: string;
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
-  attendees: string[];
-  agenda: string;
-  discussions: {
-    topic: string;
-    details: string;
-    decisions: string[];
-    actionItems?: {
-      task: string;
-      assignee: string;
-      dueDate: string;
-      status: 'Pending' | 'In Progress' | 'Completed';
-    }[];
-  }[];
-  resolutions: {
-    title: string;
-    description: string;
-    proposedBy: string;
-    secondedBy: string;
-    outcome: 'Passed' | 'Rejected' | 'Deferred';
-  }[];
-  minutes: string;
-  status: 'Draft' | 'Final' | 'Signed';
-  attachments?: string[];
-  notes?: string;
-}
+import { BoardMinute, Discussion, Resolution, ActionItem } from '../../statutory.types';
 
 @Component({
   selector: 'app-create-board-minute-modal',

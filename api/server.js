@@ -39,6 +39,9 @@ app.use('/api/banking/categories', require('./routes/categories')(prisma));
 app.use('/api/banking/alerts', require('./routes/balance-alerts')(prisma));
 app.use('/api/banking/reconciliation', require('./routes/reconciliation')(prisma, upload));
 
+// Statutory routes
+app.use('/api/statutory', require('./routes/statutory'));
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -117,6 +120,14 @@ app.listen(port, () => {
   console.log('- Balance alerts');
   console.log('- Bank reconciliation');
   console.log('- Bank accounts management');
+  console.log('- Statutory compliance management:');
+  console.log('  • Directors and officers');
+  console.log('  • Shareholders and shares');
+  console.log('  • Beneficial owners');
+  console.log('  • Charges and securities');
+  console.log('  • Share allotments');
+  console.log('  • Meetings and resolutions');
+  console.log('  • Board minutes');
 });
 
 // Export app for testing

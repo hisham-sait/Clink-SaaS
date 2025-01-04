@@ -2,38 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface BoardMinute {
-  minuteId: string;
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
-  attendees: string[];
-  agenda: string;
-  discussions: {
-    topic: string;
-    details: string;
-    decisions: string[];
-    actionItems?: {
-      task: string;
-      assignee: string;
-      dueDate: string;
-      status: 'Pending' | 'In Progress' | 'Completed';
-    }[];
-  }[];
-  resolutions: {
-    title: string;
-    description: string;
-    proposedBy: string;
-    secondedBy: string;
-    outcome: 'Passed' | 'Rejected' | 'Deferred';
-  }[];
-  minutes: string;
-  status: 'Draft' | 'Final' | 'Signed';
-  attachments?: string[];
-  notes?: string;
-}
+import { BoardMinute } from '../../statutory.types';
 
 @Component({
   selector: 'app-view-board-minute-modal',

@@ -2,22 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
-interface Shareholder {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  shares: {
-    ordinary: number;
-    preferential: number;
-  };
-  dateAcquired: string;
-  status: 'Active' | 'Inactive';
-}
+import { Shareholder } from '../../statutory.types';
 
 @Component({
   selector: 'app-view-shareholder-modal',
