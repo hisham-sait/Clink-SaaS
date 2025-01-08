@@ -10,6 +10,13 @@ import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { BeneficialOwner, Activity } from '../statutory.types';
 
+type ControlValue = 'shares' | 'voting' | 'appointment' | 'influence' | 'trust' | 'partnership';
+
+interface ControlType {
+  value: ControlValue;
+  label: string;
+}
+
 @Component({
   selector: 'app-beneficial-owners',
   standalone: true,
@@ -202,8 +209,9 @@ export class BeneficialOwnersComponent {
   owners: BeneficialOwner[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
-  controlTypes = [
+  controlTypes: ControlType[] = [
     { value: 'shares', label: 'Shares' },
     { value: 'voting', label: 'Voting' },
     { value: 'appointment', label: 'Appointment' },
@@ -243,10 +251,14 @@ export class BeneficialOwnersComponent {
         localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'beneficial-owner',
+          entityId: newOwner.email,
           description: `${this.getFullName(newOwner)} added as beneficial owner with ${newOwner.ownershipPercentage}% ownership`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -266,7 +278,7 @@ export class BeneficialOwnersComponent {
     modalRef.componentInstance.owner = {...owner};
     
     modalRef.result.then(
-      (result: { action: string; owner: BeneficialOwner }) => {
+      (result: { action: string; owner: BeneficialOwner } | undefined) => {
         if (result?.action === 'edit') {
           this.editOwner(result.owner);
         }
@@ -285,16 +297,22 @@ export class BeneficialOwnersComponent {
     
     modalRef.result.then(
       (updatedOwner: BeneficialOwner) => {
-        const index = this.owners.indexOf(owner);
-        this.owners[index] = updatedOwner;
-        localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
+        const index = this.owners.findIndex(o => o.email === owner.email);
+        if (index !== -1) {
+          this.owners[index] = updatedOwner;
+          localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
 
-        this.addActivity({
-          type: 'updated',
-          description: `${this.getFullName(updatedOwner)}'s details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: 'updated',
+            entityType: 'beneficial-owner',
+            entityId: updatedOwner.email,
+            description: `${this.getFullName(updatedOwner)}'s details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -312,18 +330,24 @@ export class BeneficialOwnersComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.owners.indexOf(owner);
-          this.owners.splice(index, 1);
-          localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
+          const index = this.owners.findIndex(o => o.email === owner.email);
+          if (index !== -1) {
+            this.owners.splice(index, 1);
+            localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${this.getFullName(owner)} removed from beneficial owners register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'beneficial-owner',
+              entityId: owner.email,
+              description: `${this.getFullName(owner)} removed from beneficial owners register`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -339,7 +363,7 @@ export class BeneficialOwnersComponent {
   }
 
   getControlLabel(value: string): string {
-    const control = this.controlTypes.find(c => c.value === value);
+    const control = this.controlTypes.find(c => c.value === value as ControlValue);
     return control?.label || value;
   }
 
@@ -377,7 +401,7 @@ export class BeneficialOwnersComponent {
     return (totalPercentage / activeOwners.length).toFixed(1);
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-person-plus';

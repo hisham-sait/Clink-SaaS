@@ -16,6 +16,21 @@ import { Director } from '../../statutory.types';
 
     <div class="modal-body">
       <div class="row g-3">
+        <!-- Company Information -->
+        <div class="col-12">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <h6 class="fw-bold mb-0">Company Information</h6>
+            <div class="border-bottom flex-grow-1"></div>
+          </div>
+          
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label small text-muted">Company</label>
+              <div class="form-control-plaintext">{{ director.company?.name || 'Not assigned' }}</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Personal Details -->
         <div class="col-12">
           <div class="d-flex align-items-center gap-2 mb-3">

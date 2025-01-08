@@ -6,6 +6,347 @@ export type Currency = 'USD' | 'EUR' | 'GBP' | 'INR';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 export type TimeFormat = '12h' | '24h';
 
+// Role Types
+export type RoleScope = 'Global' | 'Company' | 'Team';
+export type RoleStatus = 'Active' | 'Inactive' | 'Deprecated';
+export type AccessLevel = 'None' | 'Read' | 'Write' | 'Admin';
+
+// Role Interfaces
+export interface Permission {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  module: string;
+  accessLevel: AccessLevel;
+}
+
+export interface RoleTemplate {
+  id: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  permissions: Permission[];
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  scope: RoleScope;
+  permissions: Permission[];
+  status: RoleStatus;
+  isCustom: boolean;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+  metadata?: {
+    allowedModules?: string[];
+    maxUsers?: number;
+    restrictions?: string[];
+  };
+}
+
+// Predefined Role Templates
+export const ROLE_TEMPLATES: RoleTemplate[] = [
+  {
+    id: 'super-admin',
+    name: 'Super Administrator',
+    description: 'Full system access with all permissions',
+    isDefault: false,
+    permissions: []  // Will be populated with all permissions
+  },
+  {
+    id: 'admin',
+    name: 'Administrator',
+    description: 'Company-wide administrative access',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'billing-admin',
+    name: 'Billing Administrator',
+    description: 'Manage billing, subscriptions, and payments',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'compliance-manager',
+    name: 'Compliance Manager',
+    description: 'Manage compliance, audits, and regulatory requirements',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'accountant',
+    name: 'Accountant',
+    description: 'Access to accounting and financial features',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'tax-specialist',
+    name: 'Tax Specialist',
+    description: 'Manage tax-related operations and filings',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'team-manager',
+    name: 'Team Manager',
+    description: 'Manage team members and their work',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'user-manager',
+    name: 'User Manager',
+    description: 'Manage user accounts and permissions',
+    isDefault: false,
+    permissions: []
+  },
+  {
+    id: 'report-viewer',
+    name: 'Report Viewer',
+    description: 'View reports and analytics',
+    isDefault: true,
+    permissions: []
+  },
+  {
+    id: 'basic-user',
+    name: 'Basic User',
+    description: 'Standard user access',
+    isDefault: true,
+    permissions: []
+  }
+];
+
+// Module-specific Permissions
+export const MODULE_PERMISSIONS: { [key: string]: Permission[] } = {
+  users: [
+    {
+      id: 'users-view',
+      name: 'View Users',
+      code: 'users:view',
+      description: 'View user list and details',
+      module: 'users',
+      accessLevel: 'Read'
+    },
+    {
+      id: 'users-create',
+      name: 'Create Users',
+      code: 'users:create',
+      description: 'Create new users',
+      module: 'users',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'users-edit',
+      name: 'Edit Users',
+      code: 'users:edit',
+      description: 'Edit user details',
+      module: 'users',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'users-delete',
+      name: 'Delete Users',
+      code: 'users:delete',
+      description: 'Delete users',
+      module: 'users',
+      accessLevel: 'Admin'
+    }
+  ],
+  roles: [
+    {
+      id: 'roles-view',
+      name: 'View Roles',
+      code: 'roles:view',
+      description: 'View roles and permissions',
+      module: 'roles',
+      accessLevel: 'Read'
+    },
+    {
+      id: 'roles-create',
+      name: 'Create Roles',
+      code: 'roles:create',
+      description: 'Create new roles',
+      module: 'roles',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'roles-edit',
+      name: 'Edit Roles',
+      code: 'roles:edit',
+      description: 'Edit role details and permissions',
+      module: 'roles',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'roles-delete',
+      name: 'Delete Roles',
+      code: 'roles:delete',
+      description: 'Delete custom roles',
+      module: 'roles',
+      accessLevel: 'Admin'
+    }
+  ],
+  companies: [
+    {
+      id: 'companies-view',
+      name: 'View Companies',
+      code: 'companies:view',
+      description: 'View company list and details',
+      module: 'companies',
+      accessLevel: 'Read'
+    },
+    {
+      id: 'companies-create',
+      name: 'Create Companies',
+      code: 'companies:create',
+      description: 'Create new companies',
+      module: 'companies',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'companies-edit',
+      name: 'Edit Companies',
+      code: 'companies:edit',
+      description: 'Edit company details',
+      module: 'companies',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'companies-delete',
+      name: 'Delete Companies',
+      code: 'companies:delete',
+      description: 'Delete companies',
+      module: 'companies',
+      accessLevel: 'Admin'
+    }
+  ],
+  billing: [
+    {
+      id: 'billing-view',
+      name: 'View Billing',
+      code: 'billing:view',
+      description: 'View billing and subscription details',
+      module: 'billing',
+      accessLevel: 'Read'
+    },
+    {
+      id: 'billing-manage',
+      name: 'Manage Billing',
+      code: 'billing:manage',
+      description: 'Manage billing and subscriptions',
+      module: 'billing',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'billing-admin',
+      name: 'Billing Admin',
+      code: 'billing:admin',
+      description: 'Full billing administration',
+      module: 'billing',
+      accessLevel: 'Admin'
+    }
+  ],
+  settings: [
+    {
+      id: 'settings-view',
+      name: 'View Settings',
+      code: 'settings:view',
+      description: 'View system settings',
+      module: 'settings',
+      accessLevel: 'Read'
+    },
+    {
+      id: 'settings-edit',
+      name: 'Edit Settings',
+      code: 'settings:edit',
+      description: 'Edit system settings',
+      module: 'settings',
+      accessLevel: 'Write'
+    },
+    {
+      id: 'settings-admin',
+      name: 'Settings Admin',
+      code: 'settings:admin',
+      description: 'Full settings administration',
+      module: 'settings',
+      accessLevel: 'Admin'
+    }
+  ]
+};
+
+// User Types
+export type UserStatus = 'Active' | 'Inactive' | 'Pending' | 'Suspended';
+
+// Company Types
+export type CompanyType = 'Primary' | 'Client' | 'Subsidiary' | 'Partner' | 'Other';
+export type CompanyStatus = 'Active' | 'Inactive' | 'Pending' | 'Archived';
+export type CompanyTag = 'Primary Organization' | 'My Organization' | 'Client' | 'Partner' | 'Subsidiary';
+
+// User Interface
+export interface User {
+  id: string;
+  title?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  phone?: string;
+  avatar?: string;
+  jobTitle?: string;
+  department?: string;
+  lastLogin?: string;
+  invitedBy?: string;
+  invitedAt?: string;
+  joinedAt?: string;
+  status: UserStatus;
+  createdAt: string;
+  updatedAt: string;
+  roles: Role[];
+}
+
+// Company Interfaces
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  legalName: string;
+  registrationNumber: string;
+  vatNumber?: string;
+  address: Address;
+  phone: string;
+  email: string;
+  website?: string;
+  logo?: string;
+  industry: string;
+  size: string;
+  type: CompanyType;
+  tags: CompanyTag[];
+  fiscalYearEnd: string;
+  currency: Currency;
+  status: CompanyStatus;
+  createdAt: string;
+  updatedAt: string;
+  primaryContact?: {
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+  };
+  notes?: string;
+}
+
 // Profile Interfaces
 export interface Profile {
   id: string;
@@ -21,33 +362,6 @@ export interface Profile {
   language: Language;
   dateFormat: DateFormat;
   timeFormat: TimeFormat;
-  status: Status;
-}
-
-// Organization Interfaces
-export interface Address {
-  street: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-}
-
-export interface Organization {
-  id: string;
-  name: string;
-  legalName: string;
-  registrationNumber: string;
-  vatNumber?: string;
-  address: Address;
-  phone: string;
-  email: string;
-  website?: string;
-  logo?: string;
-  industry: string;
-  size: string;
-  fiscalYearEnd: string;
-  currency: Currency;
   status: Status;
 }
 

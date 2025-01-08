@@ -1,8 +1,10 @@
 import { Routes } from '@angular/router';
+import { StatutoryComponent } from './statutory.component';
 
 export const STATUTORY_ROUTES: Routes = [
   {
     path: 'statutory',
+    component: StatutoryComponent,
     children: [
       {
         path: '',

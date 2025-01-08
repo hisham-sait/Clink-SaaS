@@ -10,6 +10,8 @@ import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { BoardMinute, Activity } from '../statutory.types';
 
+type MinuteStatus = 'Draft' | 'Final' | 'Signed';
+
 @Component({
   selector: 'app-board-minutes',
   standalone: true,
@@ -214,6 +216,7 @@ export class BoardMinutesComponent {
   minutes: BoardMinute[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
   constructor(
     private modalService: NgbModal,
@@ -246,10 +249,14 @@ export class BoardMinutesComponent {
         localStorage.setItem('boardMinutes', JSON.stringify(this.minutes));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'board-minute',
+          entityId: newMinute.minuteId,
           description: `New board meeting ${newMinute.minuteId} created`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -269,7 +276,7 @@ export class BoardMinutesComponent {
     modalRef.componentInstance.minute = {...minute};
     
     modalRef.result.then(
-      (result: { action: string; minute: BoardMinute }) => {
+      (result: { action: string; minute: BoardMinute } | undefined) => {
         if (result?.action === 'edit') {
           this.editMinute(result.minute);
         }
@@ -288,19 +295,25 @@ export class BoardMinutesComponent {
     
     modalRef.result.then(
       (updatedMinute: BoardMinute) => {
-        const index = this.minutes.indexOf(minute);
-        this.minutes[index] = updatedMinute;
-        localStorage.setItem('boardMinutes', JSON.stringify(this.minutes));
+        const index = this.minutes.findIndex(m => m.minuteId === minute.minuteId);
+        if (index !== -1) {
+          this.minutes[index] = updatedMinute;
+          localStorage.setItem('boardMinutes', JSON.stringify(this.minutes));
 
-        const statusChanged = minute.status !== updatedMinute.status;
-        this.addActivity({
-          type: statusChanged ? 'status_changed' : 'updated',
-          description: statusChanged 
-            ? `${updatedMinute.minuteId} status changed to ${updatedMinute.status}`
-            : `${updatedMinute.minuteId} details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          const statusChanged = minute.status !== updatedMinute.status;
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: statusChanged ? 'status_changed' : 'updated',
+            entityType: 'board-minute',
+            entityId: updatedMinute.minuteId,
+            description: statusChanged 
+              ? `${updatedMinute.minuteId} status changed to ${updatedMinute.status}`
+              : `${updatedMinute.minuteId} details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -318,18 +331,24 @@ export class BoardMinutesComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.minutes.indexOf(minute);
-          this.minutes.splice(index, 1);
-          localStorage.setItem('boardMinutes', JSON.stringify(this.minutes));
+          const index = this.minutes.findIndex(m => m.minuteId === minute.minuteId);
+          if (index !== -1) {
+            this.minutes.splice(index, 1);
+            localStorage.setItem('boardMinutes', JSON.stringify(this.minutes));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${minute.minuteId} removed from board minutes register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'board-minute',
+              entityId: minute.minuteId,
+              description: `${minute.minuteId} removed from board minutes register`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -340,7 +359,7 @@ export class BoardMinutesComponent {
     return new Date(date).toLocaleDateString('en-GB');
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: MinuteStatus): string {
     switch (status) {
       case 'Draft':
         return 'text-bg-warning';
@@ -415,7 +434,7 @@ export class BoardMinutesComponent {
     return Math.round((completedActions / totalActions) * 100);
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-plus-circle';

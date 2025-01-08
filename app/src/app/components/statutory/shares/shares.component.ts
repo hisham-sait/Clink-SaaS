@@ -209,6 +209,7 @@ export class SharesComponent {
   shares: Share[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
   constructor(
     private modalService: NgbModal,
@@ -241,10 +242,14 @@ export class SharesComponent {
         localStorage.setItem('shares', JSON.stringify(this.shares));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'share',
+          entityId: newShare.class,
           description: `${newShare.class} share class added with ${newShare.totalIssued} shares`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -264,7 +269,7 @@ export class SharesComponent {
     modalRef.componentInstance.share = {...share};
     
     modalRef.result.then(
-      (result: { action: string; share: Share }) => {
+      (result: { action: string; share: Share } | undefined) => {
         if (result?.action === 'edit') {
           this.editShare(result.share);
         }
@@ -283,16 +288,22 @@ export class SharesComponent {
     
     modalRef.result.then(
       (updatedShare: Share) => {
-        const index = this.shares.indexOf(share);
-        this.shares[index] = updatedShare;
-        localStorage.setItem('shares', JSON.stringify(this.shares));
+        const index = this.shares.findIndex(s => s.class === share.class);
+        if (index !== -1) {
+          this.shares[index] = updatedShare;
+          localStorage.setItem('shares', JSON.stringify(this.shares));
 
-        this.addActivity({
-          type: 'updated',
-          description: `${updatedShare.class} share class details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: 'updated',
+            entityType: 'share',
+            entityId: updatedShare.class,
+            description: `${updatedShare.class} share class details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -310,18 +321,24 @@ export class SharesComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.shares.indexOf(share);
-          this.shares.splice(index, 1);
-          localStorage.setItem('shares', JSON.stringify(this.shares));
+          const index = this.shares.findIndex(s => s.class === share.class);
+          if (index !== -1) {
+            this.shares.splice(index, 1);
+            localStorage.setItem('shares', JSON.stringify(this.shares));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${share.class} share class removed`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'share',
+              entityId: share.class,
+              description: `${share.class} share class removed`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -369,7 +386,7 @@ export class SharesComponent {
       .reduce((sum, s) => sum + s.totalIssued, 0);
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-plus-circle';

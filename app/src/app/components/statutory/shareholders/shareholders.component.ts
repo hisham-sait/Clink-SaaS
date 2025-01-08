@@ -198,6 +198,7 @@ export class ShareholdersComponent {
   shareholders: Shareholder[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
   constructor(
     private modalService: NgbModal,
@@ -230,10 +231,14 @@ export class ShareholdersComponent {
         localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'shareholder',
+          entityId: newShareholder.email,
           description: `${this.getFullName(newShareholder)} added as shareholder with ${newShareholder.shares.ordinary + newShareholder.shares.preferential} shares`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -253,7 +258,7 @@ export class ShareholdersComponent {
     modalRef.componentInstance.shareholder = {...shareholder};
     
     modalRef.result.then(
-      (result: { action: string; shareholder: Shareholder }) => {
+      (result: { action: string; shareholder: Shareholder } | undefined) => {
         if (result?.action === 'edit') {
           this.editShareholder(result.shareholder);
         }
@@ -272,16 +277,22 @@ export class ShareholdersComponent {
     
     modalRef.result.then(
       (updatedShareholder: Shareholder) => {
-        const index = this.shareholders.indexOf(shareholder);
-        this.shareholders[index] = updatedShareholder;
-        localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
+        const index = this.shareholders.findIndex(s => s.email === shareholder.email);
+        if (index !== -1) {
+          this.shareholders[index] = updatedShareholder;
+          localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
 
-        this.addActivity({
-          type: 'updated',
-          description: `${this.getFullName(updatedShareholder)}'s details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: 'updated',
+            entityType: 'shareholder',
+            entityId: updatedShareholder.email,
+            description: `${this.getFullName(updatedShareholder)}'s details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -299,18 +310,24 @@ export class ShareholdersComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.shareholders.indexOf(shareholder);
-          this.shareholders.splice(index, 1);
-          localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
+          const index = this.shareholders.findIndex(s => s.email === shareholder.email);
+          if (index !== -1) {
+            this.shareholders.splice(index, 1);
+            localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${this.getFullName(shareholder)} removed from shareholders register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'shareholder',
+              entityId: shareholder.email,
+              description: `${this.getFullName(shareholder)} removed from shareholders register`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -351,7 +368,7 @@ export class ShareholdersComponent {
     return this.getTotalOrdinaryShares() + this.getTotalPreferentialShares();
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-person-plus';

@@ -1,14 +1,14 @@
 export const environment = {
-  production: true,
+  production: false,
   apiUrl: '/api',
   plaid: {
-    env: 'production',
+    env: 'sandbox',
     products: ['auth', 'transactions'],
     countryCodes: ['US', 'GB', 'IE'],
     language: 'en'
   },
   yodlee: {
-    env: 'production',
-    fastlinkUrl: 'https://node.yodlee.com/authenticate/restserver'
+    env: 'sandbox',
+    fastlinkUrl: 'https://fl4.sandbox.yodlee.com/authenticate/restserver'
   }
 };

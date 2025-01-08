@@ -8,7 +8,7 @@ import { EditMeetingModalComponent } from './modal/edit-meeting-modal.component'
 import { ViewMeetingModalComponent } from './modal/view-meeting-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-import { Meeting, Activity } from '../statutory.types';
+import { Meeting, Activity, DocumentStatus } from '../statutory.types';
 
 @Component({
   selector: 'app-meetings',
@@ -202,6 +202,7 @@ export class MeetingsComponent {
   meetings: Meeting[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
   constructor(
     private modalService: NgbModal,
@@ -234,10 +235,14 @@ export class MeetingsComponent {
         localStorage.setItem('meetings', JSON.stringify(this.meetings));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'meeting',
+          entityId: newMeeting.meetingId,
           description: `New ${newMeeting.meetingType} (${newMeeting.meetingId}) created`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -257,7 +262,7 @@ export class MeetingsComponent {
     modalRef.componentInstance.meeting = {...meeting};
     
     modalRef.result.then(
-      (result: { action: string; meeting: Meeting }) => {
+      (result: { action: string; meeting: Meeting } | undefined) => {
         if (result?.action === 'edit') {
           this.editMeeting(result.meeting);
         }
@@ -276,19 +281,25 @@ export class MeetingsComponent {
     
     modalRef.result.then(
       (updatedMeeting: Meeting) => {
-        const index = this.meetings.indexOf(meeting);
-        this.meetings[index] = updatedMeeting;
-        localStorage.setItem('meetings', JSON.stringify(this.meetings));
+        const index = this.meetings.findIndex(m => m.meetingId === meeting.meetingId);
+        if (index !== -1) {
+          this.meetings[index] = updatedMeeting;
+          localStorage.setItem('meetings', JSON.stringify(this.meetings));
 
-        const statusChanged = meeting.status !== updatedMeeting.status;
-        this.addActivity({
-          type: statusChanged ? 'status_changed' : 'updated',
-          description: statusChanged 
-            ? `${updatedMeeting.meetingId} status changed to ${updatedMeeting.status}`
-            : `${updatedMeeting.meetingId} details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          const statusChanged = meeting.status !== updatedMeeting.status;
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: statusChanged ? 'status_changed' : 'updated',
+            entityType: 'meeting',
+            entityId: updatedMeeting.meetingId,
+            description: statusChanged 
+              ? `${updatedMeeting.meetingId} status changed to ${updatedMeeting.status}`
+              : `${updatedMeeting.meetingId} details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -306,18 +317,24 @@ export class MeetingsComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.meetings.indexOf(meeting);
-          this.meetings.splice(index, 1);
-          localStorage.setItem('meetings', JSON.stringify(this.meetings));
+          const index = this.meetings.findIndex(m => m.meetingId === meeting.meetingId);
+          if (index !== -1) {
+            this.meetings.splice(index, 1);
+            localStorage.setItem('meetings', JSON.stringify(this.meetings));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${meeting.meetingId} removed from meetings register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'meeting',
+              entityId: meeting.meetingId,
+              description: `${meeting.meetingId} removed from meetings register`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -328,7 +345,7 @@ export class MeetingsComponent {
     return new Date(date).toLocaleDateString('en-GB');
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: DocumentStatus): string {
     switch (status) {
       case 'Draft':
         return 'text-bg-warning';
@@ -376,7 +393,7 @@ export class MeetingsComponent {
     return Math.round((achievedCount / this.meetings.length) * 100);
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-plus-circle';

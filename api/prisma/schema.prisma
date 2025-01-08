@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,168 +7,366 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model BankConnection {
-  id             String          @id @default(uuid())
-  institutionId  String
-  institutionName String
-  provider       String          // "plaid" or "yodlee"
-  status         String          // "connected", "connecting", "error"
-  accessToken    String?         // Encrypted access token from provider
-  itemId         String?         // Provider's item ID
-  lastSynced     DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  accounts       BankAccount[]
-  transactions   Transaction[]
-  syncLogs       SyncLog[]
-  balanceAlerts  BalanceAlert[]
-  userId         String          // Reference to your User model
-  error          String?         // Store any error messages
-  metadata       Json?           // Additional provider-specific data
+model User {
+  id            String        @id @default(uuid())
+  title         String?
+  firstName     String
+  lastName      String
+  email         String        @unique
+  password      String?
+  phone         String?
+  avatar        String?
+  jobTitle      String?
+  department    String?
+  lastLogin     DateTime?
+  invitedBy     String?
+  invitedAt     DateTime?
+  joinedAt      DateTime?
+  status        UserStatus    @default(Pending)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  roles         UserRole[]
+  createdCompanies Company[]  @relation("CreatedBy")
+  userCompanies UserCompany[]
 }
 
-model BankAccount {
-  id              String         @id @default(uuid())
-  providerId      String         // Account ID from provider
-  name            String
-  type            String         // checking, savings, etc.
-  subtype         String?
-  balance         Float
-  currency        String
-  lastUpdated     DateTime
-  status          String         // active, inactive, etc.
-  connectionId    String
-  connection      BankConnection @relation(fields: [connectionId], references: [id])
-  transactions    Transaction[]
-  balanceAlerts   BalanceAlert[]
-  reconciliations Reconciliation[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  metadata        Json?          // Additional provider-specific data
+model Permission {
+  id          String           @id @default(uuid())
+  name        String
+  code        String           @unique
+  description String
+  module      String
+  accessLevel AccessLevel
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
 
-  @@index([providerId])
-  @@index([connectionId])
+  @@index([module])
+  @@index([accessLevel])
 }
 
-model Transaction {
-  id              String         @id @default(uuid())
-  providerId      String         // Transaction ID from provider
-  accountId       String
-  account         BankAccount    @relation(fields: [accountId], references: [id])
-  connectionId    String
-  connection      BankConnection @relation(fields: [connectionId], references: [id])
-  amount          Float
-  currency        String
-  date            DateTime
-  description     String
-  categoryId      String?
-  category        Category?      @relation(fields: [categoryId], references: [id])
-  type            String         // debit or credit
-  status          String         // pending, posted, etc.
-  merchantName    String?
-  checkNumber     String?
-  notes           String?
-  tags           String[]
-  reconciliationId String?
-  reconciliation  Reconciliation? @relation(fields: [reconciliationId], references: [id])
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  metadata        Json?          // Additional provider-specific data
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String
+  scope       RoleScope
+  status      RoleStatus       @default(Active)
+  isCustom    Boolean          @default(true)
+  isSystem    Boolean          @default(false)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       UserRole[]
 
-  @@index([providerId])
-  @@index([accountId])
-  @@index([connectionId])
-  @@index([date])
-  @@index([categoryId])
+  @@index([scope])
+  @@index([status])
 }
 
-model Category {
-  id           String        @id @default(uuid())
-  name         String
-  type         String        // income, expense, transfer
-  color        String?       // For UI display
-  icon         String?       // For UI display
-  parentId     String?       // For subcategories
-  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  subcategories Category[]   @relation("CategoryHierarchy")
-  transactions Transaction[]
-  rules        CategoryRule[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+model RolePermission {
+  roleId       String
+  permissionId String
+  assignedAt   DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@index([parentId])
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }
 
-model CategoryRule {
-  id          String    @id @default(uuid())
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id])
-  pattern     String    // Regex pattern to match transaction description
-  merchantName String?  // Specific merchant to match
-  minAmount   Float?    // Minimum amount to match
-  maxAmount   Float?    // Maximum amount to match
-  priority    Int       // Higher priority rules are checked first
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([categoryId])
+  @@id([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
 }
 
-model BalanceAlert {
-  id          String        @id @default(uuid())
-  accountId   String
-  account     BankAccount   @relation(fields: [accountId], references: [id])
-  connectionId String
-  connection  BankConnection @relation(fields: [connectionId], references: [id])
-  type        String        // "below", "above"
-  threshold   Float
-  frequency   String        // "once", "always"
-  isActive    Boolean       @default(true)
-  lastTriggered DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model UserCompany {
+  userId     String
+  companyId  String
+  role       String
+  assignedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@index([accountId])
-  @@index([connectionId])
+  @@id([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
 }
 
-model Reconciliation {
-  id          String        @id @default(uuid())
-  accountId   String
-  account     BankAccount   @relation(fields: [accountId], references: [id])
-  startDate   DateTime
-  endDate     DateTime
-  startBalance Float
-  endBalance  Float
-  status      String        // "in_progress", "completed", "discrepancy"
+model Director {
+  id                 String         @id @default(cuid())
+  title              String
+  firstName          String
+  lastName           String
+  dateOfBirth        DateTime
+  nationality        String
+  address            String
+  appointmentDate    DateTime
+  resignationDate    DateTime?
+  directorType       String
+  occupation         String
+  otherDirectorships String
+  shareholding       String
+  status             DirectorStatus
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  companyId          String
+  company            Company        @relation(fields: [companyId], references: [id])
+}
+
+model Shareholder {
+  id                 String   @id @default(cuid())
+  title              String
+  firstName          String
+  lastName           String
+  dateOfBirth        DateTime
+  nationality        String
+  address            String
+  email              String
+  phone              String
+  ordinaryShares     Int
+  preferentialShares Int
+  dateAcquired       DateTime
+  status             Status
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+}
+
+model Share {
+  id             String    @id @default(cuid())
+  class          String
+  type           ShareType
+  nominalValue   Float
+  currency       String
+  votingRights   Boolean
+  dividendRights Boolean
+  transferable   Boolean
+  totalIssued    Int
+  status         Status
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id])
+}
+
+model BeneficialOwner {
+  id                  String   @id @default(cuid())
+  title               String
+  firstName           String
+  lastName            String
+  dateOfBirth         DateTime
+  nationality         String
+  address             String
+  email               String
+  phone               String
+  natureOfControl     String[]
+  ownershipPercentage Float
+  registrationDate    DateTime
+  status              Status
+  description         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  companyId           String
+  company             Company  @relation(fields: [companyId], references: [id])
+}
+
+model Charge {
+  id               String    @id @default(cuid())
+  chargeId         String    @unique
+  chargeType       String
+  dateCreated      DateTime
+  amount           Float
+  currency         String
+  chargor          String
+  chargee          String
+  description      String
+  propertyCharged  String
+  registrationDate DateTime
+  status           String
+  satisfactionDate DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  companyId        String
+  company          Company   @relation(fields: [companyId], references: [id])
+}
+
+model Allotment {
+  id                String        @id @default(cuid())
+  allotmentId       String        @unique
+  allotmentDate     DateTime
+  shareClass        String
+  numberOfShares    Int
+  pricePerShare     Float
+  currency          String
+  allottee          String
+  paymentStatus     PaymentStatus
+  amountPaid        Float?
+  paymentDate       DateTime?
+  certificateNumber String?
+  status            Status
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id])
+}
+
+model Resolution {
+  id            String            @id @default(cuid())
+  title         String
+  type          ResolutionType?
+  description   String
+  outcome       ResolutionOutcome
+  proposedBy    String?
+  secondedBy    String?
+  meetingId     String?
+  boardMinuteId String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  boardMinute   BoardMinute?      @relation(fields: [boardMinuteId], references: [id])
+  meeting       Meeting?          @relation(fields: [meetingId], references: [id])
+}
+
+model Meeting {
+  id             String         @id @default(cuid())
+  meetingId      String         @unique
+  meetingDate    DateTime
+  meetingType    MeetingType
+  venue          String
+  startTime      DateTime
+  endTime        DateTime
+  chairperson    String
+  attendees      String[]
+  agenda         String
+  quorumRequired Int
+  quorumPresent  Int
+  quorumAchieved Boolean
+  minutes        String
+  status         DocumentStatus
+  attachments    String[]
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id])
+  resolutions    Resolution[]
+}
+
+model ActionItem {
+  id           String           @id @default(cuid())
+  task         String
+  assignee     String
+  dueDate      DateTime
+  status       ActionItemStatus
+  discussionId String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  discussion   Discussion       @relation(fields: [discussionId], references: [id])
+}
+
+model Discussion {
+  id            String       @id @default(cuid())
+  topic         String
+  details       String
+  decisions     String[]
+  boardMinuteId String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  actionItems   ActionItem[]
+  boardMinute   BoardMinute  @relation(fields: [boardMinuteId], references: [id])
+}
+
+model BoardMinute {
+  id          String         @id @default(cuid())
+  minuteId    String         @unique
+  meetingDate DateTime
+  startTime   DateTime
+  endTime     DateTime
+  venue       String
+  chairperson String
+  attendees   String[]
+  agenda      String
+  minutes     String
+  status      DocumentStatus
+  attachments String[]
   notes       String?
-  transactions Transaction[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@index([accountId])
-  @@index([startDate])
-  @@index([endDate])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  companyId   String
+  company     Company        @relation(fields: [companyId], references: [id])
+  discussions Discussion[]
+  resolutions Resolution[]
 }
 
-model SyncLog {
-  id              String         @id @default(uuid())
-  connectionId    String
-  connection      BankConnection @relation(fields: [connectionId], references: [id])
-  startTime       DateTime       @default(now())
-  endTime         DateTime?
-  status          String         // success, error, in_progress
-  error           String?
-  details         Json?          // Additional sync details
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  entityType  String?
+  entityId    String?
+  description String
+  user        String
+  time        DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id])
 
-  @@index([connectionId])
-  @@index([startTime])
+  @@index([entityType, entityId])
+  @@index([companyId])
+  @@index([time])
+}
+
+model PrimaryContact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  role      String
+  companyId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id])
+}
+
+model Company {
+  id               String            @id @default(cuid())
+  name             String
+  status           Status            @default(Active)
+  isPrimary        Boolean           @default(false)
+  isMyOrg          Boolean           @default(false)
+  tags             String[]          @default([])
+  logo             String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdById      String
+  createdBy        User              @relation("CreatedBy", fields: [createdById], references: [id])
+  userCompanies    UserCompany[]
+  activities       Activity[]
+  allotments       Allotment[]
+  beneficialOwners BeneficialOwner[]
+  boardMinutes     BoardMinute[]
+  charges          Charge[]
+  directors        Director[]
+  meetings         Meeting[]
+  primaryContact   PrimaryContact?
+  shares           Share[]
+  shareholders     Shareholder[]
 }
 
 enum Status {
   Active
   Inactive
+  Archived
 }
 
 enum DocumentStatus {
@@ -232,238 +427,28 @@ enum ActivityType {
   status_changed
 }
 
-model Director {
-  id               String        @id @default(cuid())
-  title            String
-  firstName        String
-  lastName         String
-  dateOfBirth      DateTime
-  nationality      String
-  address          String
-  appointmentDate  DateTime
-  resignationDate  DateTime?
-  directorType     String
-  occupation       String
-  otherDirectorships String
-  shareholding     String
-  status           DirectorStatus
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  companyId        String
-  company          Company       @relation(fields: [companyId], references: [id])
+enum RoleScope {
+  Global
+  Company
+  Team
 }
 
-model Shareholder {
-  id           String    @id @default(cuid())
-  title        String
-  firstName    String
-  lastName     String
-  dateOfBirth  DateTime
-  nationality  String
-  address      String
-  email        String
-  phone        String
-  ordinaryShares Int
-  preferentialShares Int
-  dateAcquired DateTime
-  status       Status
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  companyId    String
-  company      Company   @relation(fields: [companyId], references: [id])
+enum RoleStatus {
+  Active
+  Inactive
+  Deprecated
 }
 
-model Share {
-  id            String    @id @default(cuid())
-  class         String
-  type          ShareType
-  nominalValue  Float
-  currency      String
-  votingRights  Boolean
-  dividendRights Boolean
-  transferable  Boolean
-  totalIssued   Int
-  status        Status
-  description   String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  companyId     String
-  company       Company   @relation(fields: [companyId], references: [id])
+enum AccessLevel {
+  None
+  Read
+  Write
+  Admin
 }
 
-model BeneficialOwner {
-  id                 String   @id @default(cuid())
-  title              String
-  firstName          String
-  lastName           String
-  dateOfBirth        DateTime
-  nationality        String
-  address            String
-  email              String
-  phone              String
-  natureOfControl    String[]
-  ownershipPercentage Float
-  registrationDate   DateTime
-  status             Status
-  description        String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  companyId          String
-  company            Company  @relation(fields: [companyId], references: [id])
-}
-
-model Charge {
-  id              String   @id @default(cuid())
-  chargeId        String   @unique
-  chargeType      String
-  dateCreated     DateTime
-  amount          Float
-  currency        String
-  chargor         String
-  chargee         String
-  description     String
-  propertyCharged String
-  registrationDate DateTime
-  status          String // Active, Satisfied, Released
-  satisfactionDate DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id])
-}
-
-model Allotment {
-  id              String        @id @default(cuid())
-  allotmentId     String        @unique
-  allotmentDate   DateTime
-  shareClass      String
-  numberOfShares  Int
-  pricePerShare   Float
-  currency        String
-  allottee        String
-  paymentStatus   PaymentStatus
-  amountPaid      Float?
-  paymentDate     DateTime?
-  certificateNumber String?
-  status          Status
-  notes           String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  companyId       String
-  company         Company       @relation(fields: [companyId], references: [id])
-}
-
-model Resolution {
-  id          String            @id @default(cuid())
-  title       String
-  type        ResolutionType?
-  description String
-  outcome     ResolutionOutcome
-  proposedBy  String?
-  secondedBy  String?
-  meetingId   String?
-  meeting     Meeting?          @relation(fields: [meetingId], references: [id])
-  boardMinuteId String?
-  boardMinute BoardMinute?      @relation(fields: [boardMinuteId], references: [id])
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-}
-
-model Meeting {
-  id          String       @id @default(cuid())
-  meetingId   String       @unique
-  meetingDate DateTime
-  meetingType MeetingType
-  venue       String
-  startTime   DateTime
-  endTime     DateTime
-  chairperson String
-  attendees   String[]
-  agenda      String
-  resolutions Resolution[]
-  quorumRequired Int
-  quorumPresent Int
-  quorumAchieved Boolean
-  minutes     String
-  status      DocumentStatus
-  attachments String[]
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  companyId   String
-  company     Company      @relation(fields: [companyId], references: [id])
-}
-
-model ActionItem {
-  id           String          @id @default(cuid())
-  task         String
-  assignee     String
-  dueDate      DateTime
-  status       ActionItemStatus
-  discussionId String
-  discussion   Discussion      @relation(fields: [discussionId], references: [id])
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-}
-
-model Discussion {
-  id          String       @id @default(cuid())
-  topic       String
-  details     String
-  decisions   String[]
-  actionItems ActionItem[]
-  boardMinuteId String
-  boardMinute BoardMinute  @relation(fields: [boardMinuteId], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-}
-
-model BoardMinute {
-  id          String       @id @default(cuid())
-  minuteId    String       @unique
-  meetingDate DateTime
-  startTime   DateTime
-  endTime     DateTime
-  venue       String
-  chairperson String
-  attendees   String[]
-  agenda      String
-  discussions Discussion[]
-  resolutions Resolution[]
-  minutes     String
-  status      DocumentStatus
-  attachments String[]
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  companyId   String
-  company     Company      @relation(fields: [companyId], references: [id])
-}
-
-model Activity {
-  id          String      @id @default(cuid())
-  type        ActivityType
-  description String
-  user        String
-  time        DateTime
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  companyId   String
-  company     Company     @relation(fields: [companyId], references: [id])
-}
-
-model Company {
-  id              String            @id @default(cuid())
-  name            String
-  directors       Director[]
-  shareholders    Shareholder[]
-  shares          Share[]
-  beneficialOwners BeneficialOwner[]
-  charges         Charge[]
-  allotments      Allotment[]
-  meetings        Meeting[]
-  boardMinutes    BoardMinute[]
-  activities      Activity[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+enum UserStatus {
+  Active
+  Inactive
+  Pending
+  Suspended
 }

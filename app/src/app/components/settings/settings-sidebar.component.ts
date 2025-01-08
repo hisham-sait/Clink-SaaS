@@ -64,10 +64,22 @@ export class SettingsSidebarComponent {
       description: 'Manage your personal information and preferences'
     },
     {
-      path: '/settings/organization',
-      title: 'Organization',
-      icon: 'bi-building',
-      description: 'Configure your organization details'
+      path: '/settings/companies',
+      title: 'Companies',
+      icon: 'bi-buildings',
+      description: 'Manage companies and their relationships'
+    },
+    {
+      path: '/settings/users',
+      title: 'Users',
+      icon: 'bi-people',
+      description: 'Manage users and their access permissions'
+    },
+    {
+      path: '/settings/roles',
+      title: 'Roles',
+      icon: 'bi-shield',
+      description: 'Manage roles and their permissions'
     },
     {
       path: '/settings/security',

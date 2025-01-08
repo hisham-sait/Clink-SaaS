@@ -5,72 +5,61 @@ const dotenv = require('dotenv');
 const crypto = require('crypto');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
+const auth = require('./middleware/auth');
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors());  // Allow all origins in development
 app.use(express.json());
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],  // Enable logging for debugging
+});
 
-// Encryption helpers
-const encryptToken = (token) => {
-  const cipher = crypto.createCipher('aes-256-cbc', process.env.ENCRYPTION_KEY);
-  return cipher.update(token, 'utf8', 'hex') + cipher.final('hex');
-};
+// Public auth routes (no auth middleware)
+app.use('/api/auth', require('./routes/auth'));
 
-const decryptToken = (encrypted) => {
-  const decipher = crypto.createDecipher('aes-256-cbc', process.env.ENCRYPTION_KEY);
-  return decipher.update(encrypted, 'hex', 'utf8') + decipher.final('utf8');
-};
-
-// Import services
-const plaidService = require('./services/plaid');
-const yodleeService = require('./services/yodlee');
-
-// Import route handlers
-app.use('/api/banking/plaid', require('./routes/plaid')(plaidService, prisma, { encryptToken, decryptToken }));
-app.use('/api/banking/yodlee', require('./routes/yodlee')(yodleeService, prisma, { encryptToken, decryptToken }));
-app.use('/api/banking/connections', require('./routes/bank-connections')(prisma, { encryptToken, decryptToken }));
-app.use('/api/banking/accounts', require('./routes/bank-accounts')(prisma));
-app.use('/api/banking/transactions', require('./routes/transactions')(prisma));
-app.use('/api/banking/categories', require('./routes/categories')(prisma));
-app.use('/api/banking/alerts', require('./routes/balance-alerts')(prisma));
-app.use('/api/banking/reconciliation', require('./routes/reconciliation')(prisma, upload));
-
-// Statutory routes
-app.use('/api/statutory', require('./routes/statutory'));
+// Protected routes
+app.use('/api/statutory', auth, require('./routes/statutory'));
+app.use('/api/settings', auth, require('./routes/settings'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
+  
+  // Handle Prisma errors
+  if (err.code) {
+    switch (err.code) {
+      case 'P2002': // Unique constraint violation
+        return res.status(409).json({
+          error: 'A record with this identifier already exists'
+        });
+      case 'P2014': // Invalid ID
+        return res.status(400).json({
+          error: 'Invalid ID provided'
+        });
+      case 'P2003': // Foreign key constraint violation
+        return res.status(400).json({
+          error: 'Referenced record does not exist'
+        });
+      case 'P2025': // Record not found
+        return res.status(404).json({
+          error: 'Record not found'
+        });
+      default:
+        return res.status(500).json({
+          error: 'Database error occurred',
+          details: process.env.NODE_ENV === 'development' ? err : undefined
+        });
+    }
+  }
+
   res.status(500).json({
     error: err.message || 'Internal server error',
     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
-
-// Start background workers
-const { startCategorizationWorker } = require('./workers/categorization');
-const { startBalanceAlertWorker } = require('./workers/balance-alerts');
-const { startReconciliationWorker } = require('./workers/reconciliation');
-
-// Start workers with error handling and retry
-function startWorkerWithRetry(worker, name, retryDelay = 60000) {
-  try {
-    worker();
-    console.log(`${name} worker started successfully`);
-  } catch (error) {
-    console.error(`Error starting ${name} worker:`, error);
-    console.log(`Retrying ${name} worker in ${retryDelay / 1000} seconds...`);
-    setTimeout(() => startWorkerWithRetry(worker, name), retryDelay);
-  }
-}
-
-startWorkerWithRetry(startCategorizationWorker, 'Transaction Categorization');
-startWorkerWithRetry(startBalanceAlertWorker, 'Balance Alert');
-startWorkerWithRetry(startReconciliationWorker, 'Reconciliation');
 
 // Cleanup on shutdown
 async function gracefulShutdown(signal) {
@@ -115,11 +104,10 @@ app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log('Environment:', process.env.NODE_ENV);
   console.log('Features enabled:');
-  console.log('- Bank integration (Plaid & Yodlee)');
-  console.log('- Transaction categorization');
-  console.log('- Balance alerts');
-  console.log('- Bank reconciliation');
-  console.log('- Bank accounts management');
+  console.log('- Authentication:');
+  console.log('  • Login');
+  console.log('  • Registration');
+  console.log('  • Password reset');
   console.log('- Statutory compliance management:');
   console.log('  • Directors and officers');
   console.log('  • Shareholders and shares');
@@ -128,6 +116,15 @@ app.listen(port, () => {
   console.log('  • Share allotments');
   console.log('  • Meetings and resolutions');
   console.log('  • Board minutes');
+  console.log('- Settings management:');
+  console.log('  • User management');
+  console.log('  • Role management');
+  console.log('  • Company management');
+  console.log('  • Security settings');
+  console.log('  • Preferences');
+  console.log('  • Integrations');
+  console.log('  • Billing');
+  console.log('  • Notifications');
 });
 
 // Export app for testing

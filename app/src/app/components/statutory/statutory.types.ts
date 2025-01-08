@@ -1,7 +1,7 @@
 // Common Types
 export type DirectorStatus = 'Active' | 'Resigned';
-type Status = 'Active' | 'Inactive';
-type DocumentStatus = 'Draft' | 'Final' | 'Signed';
+export type Status = 'Active' | 'Inactive';
+export type DocumentStatus = 'Draft' | 'Final' | 'Signed';
 
 // Director Interfaces
 export interface Director {
@@ -20,6 +20,10 @@ export interface Director {
   shareholding: string;
   status: DirectorStatus;
   companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Shareholder Interfaces
@@ -170,9 +174,13 @@ export interface BoardMinute {
 
 // Activity Interface
 export interface Activity {
+  id: string;
   type: 'appointment' | 'resignation' | 'update' | 'removal' | 
         'added' | 'updated' | 'removed' | 'status_changed';
+  entityType?: string;
+  entityId?: string;
   description: string;
   user: string;
   time: string;
+  companyId: string;
 }

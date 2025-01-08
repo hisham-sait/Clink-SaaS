@@ -10,6 +10,7 @@ const chargesRouter = require('./charges');
 const allotmentsRouter = require('./allotments');
 const meetingsRouter = require('./meetings');
 const boardMinutesRouter = require('./board-minutes');
+const activitiesRouter = require('./activities');
 
 // Mount routes
 router.use('/directors', directorsRouter);
@@ -20,10 +21,17 @@ router.use('/charges', chargesRouter);
 router.use('/allotments', allotmentsRouter);
 router.use('/meetings', meetingsRouter);
 router.use('/board-minutes', boardMinutesRouter);
+router.use('/activities', activitiesRouter);
+
+// Add logging middleware
+router.use((req, res, next) => {
+  console.log(`[Statutory] ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 // Error handling middleware
 router.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('[Statutory Error]:', err);
   
   // Handle Prisma errors
   if (err.code) {

@@ -37,9 +37,10 @@ router.get('/:companyId/:id', async (req, res) => {
 // Create a new director
 router.post('/:companyId', async (req, res) => {
   try {
+    const { company, ...directorData } = req.body;
     const director = await prisma.director.create({
       data: {
-        ...req.body,
+        ...directorData,
         companyId: req.params.companyId,
         dateOfBirth: new Date(req.body.dateOfBirth),
         appointmentDate: new Date(req.body.appointmentDate),
@@ -67,16 +68,17 @@ router.post('/:companyId', async (req, res) => {
 // Update a director
 router.put('/:companyId/:id', async (req, res) => {
   try {
+    const { company, id, ...directorData } = req.body;
     const director = await prisma.director.update({
       where: { 
         id: req.params.id,
         companyId: req.params.companyId
       },
       data: {
-        ...req.body,
-        dateOfBirth: new Date(req.body.dateOfBirth),
-        appointmentDate: new Date(req.body.appointmentDate),
-        resignationDate: req.body.resignationDate ? new Date(req.body.resignationDate) : null
+        ...directorData,
+        dateOfBirth: new Date(directorData.dateOfBirth),
+        appointmentDate: new Date(directorData.appointmentDate),
+        resignationDate: directorData.resignationDate ? new Date(directorData.resignationDate) : null
       }
     });
 

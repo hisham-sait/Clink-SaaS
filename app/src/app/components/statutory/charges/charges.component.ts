@@ -10,6 +10,8 @@ import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { Charge, Activity } from '../statutory.types';
 
+type ChargeStatus = 'Active' | 'Satisfied' | 'Released';
+
 @Component({
   selector: 'app-charges',
   standalone: true,
@@ -198,6 +200,7 @@ export class ChargesComponent {
   charges: Charge[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
   constructor(
     private modalService: NgbModal,
@@ -230,10 +233,14 @@ export class ChargesComponent {
         localStorage.setItem('charges', JSON.stringify(this.charges));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'charge',
+          entityId: newCharge.chargeId,
           description: `New ${newCharge.chargeType} (${newCharge.chargeId}) created for ${this.formatAmount(newCharge.amount, newCharge.currency)}`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -253,7 +260,7 @@ export class ChargesComponent {
     modalRef.componentInstance.charge = {...charge};
     
     modalRef.result.then(
-      (result: { action: string; charge: Charge }) => {
+      (result: { action: string; charge: Charge } | undefined) => {
         if (result?.action === 'edit') {
           this.editCharge(result.charge);
         }
@@ -272,19 +279,25 @@ export class ChargesComponent {
     
     modalRef.result.then(
       (updatedCharge: Charge) => {
-        const index = this.charges.indexOf(charge);
-        this.charges[index] = updatedCharge;
-        localStorage.setItem('charges', JSON.stringify(this.charges));
+        const index = this.charges.findIndex(c => c.chargeId === charge.chargeId);
+        if (index !== -1) {
+          this.charges[index] = updatedCharge;
+          localStorage.setItem('charges', JSON.stringify(this.charges));
 
-        const statusChanged = charge.status !== updatedCharge.status;
-        this.addActivity({
-          type: statusChanged ? 'status_changed' : 'updated',
-          description: statusChanged 
-            ? `${updatedCharge.chargeId} status changed to ${updatedCharge.status}`
-            : `${updatedCharge.chargeId} details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          const statusChanged = charge.status !== updatedCharge.status;
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: statusChanged ? 'status_changed' : 'updated',
+            entityType: 'charge',
+            entityId: updatedCharge.chargeId,
+            description: statusChanged 
+              ? `${updatedCharge.chargeId} status changed to ${updatedCharge.status}`
+              : `${updatedCharge.chargeId} details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -302,18 +315,24 @@ export class ChargesComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.charges.indexOf(charge);
-          this.charges.splice(index, 1);
-          localStorage.setItem('charges', JSON.stringify(this.charges));
+          const index = this.charges.findIndex(c => c.chargeId === charge.chargeId);
+          if (index !== -1) {
+            this.charges.splice(index, 1);
+            localStorage.setItem('charges', JSON.stringify(this.charges));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${charge.chargeId} removed from charges register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'charge',
+              entityId: charge.chargeId,
+              description: `${charge.chargeId} removed from charges register`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -331,7 +350,7 @@ export class ChargesComponent {
     }).format(amount);
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: ChargeStatus): string {
     switch (status) {
       case 'Active':
         return 'text-bg-success';
@@ -383,7 +402,7 @@ export class ChargesComponent {
     return parts.join(' + ') || '£0';
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-plus-circle';

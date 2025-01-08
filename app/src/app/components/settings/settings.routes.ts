@@ -30,13 +30,33 @@ export const SETTINGS_ROUTES: Routes = [
         }
       },
       {
-        path: 'organization',
+        path: 'companies',
         loadComponent: () => 
-          import('../../components/settings/organization/organization.component').then(m => m.SettingsOrganizationComponent),
+          import('../../components/settings/companies/companies.component').then(m => m.CompaniesComponent),
         data: {
-          title: 'Organization Settings',
-          breadcrumb: 'Organization',
-          description: 'Configure your organization details'
+          title: 'Companies',
+          breadcrumb: 'Companies',
+          description: 'Manage companies and their relationships'
+        }
+      },
+      {
+        path: 'users',
+        loadComponent: () => 
+          import('../../components/settings/users/users.component').then(m => m.UsersComponent),
+        data: {
+          title: 'User Management',
+          breadcrumb: 'Users',
+          description: 'Manage users and their access permissions'
+        }
+      },
+      {
+        path: 'roles',
+        loadComponent: () => 
+          import('../../components/settings/roles/roles.component').then(m => m.RolesComponent),
+        data: {
+          title: 'Role Management',
+          breadcrumb: 'Roles',
+          description: 'Manage roles and their permissions'
         }
       },
       {

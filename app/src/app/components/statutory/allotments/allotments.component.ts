@@ -204,6 +204,7 @@ export class AllotmentsComponent {
   allotments: Allotment[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
+  private companyId: string = '1'; // This should be injected or retrieved from a service
 
   constructor(
     private modalService: NgbModal,
@@ -236,10 +237,14 @@ export class AllotmentsComponent {
         localStorage.setItem('allotments', JSON.stringify(this.allotments));
 
         this.addActivity({
+          id: crypto.randomUUID(),
           type: 'added',
+          entityType: 'allotment',
+          entityId: newAllotment.allotmentId,
           description: `New allotment ${newAllotment.allotmentId} created for ${newAllotment.numberOfShares} ${newAllotment.shareClass}`,
           user: 'System',
-          time: new Date().toLocaleString()
+          time: new Date().toLocaleString(),
+          companyId: this.companyId
         });
       },
       () => {} // Modal dismissed
@@ -259,7 +264,7 @@ export class AllotmentsComponent {
     modalRef.componentInstance.allotment = {...allotment};
     
     modalRef.result.then(
-      (result: { action: string; allotment: Allotment }) => {
+      (result: { action: string; allotment: Allotment } | undefined) => {
         if (result?.action === 'edit') {
           this.editAllotment(result.allotment);
         }
@@ -278,19 +283,25 @@ export class AllotmentsComponent {
     
     modalRef.result.then(
       (updatedAllotment: Allotment) => {
-        const index = this.allotments.indexOf(allotment);
-        this.allotments[index] = updatedAllotment;
-        localStorage.setItem('allotments', JSON.stringify(this.allotments));
+        const index = this.allotments.findIndex(a => a.allotmentId === allotment.allotmentId);
+        if (index !== -1) {
+          this.allotments[index] = updatedAllotment;
+          localStorage.setItem('allotments', JSON.stringify(this.allotments));
 
-        const statusChanged = allotment.status !== updatedAllotment.status;
-        this.addActivity({
-          type: statusChanged ? 'status_changed' : 'updated',
-          description: statusChanged 
-            ? `${updatedAllotment.allotmentId} status changed to ${updatedAllotment.status}`
-            : `${updatedAllotment.allotmentId} details updated`,
-          user: 'System',
-          time: new Date().toLocaleString()
-        });
+          const statusChanged = allotment.status !== updatedAllotment.status;
+          this.addActivity({
+            id: crypto.randomUUID(),
+            type: statusChanged ? 'status_changed' : 'updated',
+            entityType: 'allotment',
+            entityId: updatedAllotment.allotmentId,
+            description: statusChanged 
+              ? `${updatedAllotment.allotmentId} status changed to ${updatedAllotment.status}`
+              : `${updatedAllotment.allotmentId} details updated`,
+            user: 'System',
+            time: new Date().toLocaleString(),
+            companyId: this.companyId
+          });
+        }
       },
       () => {} // Modal dismissed
     );
@@ -308,18 +319,24 @@ export class AllotmentsComponent {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          const index = this.allotments.indexOf(allotment);
-          this.allotments.splice(index, 1);
-          localStorage.setItem('allotments', JSON.stringify(this.allotments));
+          const index = this.allotments.findIndex(a => a.allotmentId === allotment.allotmentId);
+          if (index !== -1) {
+            this.allotments.splice(index, 1);
+            localStorage.setItem('allotments', JSON.stringify(this.allotments));
 
-          this.addActivity({
-            type: 'removed',
-            description: `${allotment.allotmentId} removed from allotments register`,
-            user: 'System',
-            time: new Date().toLocaleString()
-          });
+            this.addActivity({
+              id: crypto.randomUUID(),
+              type: 'removed',
+              entityType: 'allotment',
+              entityId: allotment.allotmentId,
+              description: `${allotment.allotmentId} removed from allotments register`,
+              user: 'System',
+              time: new Date().toLocaleString(),
+              companyId: this.companyId
+            });
+          }
         }
       },
       () => {} // Modal dismissed
@@ -337,7 +354,7 @@ export class AllotmentsComponent {
     }).format(amount);
   }
 
-  getPaymentStatusClass(status: string): string {
+  getPaymentStatusClass(status: Allotment['paymentStatus']): string {
     switch (status) {
       case 'Paid':
         return 'text-bg-success';
@@ -395,7 +412,7 @@ export class AllotmentsComponent {
     return Math.round((paidAllotments.length / activeAllotments.length) * 100);
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'added':
         return 'bi bi-plus-circle';

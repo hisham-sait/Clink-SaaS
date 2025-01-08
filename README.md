@@ -2,6 +2,54 @@
 
 A modern accounting and CRM platform built with Angular, inspired by XERO's functionality and design patterns.
 
+## Roles and Demo Users
+
+### Platform Level Roles
+
+1. **Super Admin**
+   - Full platform access
+   - Demo Account: superadmin@bradan.com / superadmin123
+
+2. **Platform Admin**
+   - Platform administration
+   - Demo Account: platformadmin@bradan.com / platformadmin123
+
+### Company Level Roles
+
+1. **Company Admin**
+   - Company administration
+   - Demo Account: companyadmin@bradan.com / companyadmin123
+
+2. **Company Manager**
+   - Company management
+   - Demo Account: manager@bradan.com / manager123
+
+3. **Accountant**
+   - Financial access
+   - Demo Account: accountant@bradan.com / accountant123
+
+4. **Viewer**
+   - Read-only access
+   - Demo Account: viewer@bradan.com / viewer123
+
+### Third Party Roles
+
+1. **External Auditor**
+   - External auditor access
+   - Demo Account: auditor@bradan.com / auditor123
+
+2. **Tax Advisor**
+   - External tax advisor access
+   - Demo Account: taxadvisor@bradan.com / taxadvisor123
+
+3. **Legal Advisor**
+   - External legal advisor access
+   - Demo Account: legaladvisor@bradan.com / legaladvisor123
+
+4. **External Consultant**
+   - External consultant access
+   - Demo Account: consultant@bradan.com / consultant123
+
 ## Features
 
 ### Books Module

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { Activity } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
 
@@ -32,6 +32,10 @@ export class ActivityService {
 
   getActivity(companyId: string, id: string): Observable<Activity> {
     return this.http.get<Activity>(`${this.apiUrl}/${companyId}/${id}`);
+  }
+
+  createActivity(companyId: string, activity: Omit<Activity, 'id'>): Observable<Activity> {
+    return this.http.post<Activity>(`${this.apiUrl}/${companyId}`, activity);
   }
 
   // Get activities for a specific entity (e.g., director, shareholder)

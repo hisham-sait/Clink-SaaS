@@ -6,6 +6,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Store PIDs for cleanup
+API_PID=""
+ANGULAR_PID=""
+
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -14,8 +18,77 @@ command_exists() {
 # Function to display error and exit
 error_exit() {
     echo -e "${RED}Error: $1${NC}" >&2
+    cleanup
     exit 1
 }
+
+# Function to check if a port is in use
+is_port_in_use() {
+    local port=$1
+    if command_exists "lsof"; then
+        lsof -i:"$port" >/dev/null 2>&1
+        return $?
+    elif command_exists "netstat"; then
+        netstat -an | grep "LISTEN" | grep -q ":$port "
+        return $?
+    fi
+    return 1
+}
+
+# Function to safely kill process on a port
+kill_process_on_port() {
+    local port=$1
+    echo -e "${YELLOW}Checking for process on port $port...${NC}"
+    
+    if command_exists "lsof"; then
+        local pid=$(lsof -ti:"$port" 2>/dev/null)
+        if [ ! -z "$pid" ]; then
+            echo -e "${YELLOW}Stopping process on port $port (PID: $pid)...${NC}"
+            kill -15 "$pid" 2>/dev/null || kill -9 "$pid" 2>/dev/null
+            sleep 2
+        fi
+    elif command_exists "netstat" && [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        # Windows-specific implementation
+        local pid=$(netstat -ano | grep ":$port" | grep "LISTENING" | awk '{print $5}')
+        if [ ! -z "$pid" ]; then
+            echo -e "${YELLOW}Stopping process on port $port (PID: $pid)...${NC}"
+            taskkill //F //PID "$pid" >/dev/null 2>&1
+            sleep 2
+        fi
+    elif command_exists "netstat"; then
+        # Unix netstat implementation
+        local pid=$(netstat -nlp 2>/dev/null | grep ":$port" | awk '{print $7}' | cut -d'/' -f1)
+        if [ ! -z "$pid" ]; then
+            echo -e "${YELLOW}Stopping process on port $port (PID: $pid)...${NC}"
+            kill -15 "$pid" 2>/dev/null || kill -9 "$pid" 2>/dev/null
+            sleep 2
+        fi
+    fi
+}
+
+# Cleanup function
+cleanup() {
+    echo -e "\n${YELLOW}Cleaning up...${NC}"
+    
+    # Kill Angular process
+    if [ ! -z "$ANGULAR_PID" ]; then
+        kill -15 "$ANGULAR_PID" 2>/dev/null || kill -9 "$ANGULAR_PID" 2>/dev/null
+    fi
+    
+    # Kill API process
+    if [ ! -z "$API_PID" ]; then
+        kill -15 "$API_PID" 2>/dev/null || kill -9 "$API_PID" 2>/dev/null
+    fi
+    
+    # Additional cleanup for any remaining processes
+    kill_process_on_port 3000
+    kill_process_on_port 4200
+    
+    echo -e "${GREEN}Cleanup complete${NC}"
+}
+
+# Set up trap for cleanup on script termination
+trap cleanup EXIT INT TERM
 
 # Check for required commands
 echo -e "${YELLOW}Checking prerequisites...${NC}"
@@ -34,7 +107,7 @@ fi
 install_dependencies() {
     local dir=$1
     echo -e "${YELLOW}Installing dependencies in $dir...${NC}"
-    cd $dir || error_exit "Could not change to directory $dir"
+    cd "$dir" || error_exit "Could not change to directory $dir"
     npm install || error_exit "Failed to install dependencies in $dir"
     cd - > /dev/null
 }
@@ -43,39 +116,29 @@ install_dependencies() {
 install_dependencies "api"
 install_dependencies "app"
 
-# Function to start a process in a new terminal
-start_process() {
-    local name=$1
-    local dir=$2
-    local command=$3
-    
-    echo -e "${YELLOW}Starting $name...${NC}"
-    
-    # Check if running on macOS
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS - use osascript to open new terminal
-        osascript -e "tell app \"Terminal\" to do script \"cd $(pwd)/$dir && $command\""
-    # Check if running on Linux with GNOME Terminal
-    elif command_exists "gnome-terminal"; then
-        gnome-terminal -- bash -c "cd $(pwd)/$dir && $command; exec bash"
-    # Check if running on Windows with Git Bash
-    elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-        start bash -c "cd $(pwd)/$dir && $command"
-    else
-        # Fallback - run in background
-        cd $dir
-        $command &
-        cd - > /dev/null
-    fi
-}
+# Kill any existing processes on ports
+kill_process_on_port 3000
+kill_process_on_port 4200
 
-# Kill any existing processes on port 4200
-echo -e "${YELLOW}Checking for existing processes...${NC}"
-if command_exists "lsof"; then
-    lsof -ti:4200 | xargs kill -9 2>/dev/null
-elif command_exists "netstat"; then
-    # For Windows
-    for /f "tokens=5" %a in ('netstat -aon ^| findstr :4200') do taskkill /F /PID %a 2>NUL
+# Start API server
+cd api || error_exit "Could not change to api directory"
+echo -e "${YELLOW}Starting API Server...${NC}"
+node server.js &
+API_PID=$!
+cd ..
+
+# Wait for API to be ready
+echo -e "${YELLOW}Waiting for API to initialize...${NC}"
+sleep 5
+
+# Check if API started successfully
+if ! kill -0 $API_PID 2>/dev/null; then
+    error_exit "API server failed to start"
+fi
+
+# Verify API port is now in use
+if ! is_port_in_use 3000; then
+    error_exit "API server is not listening on port 3000"
 fi
 
 # Start Angular development server
@@ -83,22 +146,26 @@ cd app || error_exit "Could not change to app directory"
 echo -e "${YELLOW}Starting Angular Development Server...${NC}"
 ng serve --port 4200 &
 ANGULAR_PID=$!
+cd ..
 
 # Wait for Angular to be ready
 echo -e "${YELLOW}Waiting for Angular to initialize...${NC}"
-sleep 5
+sleep 10
 
 # Check if Angular started successfully
 if ! kill -0 $ANGULAR_PID 2>/dev/null; then
     error_exit "Angular server failed to start"
 fi
 
-cd ..
+# Verify Angular port is now in use
+if ! is_port_in_use 4200; then
+    error_exit "Angular server is not listening on port 4200"
+fi
 
 echo -e "${GREEN}Startup complete!${NC}"
 echo -e "${YELLOW}API server running on http://localhost:3000${NC}"
 echo -e "${YELLOW}Angular app running on http://localhost:4200${NC}"
 echo -e "\nPress Ctrl+C to stop all servers"
 
-# Keep script running to allow Ctrl+C to work
-wait
+# Wait for both processes
+wait $API_PID $ANGULAR_PID

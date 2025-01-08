@@ -3,22 +3,25 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
-import { Subject, Observable, from, of } from 'rxjs';
-import { takeUntil, catchError, finalize, switchMap } from 'rxjs/operators';
+import { Subject, Observable, from, of, forkJoin } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap, filter, map } from 'rxjs/operators';
 
 import { CreateDirectorModalComponent } from './modal/create-director-modal.component';
 import { EditDirectorModalComponent } from './modal/edit-director-modal.component';
 import { ViewDirectorModalComponent } from './modal/view-director-modal.component';
 import { ResignDirectorModalComponent } from './modal/resign-director-modal.component';
-import { ConfirmModalComponent } from './modal/confirm-modal.component';
+import { ConfirmModalComponent } from '../../../components/settings/users/modal/confirm-modal.component';
 
-import {
-  DirectorService,
-  CompanyService,
-  ActivityService
-} from '../../../services/statutory';
+import { DirectorService } from '../../../services/statutory/director.service';
+import { ActivityService } from '../../../services/statutory/activity.service';
+import { CompanyService } from '../../../services/settings/company.service';
 import { Director, Activity } from '../statutory.types';
-import type { Company } from '../../../services/statutory/company.service';
+import type { Company } from '../../../components/settings/settings.types';
+
+interface ActivityResponse {
+  activities: Activity[];
+  total: number;
+}
 
 @Component({
   selector: 'app-directors',
@@ -133,6 +136,7 @@ import type { Company } from '../../../services/statutory/company.service';
               <thead class="bg-light">
                 <tr>
                   <th class="text-uppercase small fw-semibold text-secondary">Name</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Company</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Type</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Appointed</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Service</th>
@@ -151,6 +155,7 @@ import type { Company } from '../../../services/statutory/company.service';
                       </a>
                     </div>
                   </td>
+                  <td>{{ director.company?.name }}</td>
                   <td>{{ director.directorType }}</td>
                   <td>{{ formatDate(director.appointmentDate) }}</td>
                   <td>{{ getServiceDuration(director.appointmentDate, director.resignationDate) }}</td>
@@ -178,7 +183,7 @@ import type { Company } from '../../../services/statutory/company.service';
                   </td>
                 </tr>
                 <tr *ngIf="getFilteredDirectors().length === 0">
-                  <td colspan="7" class="text-center py-4 text-muted">
+                  <td colspan="8" class="text-center py-4 text-muted">
                     <i class="bi bi-info-circle me-2"></i>
                     No directors found
                   </td>
@@ -231,7 +236,7 @@ export class DirectorsComponent implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
   private destroy$ = new Subject<void>();
-  private currentCompanyId: string | null = null;
+  private accessibleCompanies: Company[] = [];
 
   constructor(
     private modalService: NgbModal,
@@ -242,24 +247,28 @@ export class DirectorsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to company changes
-    this.companyService.currentCompany$
-      .pipe(
-        takeUntil(this.destroy$),
-        switchMap(company => {
-          if (!company) {
-            throw new Error('No company selected');
-          }
-          this.currentCompanyId = company.id;
-          return this.loadData(company.id);
-        }),
-        catchError(error => {
-          console.error('Error in company subscription:', error);
-          this.error = 'Please select a company to view directors.';
-          return of(null);
-        })
-      )
-      .subscribe();
+    // Load accessible companies and their directors
+    this.companyService.getAccessibleCompanies().pipe(
+      takeUntil(this.destroy$),
+      switchMap(companies => {
+        this.accessibleCompanies = companies;
+        return forkJoin(
+          companies.map(company => 
+            this.directorService.getDirectors(company.id).pipe(
+              map(directors => directors.map(d => ({ ...d, company })))
+            )
+          )
+        );
+      }),
+      catchError(error => {
+        console.error('Error loading directors:', error);
+        this.error = 'Failed to load directors. Please try again.';
+        return of([]);
+      })
+    ).subscribe(directorsArrays => {
+      this.directors = directorsArrays.flat();
+      this.loadActivities();
+    });
   }
 
   ngOnDestroy(): void {
@@ -267,74 +276,86 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadData(companyId: string): Observable<[Director[], { activities: Activity[] }]> {
+  loadActivities(): void {
     this.loading = true;
     this.error = null;
 
-    // Load directors and activities in parallel
-    const directors$ = this.directorService.getDirectors(companyId);
-    const activities$ = this.activityService.getEntityActivities(companyId, 'director', '', {
-      limit: 10
+    // Load activities for all accessible companies
+    forkJoin(
+      this.accessibleCompanies.map(company =>
+        this.activityService.getActivities(company.id, {
+          entityType: 'director',
+          limit: 10
+        }).pipe(
+          catchError(error => {
+            console.error('Error loading activities:', error);
+            return of({ activities: [], total: 0 } as ActivityResponse);
+          })
+        )
+      )
+    ).pipe(
+      finalize(() => this.loading = false)
+    ).subscribe(activitiesArrays => {
+      this.recentActivities = activitiesArrays
+        .map(response => response.activities)
+        .flat()
+        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        .slice(0, 10);
     });
+  }
 
-    return new Observable(subscriber => {
-      Promise.all([
-        directors$.toPromise(),
-        activities$.toPromise()
-      ])
-        .then(([directors, activitiesResponse]) => {
-          if (directors && activitiesResponse) {
-            this.directors = directors;
-            this.recentActivities = activitiesResponse.activities || [];
-            subscriber.next([directors, activitiesResponse]);
-          }
-        })
-        .catch(error => {
-          const errorMsg = error.error?.message || 'Failed to load directors. Please try again.';
-          console.error('Error loading data:', error);
-          this.error = errorMsg;
-          subscriber.error(error);
-        })
-        .finally(() => {
-          this.loading = false;
-          subscriber.complete();
-        });
-    });
+  private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {
+    return this.activityService.createActivity(companyId, {
+      ...activity,
+      companyId,
+      time: new Date().toISOString()
+    }).pipe(
+      catchError(error => {
+        console.error('Error creating activity:', error);
+        return of(null);
+      })
+    );
   }
 
   refreshData(): void {
-    if (this.currentCompanyId) {
-      this.loadData(this.currentCompanyId).subscribe();
-    }
+    this.ngOnInit();
   }
 
   openAddDirectorModal(): void {
-    const company = this.companyService.getCurrentCompany();
-    if (!company) {
-      this.error = 'Please select a company first';
-      return;
-    }
-
     const modalRef = this.modalService.open(CreateDirectorModalComponent, {
       size: 'lg',
       backdrop: 'static'
     });
 
+    modalRef.componentInstance.companies = this.accessibleCompanies;
+
     modalRef.result.then(
-      (newDirector: Director) => {
-        this.directorService.createDirector(company.id, newDirector)
+      (result: { company: Company; director: Omit<Director, 'id'> }) => {
+        this.directorService.createDirector(result.company.id, result.director)
           .pipe(
             catchError(error => {
               const errorMsg = error.error?.message || 'Failed to create director. Please try again.';
               console.error('Error creating director:', error);
               this.error = errorMsg;
               return of(null);
+            }),
+            switchMap(director => {
+              if (director) {
+                this.directors.push({ ...director, company: result.company });
+                return this.addActivity(result.company.id, {
+                  type: 'appointment',
+                  entityType: 'director',
+                  entityId: director.id,
+                  description: `${this.getFullName(director)} appointed as ${director.directorType}`,
+                  user: 'System'
+                }).pipe(map(() => director));
+              }
+              return of(null);
             })
           )
           .subscribe(director => {
             if (director) {
-              this.directors.push(director);
-              this.loadData(company.id).subscribe();
+              this.refreshData();
             }
           });
       },
@@ -343,12 +364,6 @@ export class DirectorsComponent implements OnInit, OnDestroy {
   }
 
   removeDirector(director: Director): void {
-    const company = this.companyService.getCurrentCompany();
-    if (!company) {
-      this.error = 'Please select a company first';
-      return;
-    }
-
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
@@ -360,21 +375,35 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
-      (result) => {
+      (result: boolean) => {
         if (result === true) {
-          this.directorService.deleteDirector(company.id, director.id)
+          this.directorService.deleteDirector(director.companyId, director.id)
             .pipe(
               catchError(error => {
                 const errorMsg = error.error?.message || 'Failed to remove director. Please try again.';
                 console.error('Error removing director:', error);
                 this.error = errorMsg;
                 return of(null);
+              }),
+              switchMap(() => {
+                const index = this.directors.findIndex(d => d.id === director.id);
+                if (index !== -1) {
+                  this.directors.splice(index, 1);
+                  return this.addActivity(director.companyId, {
+                    type: 'removal',
+                    entityType: 'director',
+                    entityId: director.id,
+                    description: `${this.getFullName(director)} removed from directors register`,
+                    user: 'System'
+                  });
+                }
+                return of(null);
               })
             )
-            .subscribe(() => {
-              const index = this.directors.indexOf(director);
-              this.directors.splice(index, 1);
-              this.loadData(company.id).subscribe();
+            .subscribe(activity => {
+              if (activity) {
+                this.refreshData();
+              }
             });
         }
       },
@@ -391,12 +420,6 @@ export class DirectorsComponent implements OnInit, OnDestroy {
   }
 
   markAsResigned(director: Director): void {
-    const company = this.companyService.getCurrentCompany();
-    if (!company) {
-      this.error = 'Please select a company first';
-      return;
-    }
-
     const modalRef = this.modalService.open(ResignDirectorModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -407,7 +430,7 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     modalRef.result.then(
       (updatedDirector: Director & { resignationReason: string }) => {
         const resignationDate = updatedDirector.resignationDate || new Date().toISOString();
-        this.directorService.resignDirector(company.id, director.id, resignationDate)
+        this.directorService.resignDirector(director.companyId, director.id, resignationDate)
           .pipe(
             catchError(error => {
               const errorMsg = error.error?.message || 'Failed to resign director. Please try again.';
@@ -418,9 +441,18 @@ export class DirectorsComponent implements OnInit, OnDestroy {
           )
           .subscribe(result => {
             if (result) {
-              const index = this.directors.indexOf(director);
-              this.directors[index] = result;
-              this.loadData(company.id).subscribe();
+              const index = this.directors.findIndex(d => d.id === director.id);
+              if (index !== -1) {
+                this.directors[index] = { ...result, company: director.company };
+                this.addActivity(director.companyId, {
+                  type: 'resignation',
+                  entityType: 'director',
+                  entityId: director.id,
+                  description: `${this.getFullName(director)} resigned from position of ${director.directorType}`,
+                  user: 'System'
+                });
+                this.refreshData();
+              }
             }
           });
       },
@@ -497,7 +529,7 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.director = {...director};
     
     modalRef.result.then(
-      (result: { action: string; director: Director }) => {
+      (result: { action: string; director: Director } | undefined) => {
         if (result?.action === 'edit') {
           this.editDirector(result.director);
         }
@@ -510,12 +542,6 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     if (event) {
       event.preventDefault();
     }
-
-    const company = this.companyService.getCurrentCompany();
-    if (!company) {
-      this.error = 'Please select a company first';
-      return;
-    }
     
     const modalRef = this.modalService.open(EditDirectorModalComponent, {
       size: 'lg',
@@ -523,24 +549,39 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     });
     
     modalRef.componentInstance.director = {...director};
+    modalRef.componentInstance.companies = this.accessibleCompanies;
     modalRef.componentInstance.mode = 'edit';
     
     modalRef.result.then(
       (updatedDirector: Director) => {
-        this.directorService.updateDirector(company.id, director.id, updatedDirector)
+        this.directorService.updateDirector(director.companyId, director.id, updatedDirector)
           .pipe(
             catchError(error => {
               const errorMsg = error.error?.message || 'Failed to update director. Please try again.';
               console.error('Error updating director:', error);
               this.error = errorMsg;
               return of(null);
+            }),
+            switchMap(result => {
+              if (result) {
+                const index = this.directors.findIndex(d => d.id === director.id);
+                if (index !== -1) {
+                  this.directors[index] = { ...result, company: director.company };
+                  return this.addActivity(director.companyId, {
+                    type: 'update',
+                    entityType: 'director',
+                    entityId: director.id,
+                    description: `${this.getFullName(director)} details updated`,
+                    user: 'System'
+                  }).pipe(map(() => result));
+                }
+              }
+              return of(null);
             })
           )
           .subscribe(result => {
             if (result) {
-              const index = this.directors.indexOf(director);
-              this.directors[index] = result;
-              this.loadData(company.id).subscribe();
+              this.refreshData();
             }
           });
       },
@@ -548,7 +589,7 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     );
   }
 
-  getActivityIcon(type: string): string {
+  getActivityIcon(type: Activity['type']): string {
     switch (type) {
       case 'appointment':
         return 'bi bi-person-plus';
