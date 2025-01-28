@@ -1,47 +1,15 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
-interface ComplianceDocument {
-  id: number;
-  title: string;
-  type: 'Report' | 'Certificate' | 'Policy' | 'Form' | 'Evidence';
-  category: 'Regulatory' | 'Legal' | 'Internal' | 'External';
-  status: 'Draft' | 'Under Review' | 'Approved' | 'Expired';
-  dueDate: Date;
-  submittedDate?: Date;
-  assignedTo: string;
-  authority: string;
-  description: string;
-  version: string;
-  size: number;
-  lastModified: Date;
-  tags: string[];
-}
-
-interface DocumentTemplate {
-  id: number;
-  title: string;
-  type: 'Report' | 'Certificate' | 'Policy' | 'Form';
-  category: 'Regulatory' | 'Legal' | 'Internal' | 'External';
-  description: string;
-  lastUpdated: Date;
-  version: string;
-  usageCount: number;
-}
-
-interface FilingActivity {
-  id: number;
-  documentId: number;
-  type: 'Creation' | 'Update' | 'Review' | 'Approval' | 'Submission';
-  date: Date;
-  user: string;
-  notes: string;
-  changes?: string[];
-}
+import { 
+  Filing, 
+  FilingDocument,
+  FilingHistory,
+  FilingStatus
+} from '../compliance.types';
 
 type StatusClasses = {
-  [key in 'Draft' | 'Under Review' | 'Approved' | 'Expired']: string;
+  [key in FilingStatus]: string;
 };
 
 type CategoryClasses = {
@@ -50,110 +18,321 @@ type CategoryClasses = {
 
 @Component({
   selector: 'app-compliance-filing',
-  templateUrl: './filing.component.html',
-  styleUrls: ['./filing.component.scss'],
   standalone: true,
-  imports: [CommonModule, RouterModule]
+  imports: [CommonModule, RouterModule],
+  template: `
+    <div class="container-fluid p-4">
+      <!-- Header -->
+      <div class="row mb-4">
+        <div class="col">
+          <h2 class="mb-3">Document Filing</h2>
+          <p class="text-muted">Manage compliance documents, templates, and filing activities</p>
+        </div>
+        <div class="col-auto">
+          <div class="btn-group">
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2">
+              <i class="bi bi-plus-lg"></i>
+              <span>New Document</span>
+            </button>
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Template</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-2">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="card-title mb-0">Documents</h6>
+                <div class="rounded-3 bg-primary bg-opacity-10 p-2">
+                  <i class="bi bi-file-text fs-4 text-primary"></i>
+                </div>
+              </div>
+              <h3 class="mb-0 fw-semibold">{{statistics.totalDocuments}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="card-title mb-0">In Review</h6>
+                <div class="rounded-3 bg-warning bg-opacity-10 p-2">
+                  <i class="bi bi-eye fs-4 text-warning"></i>
+                </div>
+              </div>
+              <h3 class="mb-0 fw-semibold">{{statistics.pendingReview}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="card-title mb-0">Approved</h6>
+                <div class="rounded-3 bg-success bg-opacity-10 p-2">
+                  <i class="bi bi-check-circle fs-4 text-success"></i>
+                </div>
+              </div>
+              <h3 class="mb-0 fw-semibold">{{statistics.approvedDocuments}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="card-title mb-0">Deadlines</h6>
+                <div class="rounded-3 bg-danger bg-opacity-10 p-2">
+                  <i class="bi bi-calendar-event fs-4 text-danger"></i>
+                </div>
+              </div>
+              <h3 class="mb-0 fw-semibold">{{statistics.upcomingDeadlines}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="card-title mb-0">Templates</h6>
+                <div class="rounded-3 bg-info bg-opacity-10 p-2">
+                  <i class="bi bi-file-earmark-text fs-4 text-info"></i>
+                </div>
+              </div>
+              <h3 class="mb-0 fw-semibold">{{statistics.totalTemplates}}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="card-title mb-0">Activities</h6>
+                <div class="rounded-3 bg-primary bg-opacity-10 p-2">
+                  <i class="bi bi-activity fs-4 text-primary"></i>
+                </div>
+              </div>
+              <h3 class="mb-0 fw-semibold">{{statistics.recentActivities}}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+          <h5 class="mb-0">Documents</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="text-uppercase small fw-semibold text-secondary">Document Details</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Type</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Authority</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Due Date</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Status</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of filings">
+                <td>
+                  <div class="fw-medium">{{doc.title}}</div>
+                  <small class="text-muted">{{doc.description}}</small>
+                  <div class="mt-1 d-flex align-items-center gap-3">
+                    <small class="text-muted d-inline-flex align-items-center gap-1">
+                      <i class="bi bi-person-circle"></i>{{doc.assignedTo}}
+                    </small>
+                    <small class="text-muted d-inline-flex align-items-center gap-1">
+                      <i class="bi bi-building"></i>{{doc.authority}}
+                    </small>
+                  </div>
+                </td>
+                <td>{{doc.type}}</td>
+                <td>{{doc.authority}}</td>
+                <td>
+                  <div [class]="isOverdue(doc.dueDate) ? 'text-danger' : isDueSoon(doc.dueDate) ? 'text-warning' : ''">
+                    {{doc.dueDate | date:'mediumDate'}}
+                    <div class="small">
+                      {{calculateDaysRemaining(doc.dueDate)}} days remaining
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getStatusClass(doc.status)">{{doc.status}}</span>
+                </td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" title="View Document">
+                      <i class="bi bi-file-text"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" title="Download">
+                      <i class="bi bi-download"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Activities -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+          <h5 class="mb-0">Recent Activities</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="text-uppercase small fw-semibold text-secondary">Activity Details</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Type</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Date</th>
+                <th class="text-uppercase small fw-semibold text-secondary">User</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let activity of filingHistory">
+                <td>
+                  <div class="fw-medium">{{getDocumentTitle(activity.filingId)}}</div>
+                  <small class="text-muted">{{activity.description}}</small>
+                </td>
+                <td>{{activity.action}}</td>
+                <td>{{activity.timestamp | date:'mediumDate'}}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-circle text-secondary"></i>
+                    {{activity.user}}
+                  </div>
+                </td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" title="View Details">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `
 })
 export class FilingComponent {
-  documents: ComplianceDocument[] = [
+  // Component code remains unchanged
+  filings: Filing[] = [
     {
-      id: 1,
+      id: '1',
       title: 'Annual Compliance Report 2024',
-      type: 'Report',
-      category: 'Regulatory',
-      status: 'Draft',
-      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
-      assignedTo: 'Sarah Johnson',
-      authority: 'Financial Services Authority',
       description: 'Annual compliance report detailing regulatory adherence',
-      version: '1.0',
-      size: 2048576, // 2MB
-      lastModified: new Date(new Date().setDate(new Date().getDate() - 2)),
-      tags: ['Annual', 'Regulatory', 'FSA']
+      companyId: '1',
+      authority: 'Financial Services Authority',
+      referenceNumber: 'FSA-2024-001',
+      type: 'Annual Report',
+      status: 'Draft',
+      frequency: 'Annual',
+      priority: 'High',
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
+      period: {
+        start: new Date(2024, 0, 1).toISOString(),
+        end: new Date(2024, 11, 31).toISOString()
+      },
+      assignedTo: 'Sarah Johnson',
+      documents: [],
+      comments: [],
+      history: [],
+      reminders: []
     },
     {
-      id: 2,
-      title: 'Data Protection Policy',
-      type: 'Policy',
-      category: 'Internal',
-      status: 'Approved',
-      dueDate: new Date(new Date().setDate(new Date().getDate() + 180)),
-      submittedDate: new Date(new Date().setDate(new Date().getDate() - 30)),
-      assignedTo: 'Michael Brown',
+      id: '2',
+      title: 'Data Protection Policy Filing',
+      description: 'Company-wide data protection policy documentation',
+      companyId: '1',
       authority: 'Internal Compliance',
-      description: 'Company-wide data protection policy',
-      version: '2.1',
-      size: 1048576, // 1MB
-      lastModified: new Date(new Date().setDate(new Date().getDate() - 30)),
-      tags: ['Policy', 'Data Protection', 'GDPR']
-    }
-  ];
-
-  templates: DocumentTemplate[] = [
-    {
-      id: 1,
-      title: 'Compliance Report Template',
-      type: 'Report',
-      category: 'Regulatory',
-      description: 'Standard template for compliance reports',
-      lastUpdated: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-      version: '2.0',
-      usageCount: 15
-    },
-    {
-      id: 2,
-      title: 'Policy Document Template',
+      referenceNumber: 'DPP-2024-001',
       type: 'Policy',
-      category: 'Internal',
-      description: 'Template for internal policy documents',
-      lastUpdated: new Date(new Date().setMonth(new Date().getMonth() - 2)),
-      version: '1.5',
-      usageCount: 8
+      status: 'Pending Review',
+      frequency: 'Annual',
+      priority: 'Medium',
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 180)).toISOString(),
+      submissionDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString(),
+      period: {
+        start: new Date(2024, 0, 1).toISOString(),
+        end: new Date(2024, 11, 31).toISOString()
+      },
+      assignedTo: 'Michael Brown',
+      documents: [],
+      comments: [],
+      history: [],
+      reminders: []
     }
   ];
 
-  activities: FilingActivity[] = [
+  filingHistory: FilingHistory[] = [
     {
-      id: 1,
-      documentId: 1,
-      type: 'Creation',
-      date: new Date(new Date().setDate(new Date().getDate() - 5)),
+      id: '1',
+      action: 'created',
+      description: 'Initial draft created from template',
+      timestamp: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(),
       user: 'Sarah Johnson',
-      notes: 'Initial draft created from template',
-      changes: ['Created document', 'Added basic structure']
+      changes: [
+        { field: 'status', oldValue: '', newValue: 'Draft' },
+        { field: 'content', oldValue: '', newValue: 'Initial content' }
+      ],
+      filingId: '1'
     },
     {
-      id: 2,
-      documentId: 2,
-      type: 'Approval',
-      date: new Date(new Date().setDate(new Date().getDate() - 30)),
+      id: '2',
+      action: 'submitted',
+      description: 'Submitted for review',
+      timestamp: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString(),
       user: 'Michael Brown',
-      notes: 'Approved after legal review',
-      changes: ['Updated policy sections', 'Added compliance references']
+      changes: [
+        { field: 'status', oldValue: 'Draft', newValue: 'Pending Review' }
+      ],
+      filingId: '2'
     }
   ];
 
   statistics = {
-    totalDocuments: this.documents.length,
-    pendingReview: this.documents.filter(d => d.status === 'Under Review').length,
-    approvedDocuments: this.documents.filter(d => d.status === 'Approved').length,
-    upcomingDeadlines: this.documents.filter(d => {
+    totalDocuments: this.filings.length,
+    pendingReview: this.filings.filter(d => d.status === 'Pending Review').length,
+    approvedDocuments: this.filings.filter(d => d.status === 'Accepted').length,
+    upcomingDeadlines: this.filings.filter(d => {
       const daysUntilDue = this.calculateDaysRemaining(d.dueDate);
       return daysUntilDue >= 0 && daysUntilDue <= 30;
     }).length,
-    totalTemplates: this.templates.length,
-    recentActivities: this.activities.filter(a => {
-      const daysSinceActivity = Math.abs(this.calculateDaysRemaining(a.date));
+    totalTemplates: 0,
+    recentActivities: this.filingHistory.filter(a => {
+      const daysSinceActivity = Math.abs(this.calculateDaysRemaining(a.timestamp));
       return daysSinceActivity <= 7;
     }).length
   };
 
   private statusClasses: StatusClasses = {
     'Draft': 'bg-secondary',
-    'Under Review': 'bg-warning',
-    'Approved': 'bg-success',
-    'Expired': 'bg-danger'
+    'Pending Review': 'bg-warning',
+    'Submitted': 'bg-info',
+    'Accepted': 'bg-success',
+    'Rejected': 'bg-danger',
+    'Amended': 'bg-primary'
   };
 
   private categoryClasses: CategoryClasses = {
@@ -163,43 +342,36 @@ export class FilingComponent {
     'External': 'text-warning'
   };
 
-  getDocumentTitle(documentId: number): string {
-    const document = this.documents.find(d => d.id === documentId);
-    return document ? document.title : 'Unknown Document';
+  getDocumentTitle(filingId: string): string {
+    const filing = this.filings.find(d => d.id === filingId);
+    return filing ? filing.title : 'Unknown Document';
   }
 
-  getStatusClass(status: keyof StatusClasses): string {
-    return this.statusClasses[status];
+  getStatusClass(status: FilingStatus): string {
+    return this.statusClasses[status] || 'bg-secondary';
   }
 
   getCategoryClass(category: keyof CategoryClasses): string {
     return this.categoryClasses[category];
   }
 
-  calculateDaysRemaining(date: Date): number {
+  calculateDaysRemaining(date: string): number {
     const today = new Date();
     const targetDate = new Date(date);
     const diffTime = targetDate.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
-  isOverdue(date: Date): boolean {
+  isOverdue(date: string): boolean {
     return this.calculateDaysRemaining(date) < 0;
   }
 
-  isDueSoon(date: Date): boolean {
+  isDueSoon(date: string): boolean {
     const daysRemaining = this.calculateDaysRemaining(date);
     return daysRemaining >= 0 && daysRemaining <= 30;
   }
 
-  formatFileSize(bytes: number): string {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Byte';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
-  }
-
-  getActivitiesByDocument(documentId: number): FilingActivity[] {
-    return this.activities.filter(a => a.documentId === documentId);
+  getActivitiesByDocument(filingId: string): FilingHistory[] {
+    return this.filingHistory.filter(a => a.filingId === filingId);
   }
 }

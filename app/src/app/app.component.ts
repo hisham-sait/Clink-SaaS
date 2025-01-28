@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { TinySidebarComponent } from './components/tiny-sidebar/tiny-sidebar.component';
+import { CompanySelectorComponent } from './components/shared/company-selector/company-selector.component';
 import { AuthService } from './services/auth/auth.service';
 import { Subscription } from 'rxjs';
 
@@ -106,6 +107,9 @@ interface User {
             </div>
           </div>
         </div>
+
+        <!-- Company Selector -->
+        <app-company-selector *ngIf="isLoggedIn && !isAuthRoute"></app-company-selector>
       </div>
     </div>
   `,
@@ -125,7 +129,7 @@ interface User {
     }
   `],
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, NgbModule, SidebarComponent, TinySidebarComponent]
+  imports: [CommonModule, RouterModule, FormsModule, NgbModule, SidebarComponent, TinySidebarComponent, CompanySelectorComponent]
 })
 export class AppComponent implements OnInit, OnDestroy {
   // Layout state

@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModule, NgbAccordionModule } from '@ng-bootstrap/ng-bootstrap';
 import { RoleTemplate, Permission, RoleScope } from '../../settings.types';
 import { RoleService } from '../../../../services/settings/role.service';
 
 @Component({
   selector: 'app-add-role-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgbModule],
+  imports: [CommonModule, ReactiveFormsModule, NgbModule, NgbAccordionModule],
   template: `
     <div class="modal-header">
       <h4 class="modal-title">Add Role</h4>
@@ -100,35 +100,28 @@ import { RoleService } from '../../../../services/settings/role.service';
         <div class="mb-4" *ngIf="addForm.get('creationMethod')?.value === 'scratch'">
           <h6 class="text-muted mb-3">Permissions</h6>
           
-          <div class="accordion" id="permissionsAccordion">
-            <div class="accordion-item" *ngFor="let module of getModules()">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" 
-                        [attr.data-bs-target]="'#' + module + 'Collapse'"
-                        data-bs-toggle="collapse">
-                  {{ module | titlecase }} Permissions
-                </button>
-              </h2>
-              <div [id]="module + 'Collapse'" class="accordion-collapse collapse" 
-                   [attr.data-bs-parent]="'#permissionsAccordion'">
-                <div class="accordion-body">
-                  <div class="list-group">
-                    <div class="list-group-item" *ngFor="let permission of getModulePermissions(module)">
-                      <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               [id]="permission.id"
-                               [formControlName]="permission.id">
-                        <label class="form-check-label" [for]="permission.id">
-                          <div>{{ permission.name }}</div>
-                          <small class="text-muted">{{ permission.description }}</small>
-                        </label>
-                      </div>
+          <ngb-accordion>
+            <ngb-panel *ngFor="let module of getModules()" [id]="module">
+              <ng-template ngbPanelTitle>
+                {{ module | titlecase }} Permissions
+              </ng-template>
+              <ng-template ngbPanelContent>
+                <div class="list-group" formGroupName="permissions">
+                  <div class="list-group-item" *ngFor="let permission of getModulePermissions(module)">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox"
+                             [id]="permission.code"
+                             [formControlName]="permission.code">
+                      <label class="form-check-label" [for]="permission.code">
+                        <div>{{ permission.name }}</div>
+                        <small class="text-muted">{{ permission.description }}</small>
+                      </label>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </ng-template>
+            </ngb-panel>
+          </ngb-accordion>
         </div>
 
         <!-- Metadata -->
@@ -173,6 +166,16 @@ export class AddRoleModalComponent implements OnInit {
     private fb: FormBuilder,
     private roleService: RoleService
   ) {
+    // Load all permissions first
+    this.allPermissions = this.roleService.getAllPermissions();
+
+    // Create permission controls
+    const permissionControls: { [key: string]: any } = {};
+    this.allPermissions.forEach(permission => {
+      permissionControls[permission.code] = [false];
+    });
+
+    // Initialize form with all controls
     this.addForm = this.fb.group({
       creationMethod: ['scratch', Validators.required],
       templateId: [''],
@@ -181,7 +184,7 @@ export class AddRoleModalComponent implements OnInit {
       scope: ['Company', Validators.required],
       maxUsers: [null],
       isCustom: [true],
-      // Permission controls will be added dynamically
+      permissions: this.fb.group(permissionControls)
     });
 
     // Update form when creation method changes
@@ -200,14 +203,6 @@ export class AddRoleModalComponent implements OnInit {
     this.roleService.getRoleTemplates().subscribe(templates => {
       this.roleTemplates = templates;
     });
-
-    // Load all permissions and create form controls
-    this.allPermissions = this.roleService.getAllPermissions();
-    const permissionControls: { [key: string]: any } = {};
-    this.allPermissions.forEach(permission => {
-      permissionControls[permission.id] = [false];
-    });
-    this.addForm.addControl('permissions', this.fb.group(permissionControls));
   }
 
   selectTemplate(template: RoleTemplate): void {
@@ -239,7 +234,7 @@ export class AddRoleModalComponent implements OnInit {
       } else {
         // Create custom role
         const selectedPermissions = this.allPermissions.filter(
-          p => formValue.permissions[p.id]
+          p => formValue.permissions[p.code]
         );
 
         const role = {

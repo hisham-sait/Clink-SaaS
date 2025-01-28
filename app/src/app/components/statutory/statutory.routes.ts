@@ -1,10 +1,13 @@
 import { Routes } from '@angular/router';
 import { StatutoryComponent } from './statutory.component';
+import { companyGuard } from '../../guards/company.guard';
 
 export const STATUTORY_ROUTES: Routes = [
   {
     path: 'statutory',
     component: StatutoryComponent,
+    canActivate: [companyGuard],
+    canActivateChild: [companyGuard],
     children: [
       {
         path: '',

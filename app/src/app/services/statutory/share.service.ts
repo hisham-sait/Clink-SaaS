@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Share } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -12,8 +12,12 @@ export class ShareService {
 
   constructor(private http: HttpClient) {}
 
-  getShares(companyId: string): Observable<Share[]> {
-    return this.http.get<Share[]>(`${this.apiUrl}/${companyId}`);
+  getShares(companyId: string, status?: string): Observable<Share[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<Share[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   getShare(companyId: string, id: string): Observable<Share> {

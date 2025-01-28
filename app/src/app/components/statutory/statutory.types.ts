@@ -26,8 +26,15 @@ export interface Director {
   };
 }
 
+// Activity Response Interface
+export interface ActivityResponse {
+  activities: Activity[];
+  total: number;
+}
+
 // Shareholder Interfaces
 export interface Shareholder {
+  id: string;
   title: string;
   firstName: string;
   lastName: string;
@@ -42,10 +49,16 @@ export interface Shareholder {
   };
   dateAcquired: string;
   status: Status;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Share Interfaces
 export interface Share {
+  id: string;
   class: string;
   type: 'Ordinary' | 'Preferential' | 'Deferred';
   nominalValue: number;
@@ -56,10 +69,16 @@ export interface Share {
   totalIssued: number;
   status: Status;
   description?: string;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Beneficial Owner Interfaces
 export interface BeneficialOwner {
+  id: string;
   title: string;
   firstName: string;
   lastName: string;
@@ -73,11 +92,16 @@ export interface BeneficialOwner {
   registrationDate: string;
   status: Status;
   description?: string;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Charge Interfaces
 export interface Charge {
-  chargeId: string;
+  id: string;
   chargeType: string;
   dateCreated: string;
   amount: number;
@@ -89,11 +113,16 @@ export interface Charge {
   registrationDate: string;
   status: 'Active' | 'Satisfied' | 'Released';
   satisfactionDate?: string;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Allotment Interfaces
 export interface Allotment {
-  allotmentId: string;
+  id: string;
   allotmentDate: string;
   shareClass: string;
   numberOfShares: number;
@@ -106,6 +135,11 @@ export interface Allotment {
   certificateNumber?: string;
   status: Status;
   notes?: string;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Meeting Interfaces
@@ -119,7 +153,7 @@ export interface Resolution {
 }
 
 export interface Meeting {
-  meetingId: string;
+  id: string;
   meetingDate: string;
   meetingType: 'AGM' | 'EGM' | 'Class Meeting';
   venue: string;
@@ -138,6 +172,11 @@ export interface Meeting {
   status: DocumentStatus;
   attachments?: string[];
   notes?: string;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Board Minute Interfaces
@@ -156,7 +195,7 @@ export interface Discussion {
 }
 
 export interface BoardMinute {
-  minuteId: string;
+  id: string;
   meetingDate: string;
   startTime: string;
   endTime: string;
@@ -170,6 +209,11 @@ export interface BoardMinute {
   status: DocumentStatus;
   attachments?: string[];
   notes?: string;
+  companyId: string;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 // Activity Interface

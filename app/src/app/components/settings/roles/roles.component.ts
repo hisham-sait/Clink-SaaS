@@ -169,9 +169,9 @@ import { Role } from '../settings.types';
                   <td>{{ role.scope }}</td>
                   <td>{{ role.permissions.length }}</td>
                   <td>
-                    <small class="text-muted">
-                      Loading...
-                    </small>
+                    <span class="text-muted">
+                      {{ role.userCount || 0 }}
+                    </span>
                   </td>
                   <td>
                     <span [class]="'badge ' + getStatusBadgeClass(role.status)">

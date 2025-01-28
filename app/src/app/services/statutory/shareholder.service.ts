@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Shareholder } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -12,8 +12,14 @@ export class ShareholderService {
 
   constructor(private http: HttpClient) {}
 
-  getShareholders(companyId: string): Observable<Shareholder[]> {
-    return this.http.get<Shareholder[]>(`${this.apiUrl}/${companyId}`);
+  getShareholders(companyId: string, status?: string): Observable<Shareholder[]> {
+    let params = new HttpParams();
+    // Set status parameter even if it's an empty string (to show all)
+    // Only skip if status is undefined/null
+    if (status !== undefined && status !== null) {
+      params = params.set('status', status);
+    }
+    return this.http.get<Shareholder[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   getShareholder(companyId: string, id: string): Observable<Shareholder> {

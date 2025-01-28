@@ -4,11 +4,29 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Get all allotments for a company
-router.get('/:companyId', async (req, res) => {
+router.get('/:companyId?', async (req, res) => {
   try {
+    const { status } = req.query;
+    const where = {
+      status: status || 'Active' // Default to Active if no status provided
+    };
+
+    // If not super_admin/platform_admin or if companyId is provided, filter by company
+    if (req.params.companyId || (!req.user.roles.includes('super_admin') && !req.user.roles.includes('platform_admin'))) {
+      where.companyId = req.params.companyId || req.user.companyId;
+    }
+
     const allotments = await prisma.allotment.findMany({
-      where: { companyId: req.params.companyId },
-      orderBy: { allotmentDate: 'desc' }
+      where,
+      orderBy: { allotmentDate: 'desc' },
+      include: {
+        company: {
+          select: {
+            name: true,
+            legalName: true
+          }
+        }
+      }
     });
     res.json(allotments);
   } catch (error) {

@@ -26,7 +26,7 @@ import { BoardMinute } from '../../statutory.types';
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label small text-muted">Minute ID</label>
-              <div class="form-control-plaintext">{{ minute.minuteId }}</div>
+              <div class="form-control-plaintext">{{ minute.id }}</div>
             </div>
             <div class="col-md-4">
               <label class="form-label small text-muted">Date</label>

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { User, Role } from '../../settings.types';
+import { RoleService } from '../../../../services/settings/role.service';
 
 @Component({
   selector: 'app-edit-user-modal',
@@ -81,10 +82,9 @@ import { User, Role } from '../../settings.types';
           <label for="role" class="form-label">Role</label>
           <select class="form-select" id="role" formControlName="role">
             <option value="">Select a role</option>
-            <option value="Super Administrator">Super Administrator</option>
-            <option value="Administrator">Administrator</option>
-            <option value="Billing Administrator">Billing Administrator</option>
-            <option value="User Manager">User Manager</option>
+            <option *ngFor="let role of availableRoles" [ngValue]="role">
+              {{ role.name }}
+            </option>
           </select>
           <div class="form-text text-danger" *ngIf="editForm.get('role')?.errors?.['required'] && editForm.get('role')?.touched">
             Role is required
@@ -125,10 +125,12 @@ import { User, Role } from '../../settings.types';
 export class EditUserModalComponent implements OnInit {
   @Input() user!: User;
   editForm: FormGroup;
+  availableRoles: Role[] = [];
 
   constructor(
     public activeModal: NgbActiveModal,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private roleService: RoleService
   ) {
     this.editForm = this.fb.group({
       title: [''],
@@ -143,18 +145,28 @@ export class EditUserModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.user) {
-      this.editForm.patchValue({
-        title: this.user.title,
-        firstName: this.user.firstName,
-        lastName: this.user.lastName,
-        email: this.user.email,
-        phone: this.user.phone,
-        role: this.user.roles[0]?.name || '',
-        department: this.user.department,
-        jobTitle: this.user.jobTitle
-      });
-    }
+    // Load available roles
+    this.roleService.getRoles().subscribe(roles => {
+      // Filter for active roles only
+      this.availableRoles = roles.filter(role => role.status === 'Active');
+      
+      // After roles are loaded, set the form values
+      if (this.user) {
+        // Find the matching role object from available roles
+        const userRole = this.availableRoles.find(role => role.id === this.user.roles[0]?.id);
+        
+        this.editForm.patchValue({
+          title: this.user.title,
+          firstName: this.user.firstName,
+          lastName: this.user.lastName,
+          email: this.user.email,
+          phone: this.user.phone,
+          role: userRole || '', // Use the full role object
+          department: this.user.department,
+          jobTitle: this.user.jobTitle
+        });
+      }
+    });
   }
 
   onSubmit(): void {
@@ -162,28 +174,11 @@ export class EditUserModalComponent implements OnInit {
       const formValue = this.editForm.getRawValue();
       const selectedRole = formValue.role;
 
-      // Create role object
-      const role: Role = {
-        id: selectedRole,
-        name: selectedRole,
-        description: '',
-        scope: 'Company',
-        permissions: [],
-        status: 'Active',
-        isCustom: false,
-        isSystem: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        metadata: {
-          allowedModules: []
-        }
-      };
-
-      // Replace role string with role object array
+      // Create user data with role object
       const userData = {
         ...this.user,
         ...formValue,
-        roles: [role]
+        roles: [selectedRole] // Use the actual role object
       };
       delete userData.role;
 

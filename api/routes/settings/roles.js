@@ -12,6 +12,11 @@ router.get('/', async (req, res, next) => {
           include: {
             permission: true
           }
+        },
+        users: {
+          include: {
+            user: true
+          }
         }
       }
     });
@@ -19,7 +24,9 @@ router.get('/', async (req, res, next) => {
     // Transform the response to match the expected format
     const transformedRoles = roles.map(role => ({
       ...role,
-      permissions: role.permissions.map(rp => rp.permission)
+      permissions: role.permissions.map(rp => rp.permission),
+      users: role.users.map(ur => ur.user),
+      userCount: role.users.length
     }));
 
     res.json(transformedRoles);
@@ -38,6 +45,11 @@ router.get('/:id', async (req, res, next) => {
           include: {
             permission: true
           }
+        },
+        users: {
+          include: {
+            user: true
+          }
         }
       }
     });
@@ -49,7 +61,9 @@ router.get('/:id', async (req, res, next) => {
     // Transform the response to match the expected format
     const transformedRole = {
       ...role,
-      permissions: role.permissions.map(rp => rp.permission)
+      permissions: role.permissions.map(rp => rp.permission),
+      users: role.users.map(ur => ur.user),
+      userCount: role.users.length
     };
     
     res.json(transformedRole);
@@ -94,6 +108,11 @@ router.post('/create', async (req, res, next) => {
           include: {
             permission: true
           }
+        },
+        users: {
+          include: {
+            user: true
+          }
         }
       }
     });
@@ -101,7 +120,9 @@ router.post('/create', async (req, res, next) => {
     // Transform the response to match the expected format
     const transformedRole = {
       ...role,
-      permissions: role.permissions.map(rp => rp.permission)
+      permissions: role.permissions.map(rp => rp.permission),
+      users: role.users.map(ur => ur.user),
+      userCount: role.users.length
     };
 
     res.status(201).json(transformedRole);
@@ -164,6 +185,11 @@ router.put('/:id', async (req, res, next) => {
           include: {
             permission: true
           }
+        },
+        users: {
+          include: {
+            user: true
+          }
         }
       }
     });
@@ -171,7 +197,9 @@ router.put('/:id', async (req, res, next) => {
     // Transform the response to match the expected format
     const transformedRole = {
       ...role,
-      permissions: role.permissions.map(rp => rp.permission)
+      permissions: role.permissions.map(rp => rp.permission),
+      users: role.users.map(ur => ur.user),
+      userCount: role.users.length
     };
 
     res.json(transformedRole);

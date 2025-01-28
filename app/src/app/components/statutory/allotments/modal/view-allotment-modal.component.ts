@@ -26,7 +26,7 @@ import { Allotment } from '../../statutory.types';
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label small text-muted">Allotment ID</label>
-              <div class="form-control-plaintext">{{ allotment.allotmentId }}</div>
+              <div class="form-control-plaintext">{{ allotment.id }}</div>
             </div>
             <div class="col-md-4">
               <label class="form-label small text-muted">Allotment Date</label>

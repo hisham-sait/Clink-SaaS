@@ -1,14 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { Subject, Observable, of } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators';
+
 import { CreateShareholderModalComponent } from './modal/create-shareholder-modal.component';
 import { EditShareholderModalComponent } from './modal/edit-shareholder-modal.component';
 import { ViewShareholderModalComponent } from './modal/view-shareholder-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-import { Shareholder, Activity } from '../statutory.types';
+import { ShareholderService } from '../../../services/statutory/shareholder.service';
+import { CompanyService } from '../../../services/settings/company.service';
+import { ActivityService } from '../../../services/statutory/activity.service';
+import { AuthService } from '../../../services/auth/auth.service';
+
+import { Shareholder, Activity, ActivityResponse } from '../statutory.types';
 
 @Component({
   selector: 'app-shareholders',
@@ -24,8 +32,23 @@ import { Shareholder, Activity } from '../statutory.types';
   ],
   template: `
     <div class="container-fluid p-4">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
+      <!-- Error Alert -->
+      <div class="alert alert-danger alert-dismissible fade show" role="alert" *ngIf="error">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = null"></button>
+      </div>
+
+      <!-- Loading State -->
+      <div class="text-center py-5" *ngIf="loading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Content (only show when not loading) -->
+      <ng-container *ngIf="!loading">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3 mb-2">Shareholders Register</h1>
           <p class="text-muted mb-0">Record and manage company shareholders and their holdings</p>
@@ -125,9 +148,9 @@ import { Shareholder, Activity } from '../statutory.types';
                     </a>
                   </div>
                 </td>
-                <td>{{ shareholder.shares.ordinary }}</td>
-                <td>{{ shareholder.shares.preferential }}</td>
-                <td>{{ shareholder.shares.ordinary + shareholder.shares.preferential }}</td>
+                <td>{{ shareholder.shares?.ordinary || 0 }}</td>
+                <td>{{ shareholder.shares?.preferential || 0 }}</td>
+                <td>{{ (shareholder.shares?.ordinary || 0) + (shareholder.shares?.preferential || 0) }}</td>
                 <td>{{ formatDate(shareholder.dateAcquired) }}</td>
                 <td>
                   <span [class]="'badge ' + (shareholder.status === 'Active' ? 'text-bg-success' : 'text-bg-secondary')">
@@ -163,27 +186,29 @@ import { Shareholder, Activity } from '../statutory.types';
       <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
           <h5 class="mb-0">Recent Activities</h5>
-          <button class="btn btn-link p-0 text-decoration-none">
+          <button class="btn btn-link p-0 text-decoration-none" (click)="refreshData()">
             <i class="bi bi-arrow-clockwise me-1"></i>
             <span>Refresh</span>
           </button>
         </div>
         <div class="card-body">
           <div class="list-group list-group-flush">
-            <div class="list-group-item px-0" *ngFor="let activity of recentActivities">
-              <div class="d-flex align-items-start gap-3">
-                <div class="bg-light rounded p-2">
-                  <i [class]="getActivityIcon(activity.type)"></i>
-                </div>
-                <div>
-                  <p class="mb-1">{{ activity.description }}</p>
-                  <div class="d-flex align-items-center gap-2 small">
-                    <span class="text-primary">{{ activity.user }}</span>
-                    <span class="text-muted">{{ activity.time }}</span>
+            <ng-container *ngFor="let activity of recentActivities">
+              <div class="list-group-item px-0">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="bg-light rounded p-2">
+                    <i [class]="getActivityIcon(activity.type)"></i>
+                  </div>
+                  <div>
+                    <p class="mb-1">{{ activity.description }}</p>
+                    <div class="d-flex align-items-center gap-2 small">
+                      <span class="text-primary">{{ activity.user }}</span>
+                      <span class="text-muted">{{ activity.time }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </ng-container>
             <div class="text-center py-4 text-muted" *ngIf="recentActivities.length === 0">
               <i class="bi bi-info-circle me-2"></i>
               No recent activities
@@ -191,35 +216,88 @@ import { Shareholder, Activity } from '../statutory.types';
           </div>
         </div>
       </div>
-    </div>
   `
 })
-export class ShareholdersComponent {
+export class ShareholdersComponent implements OnInit, OnDestroy {
   shareholders: Shareholder[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
-  private companyId: string = '1'; // This should be injected or retrieved from a service
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private modalService: NgbModal,
-    private router: Router
-  ) {
-    this.loadData();
+    private router: Router,
+    private shareholderService: ShareholderService,
+    private companyService: CompanyService,
+    private activityService: ActivityService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    this.refreshData();
   }
 
-  private loadData(): void {
-    const savedShareholders = localStorage.getItem('shareholders');
-    if (savedShareholders) {
-      this.shareholders = JSON.parse(savedShareholders);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  refreshData(): void {
+    // Get current company's shareholders
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
     }
 
-    const savedActivities = localStorage.getItem('shareholderActivities');
-    if (savedActivities) {
-      this.recentActivities = JSON.parse(savedActivities);
-    }
+    this.loading = true;
+    this.error = null;
+
+    // First get company details
+    this.companyService.getCompany(companyId).pipe(
+      takeUntil(this.destroy$),
+      switchMap(company => 
+        this.shareholderService.getShareholders(companyId, this.showAll ? undefined : 'Active').pipe(
+          map(shareholders => shareholders.map(s => ({ ...s, company })))
+        )
+      ),
+      catchError(error => {
+        console.error('Error loading shareholders:', error);
+        this.error = 'Failed to load shareholders. Please try again.';
+        return of([]);
+      }),
+      finalize(() => this.loading = false)
+    ).subscribe(shareholdersArrays => {
+      this.shareholders = shareholdersArrays.flat();
+      this.loadActivities(companyId);
+    });
+  }
+
+  private loadActivities(companyId: string): void {
+    this.activityService.getActivities(companyId, {
+      entityType: 'shareholder',
+      limit: 10
+    }).pipe(
+      catchError(error => {
+        console.error('Error loading activities:', error);
+        return of({ activities: [], total: 0 } as ActivityResponse);
+      })
+    ).subscribe(response => {
+      this.recentActivities = response.activities;
+    });
   }
 
   openAddShareholderModal(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateShareholderModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -227,19 +305,32 @@ export class ShareholdersComponent {
 
     modalRef.result.then(
       (newShareholder: Shareholder) => {
-        this.shareholders.push(newShareholder);
-        localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
-
-        this.addActivity({
-          id: crypto.randomUUID(),
-          type: 'added',
-          entityType: 'shareholder',
-          entityId: newShareholder.email,
-          description: `${this.getFullName(newShareholder)} added as shareholder with ${newShareholder.shares.ordinary + newShareholder.shares.preferential} shares`,
-          user: 'System',
-          time: new Date().toLocaleString(),
-          companyId: this.companyId
-        });
+        this.shareholderService.createShareholder(companyId, newShareholder)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to create shareholder. Please try again.';
+              console.error('Error creating shareholder:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(shareholder => {
+              if (shareholder) {
+                return this.addActivity(companyId, {
+                  type: 'added',
+                  entityType: 'shareholder',
+                  entityId: shareholder.id,
+                  description: `${this.getFullName(shareholder)} added as shareholder with ${shareholder.shares.ordinary + shareholder.shares.preferential} shares`,
+                  user: 'System'
+                }).pipe(map(() => shareholder));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(shareholder => {
+            if (shareholder) {
+              this.refreshData();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -268,6 +359,13 @@ export class ShareholdersComponent {
   }
 
   editShareholder(shareholder: Shareholder): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(EditShareholderModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -277,28 +375,45 @@ export class ShareholdersComponent {
     
     modalRef.result.then(
       (updatedShareholder: Shareholder) => {
-        const index = this.shareholders.findIndex(s => s.email === shareholder.email);
-        if (index !== -1) {
-          this.shareholders[index] = updatedShareholder;
-          localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
-
-          this.addActivity({
-            id: crypto.randomUUID(),
-            type: 'updated',
-            entityType: 'shareholder',
-            entityId: updatedShareholder.email,
-            description: `${this.getFullName(updatedShareholder)}'s details updated`,
-            user: 'System',
-            time: new Date().toLocaleString(),
-            companyId: this.companyId
+        this.shareholderService.updateShareholder(companyId, shareholder.id, updatedShareholder)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to update shareholder. Please try again.';
+              console.error('Error updating shareholder:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(result => {
+              if (result) {
+                return this.addActivity(companyId, {
+                  type: 'updated',
+                  entityType: 'shareholder',
+                  entityId: shareholder.id,
+                  description: `${this.getFullName(shareholder)}'s details updated`,
+                  user: 'System'
+                }).pipe(map(() => result));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              this.refreshData();
+            }
           });
-        }
       },
       () => {} // Modal dismissed
     );
   }
 
   removeShareholder(shareholder: Shareholder): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
@@ -312,22 +427,29 @@ export class ShareholdersComponent {
     modalRef.result.then(
       (result: boolean) => {
         if (result === true) {
-          const index = this.shareholders.findIndex(s => s.email === shareholder.email);
-          if (index !== -1) {
-            this.shareholders.splice(index, 1);
-            localStorage.setItem('shareholders', JSON.stringify(this.shareholders));
-
-            this.addActivity({
-              id: crypto.randomUUID(),
-              type: 'removed',
-              entityType: 'shareholder',
-              entityId: shareholder.email,
-              description: `${this.getFullName(shareholder)} removed from shareholders register`,
-              user: 'System',
-              time: new Date().toLocaleString(),
-              companyId: this.companyId
+          this.shareholderService.deleteShareholder(companyId, shareholder.id)
+            .pipe(
+              catchError(error => {
+                const errorMsg = error.error?.message || 'Failed to remove shareholder. Please try again.';
+                console.error('Error removing shareholder:', error);
+                this.error = errorMsg;
+                return of(null);
+              }),
+              switchMap(() => {
+                return this.addActivity(companyId, {
+                  type: 'removed',
+                  entityType: 'shareholder',
+                  entityId: shareholder.id,
+                  description: `${this.getFullName(shareholder)} removed from shareholders register`,
+                  user: 'System'
+                });
+              })
+            )
+            .subscribe(activity => {
+              if (activity) {
+                this.refreshData();
+              }
             });
-          }
         }
       },
       () => {} // Modal dismissed
@@ -344,6 +466,7 @@ export class ShareholdersComponent {
 
   toggleShowAll(): void {
     this.showAll = !this.showAll;
+    this.refreshData();
   }
 
   getFilteredShareholders(): Shareholder[] {
@@ -357,11 +480,11 @@ export class ShareholdersComponent {
   }
 
   getTotalOrdinaryShares(): number {
-    return this.shareholders.reduce((sum, s) => sum + s.shares.ordinary, 0);
+    return this.shareholders.reduce((sum, s) => sum + (s.shares?.ordinary || 0), 0);
   }
 
   getTotalPreferentialShares(): number {
-    return this.shareholders.reduce((sum, s) => sum + s.shares.preferential, 0);
+    return this.shareholders.reduce((sum, s) => sum + (s.shares?.preferential || 0), 0);
   }
 
   getTotalShares(): number {
@@ -383,11 +506,16 @@ export class ShareholdersComponent {
     }
   }
 
-  private addActivity(activity: Activity): void {
-    this.recentActivities.unshift(activity);
-    if (this.recentActivities.length > 10) {
-      this.recentActivities.pop();
-    }
-    localStorage.setItem('shareholderActivities', JSON.stringify(this.recentActivities));
+  private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {
+    return this.activityService.createActivity(companyId, {
+      ...activity,
+      companyId,
+      time: new Date().toISOString()
+    }).pipe(
+      catchError(error => {
+        console.error('Error creating activity:', error);
+        return of(null);
+      })
+    );
   }
 }

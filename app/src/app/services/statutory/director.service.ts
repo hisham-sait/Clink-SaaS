@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Director } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -13,8 +13,12 @@ export class DirectorService {
   constructor(private http: HttpClient) {}
 
   // Get all directors for a company
-  getDirectors(companyId: string): Observable<Director[]> {
-    return this.http.get<Director[]>(`${this.apiUrl}/${companyId}`);
+  getDirectors(companyId: string, status?: string): Observable<Director[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<Director[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   // Get a specific director

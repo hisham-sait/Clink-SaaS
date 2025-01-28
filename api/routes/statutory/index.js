@@ -29,6 +29,30 @@ router.use((req, res, next) => {
   next();
 });
 
+// Company validation middleware
+router.use((req, res, next) => {
+  // Super admin and platform admin can access without company selection
+  if (req.user?.roles.includes('super_admin') || req.user?.roles.includes('platform_admin')) {
+    // If companyId is provided in URL params, use it, otherwise allow access to all companies
+    req.user.companyId = req.params.companyId || null;
+    return next();
+  }
+
+  // For other roles, company selection is required
+  if (!req.user?.companyId) {
+    console.error('[Statutory Error]: No company selected for user', {
+      userId: req.user?.id,
+      userRoles: req.user?.roles,
+      userCompanyId: req.user?.companyId
+    });
+    return res.status(400).json({
+      error: 'Company Required',
+      message: 'Please ensure you have selected a company in your profile settings to access statutory records'
+    });
+  }
+  next();
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
   console.error('[Statutory Error]:', err);

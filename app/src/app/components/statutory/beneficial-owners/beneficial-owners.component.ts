@@ -1,14 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { Subject, Observable, of } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators';
+
 import { CreateOwnerModalComponent } from './modal/create-owner-modal.component';
 import { EditOwnerModalComponent } from './modal/edit-owner-modal.component';
 import { ViewOwnerModalComponent } from './modal/view-owner-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-import { BeneficialOwner, Activity } from '../statutory.types';
+import { BeneficialOwnerService } from '../../../services/statutory/beneficial-owner.service';
+import { CompanyService } from '../../../services/settings/company.service';
+import { ActivityService } from '../../../services/statutory/activity.service';
+import { AuthService } from '../../../services/auth/auth.service';
+
+import { BeneficialOwner, Activity, ActivityResponse } from '../statutory.types';
 
 type ControlValue = 'shares' | 'voting' | 'appointment' | 'influence' | 'trust' | 'partnership';
 
@@ -174,7 +182,7 @@ interface ControlType {
       <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
           <h5 class="mb-0">Recent Activities</h5>
-          <button class="btn btn-link p-0 text-decoration-none">
+          <button class="btn btn-link p-0 text-decoration-none" (click)="refreshData()">
             <i class="bi bi-arrow-clockwise me-1"></i>
             <span>Refresh</span>
           </button>
@@ -205,11 +213,13 @@ interface ControlType {
     </div>
   `
 })
-export class BeneficialOwnersComponent {
+export class BeneficialOwnersComponent implements OnInit, OnDestroy {
   owners: BeneficialOwner[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
-  private companyId: string = '1'; // This should be injected or retrieved from a service
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
 
   controlTypes: ControlType[] = [
     { value: 'shares', label: 'Shares' },
@@ -222,24 +232,76 @@ export class BeneficialOwnersComponent {
 
   constructor(
     private modalService: NgbModal,
-    private router: Router
-  ) {
-    this.loadData();
+    private router: Router,
+    private beneficialOwnerService: BeneficialOwnerService,
+    private companyService: CompanyService,
+    private activityService: ActivityService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    this.refreshData();
   }
 
-  private loadData(): void {
-    const savedOwners = localStorage.getItem('beneficialOwners');
-    if (savedOwners) {
-      this.owners = JSON.parse(savedOwners);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  refreshData(): void {
+    // Get current company's beneficial owners
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
     }
 
-    const savedActivities = localStorage.getItem('beneficialOwnerActivities');
-    if (savedActivities) {
-      this.recentActivities = JSON.parse(savedActivities);
-    }
+    this.loading = true;
+    this.error = null;
+
+    // First get company details
+    this.companyService.getCompany(companyId).pipe(
+      takeUntil(this.destroy$),
+      switchMap(company => 
+        this.beneficialOwnerService.getBeneficialOwners(companyId, this.showAll ? undefined : 'Active').pipe(
+          map(owners => owners.map(o => ({ ...o, company })))
+        )
+      ),
+      catchError(error => {
+        console.error('Error loading beneficial owners:', error);
+        this.error = 'Failed to load beneficial owners. Please try again.';
+        return of([]);
+      }),
+      finalize(() => this.loading = false)
+    ).subscribe(ownersArrays => {
+      this.owners = ownersArrays.flat();
+      this.loadActivities(companyId);
+    });
+  }
+
+  private loadActivities(companyId: string): void {
+    this.activityService.getActivities(companyId, {
+      entityType: 'beneficial-owner',
+      limit: 10
+    }).pipe(
+      catchError(error => {
+        console.error('Error loading activities:', error);
+        return of({ activities: [], total: 0 } as ActivityResponse);
+      })
+    ).subscribe(response => {
+      this.recentActivities = response.activities;
+    });
   }
 
   openAddOwnerModal(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateOwnerModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -247,19 +309,32 @@ export class BeneficialOwnersComponent {
 
     modalRef.result.then(
       (newOwner: BeneficialOwner) => {
-        this.owners.push(newOwner);
-        localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
-
-        this.addActivity({
-          id: crypto.randomUUID(),
-          type: 'added',
-          entityType: 'beneficial-owner',
-          entityId: newOwner.email,
-          description: `${this.getFullName(newOwner)} added as beneficial owner with ${newOwner.ownershipPercentage}% ownership`,
-          user: 'System',
-          time: new Date().toLocaleString(),
-          companyId: this.companyId
-        });
+        this.beneficialOwnerService.createBeneficialOwner(companyId, newOwner)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to create beneficial owner. Please try again.';
+              console.error('Error creating beneficial owner:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(owner => {
+              if (owner) {
+                return this.addActivity(companyId, {
+                  type: 'added',
+                  entityType: 'beneficial-owner',
+                  entityId: owner.id,
+                  description: `${this.getFullName(owner)} added as beneficial owner with ${owner.ownershipPercentage}% ownership`,
+                  user: 'System'
+                }).pipe(map(() => owner));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(owner => {
+            if (owner) {
+              this.refreshData();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -288,6 +363,13 @@ export class BeneficialOwnersComponent {
   }
 
   editOwner(owner: BeneficialOwner): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(EditOwnerModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -297,28 +379,45 @@ export class BeneficialOwnersComponent {
     
     modalRef.result.then(
       (updatedOwner: BeneficialOwner) => {
-        const index = this.owners.findIndex(o => o.email === owner.email);
-        if (index !== -1) {
-          this.owners[index] = updatedOwner;
-          localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
-
-          this.addActivity({
-            id: crypto.randomUUID(),
-            type: 'updated',
-            entityType: 'beneficial-owner',
-            entityId: updatedOwner.email,
-            description: `${this.getFullName(updatedOwner)}'s details updated`,
-            user: 'System',
-            time: new Date().toLocaleString(),
-            companyId: this.companyId
+        this.beneficialOwnerService.updateBeneficialOwner(companyId, owner.id, updatedOwner)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to update beneficial owner. Please try again.';
+              console.error('Error updating beneficial owner:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(result => {
+              if (result) {
+                return this.addActivity(companyId, {
+                  type: 'updated',
+                  entityType: 'beneficial-owner',
+                  entityId: owner.id,
+                  description: `${this.getFullName(owner)}'s details updated`,
+                  user: 'System'
+                }).pipe(map(() => result));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              this.refreshData();
+            }
           });
-        }
       },
       () => {} // Modal dismissed
     );
   }
 
   removeOwner(owner: BeneficialOwner): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
@@ -332,22 +431,29 @@ export class BeneficialOwnersComponent {
     modalRef.result.then(
       (result: boolean) => {
         if (result === true) {
-          const index = this.owners.findIndex(o => o.email === owner.email);
-          if (index !== -1) {
-            this.owners.splice(index, 1);
-            localStorage.setItem('beneficialOwners', JSON.stringify(this.owners));
-
-            this.addActivity({
-              id: crypto.randomUUID(),
-              type: 'removed',
-              entityType: 'beneficial-owner',
-              entityId: owner.email,
-              description: `${this.getFullName(owner)} removed from beneficial owners register`,
-              user: 'System',
-              time: new Date().toLocaleString(),
-              companyId: this.companyId
+          this.beneficialOwnerService.deleteBeneficialOwner(companyId, owner.id)
+            .pipe(
+              catchError(error => {
+                const errorMsg = error.error?.message || 'Failed to remove beneficial owner. Please try again.';
+                console.error('Error removing beneficial owner:', error);
+                this.error = errorMsg;
+                return of(null);
+              }),
+              switchMap(() => {
+                return this.addActivity(companyId, {
+                  type: 'removed',
+                  entityType: 'beneficial-owner',
+                  entityId: owner.id,
+                  description: `${this.getFullName(owner)} removed from beneficial owners register`,
+                  user: 'System'
+                });
+              })
+            )
+            .subscribe(activity => {
+              if (activity) {
+                this.refreshData();
+              }
             });
-          }
         }
       },
       () => {} // Modal dismissed
@@ -369,6 +475,7 @@ export class BeneficialOwnersComponent {
 
   toggleShowAll(): void {
     this.showAll = !this.showAll;
+    this.refreshData();
   }
 
   getFilteredOwners(): BeneficialOwner[] {
@@ -416,11 +523,16 @@ export class BeneficialOwnersComponent {
     }
   }
 
-  private addActivity(activity: Activity): void {
-    this.recentActivities.unshift(activity);
-    if (this.recentActivities.length > 10) {
-      this.recentActivities.pop();
-    }
-    localStorage.setItem('beneficialOwnerActivities', JSON.stringify(this.recentActivities));
+  private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {
+    return this.activityService.createActivity(companyId, {
+      ...activity,
+      companyId,
+      time: new Date().toISOString()
+    }).pipe(
+      catchError(error => {
+        console.error('Error creating activity:', error);
+        return of(null);
+      })
+    );
   }
 }

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { TAX_ROUTES } from './shared/routes/tax.routes';
-import { COMPLIANCE_ROUTES } from './shared/routes/compliance.routes';
+import { TAX_ROUTES } from './components/tax/tax.routes';
+import { COMPLIANCE_ROUTES } from './components/compliance/compliance.routes';
 import { STATUTORY_ROUTES } from './components/statutory/statutory.routes';
 import { SETTINGS_ROUTES } from './components/settings/settings.routes';
 import { AUTH_ROUTES } from './components/auth/auth.routes';

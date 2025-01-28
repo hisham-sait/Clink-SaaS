@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient, UserStatus } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
+const auth = require('../middleware/auth');
 
 const prisma = new PrismaClient();
 
@@ -10,8 +11,6 @@ const prisma = new PrismaClient();
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    console.log('Login attempt:', { email }); // Debug log
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -21,48 +20,39 @@ router.post('/login', async (req, res) => {
           include: {
             role: true
           }
-        }
+        },
+        userCompanies: {
+          select: {
+            companyId: true,
+            role: true
+          }
+        },
+        billingCompany: true
       }
     });
 
-    console.log('Found user:', user ? { id: user.id, status: user.status } : null); // Debug log
-
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Check if user is active
-    if (user.status !== UserStatus.Active) {
-      console.log('User not active:', { status: user.status }); // Debug log
-      return res.status(401).json({ message: 'Account is not active' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() }
-    });
-
-    // Generate token
+    // Create token
     const token = jwt.sign(
-      { 
-        userId: user.id,
-        email: user.email,
-        roles: user.roles.map(r => r.role.name)
-      },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    console.log('Login successful:', { userId: user.id }); // Debug log
+    // Get company ID from either billing company or first company association
+    const defaultCompanyId = user.userCompanies?.[0]?.companyId;
+    const billingCompanyId = user.billingCompany?.id;
+    const companyId = billingCompanyId || defaultCompanyId;
 
-    // Return user data and token
     res.json({
       token,
       user: {
@@ -70,15 +60,13 @@ router.post('/login', async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        roles: user.roles.map(r => r.role.name)
+        roles: user.roles.map(r => r.role.name),
+        companyId
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -87,49 +75,57 @@ router.post('/register', async (req, res) => {
   try {
     const { company, admin } = req.body;
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: admin.email }
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
-    }
-
     // Create company
     const newCompany = await prisma.company.create({
       data: {
         name: company.name,
+        legalName: company.legalName,
+        registrationNumber: company.registrationNumber,
+        vatNumber: company.vatNumber,
         status: 'Active',
-        primaryContact: {
+        isPrimary: true,
+        isMyOrg: true,
+        billingDetails: {
           create: {
-            name: `${admin.firstName} ${admin.lastName}`,
-            email: admin.email,
-            phone: admin.phone || '',
-            role: 'Company Admin'
+            address: company.address,
+            city: company.city,
+            state: company.state,
+            country: company.country,
+            postalCode: company.postalCode,
+            taxId: company.taxId,
+            currency: company.currency || 'EUR',
+            paymentTerms: 30
           }
         }
       }
     });
 
-    // Get Company Admin role
-    const adminRole = await prisma.role.findUnique({
-      where: { name: 'Company Admin' }
-    });
-
     // Hash password
     const hashedPassword = await bcrypt.hash(admin.password, 10);
 
-    // Create user
-    const newUser = await prisma.user.create({
+    // Create admin user
+    const user = await prisma.user.create({
       data: {
-        ...admin,
+        email: admin.email,
         password: hashedPassword,
-        status: UserStatus.Active,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        status: 'Active',
         joinedAt: new Date(),
+        billingCompanyId: newCompany.id,
         roles: {
           create: [{
-            roleId: adminRole.id
+            role: {
+              connect: {
+                name: 'Company Admin'
+              }
+            }
+          }]
+        },
+        userCompanies: {
+          create: [{
+            companyId: newCompany.id,
+            role: 'Company Admin'
           }]
         }
       },
@@ -142,35 +138,102 @@ router.post('/register', async (req, res) => {
       }
     });
 
-    res.status(201).json({
-      message: 'Registration successful',
+    // Update company with created by
+    await prisma.company.update({
+      where: { id: newCompany.id },
+      data: { createdById: user.id }
+    });
+
+    // Create token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
       user: {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        roles: newUser.roles.map(r => r.role.name)
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: user.roles.map(r => r.role.name),
+        companyId: newCompany.id
       }
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Forgot Password
+// Update company
+router.post('/update-company', auth, async (req, res) => {
+  try {
+    const { companyId } = req.body;
+
+    // Verify company exists and user has access
+    const userCompany = await prisma.userCompany.findFirst({
+      where: {
+        userId: req.user.id,
+        companyId
+      }
+    });
+
+    if (!userCompany) {
+      return res.status(403).json({ error: 'Access denied to this company' });
+    }
+
+    // Update user's billing company
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { billingCompanyId: companyId },
+      include: {
+        roles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    });
+
+    // Create new token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: user.roles.map(r => r.role.name),
+        companyId
+      }
+    });
+  } catch (error) {
+    console.error('Update company error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Forgot password
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check if user exists
+    // Find user
     const user = await prisma.user.findUnique({
       where: { email }
     });
 
     if (!user) {
-      // Return success even if user not found for security
-      return res.json({ message: 'If an account exists, you will receive a password reset email' });
+      return res.status(404).json({ error: 'User not found' });
     }
 
     // Generate reset token
@@ -181,16 +244,16 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     // TODO: Send reset email
-    console.log('Reset token for', email, ':', resetToken);
+    console.log('Reset token:', resetToken);
 
-    res.json({ message: 'If an account exists, you will receive a password reset email' });
+    res.json({ message: 'Password reset instructions sent' });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Reset Password
+// Reset password
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -201,7 +264,7 @@ router.post('/reset-password', async (req, res) => {
     // Hash new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Update password
+    // Update user password
     await prisma.user.update({
       where: { id: decoded.userId },
       data: { password: hashedPassword }
@@ -210,10 +273,61 @@ router.post('/reset-password', async (req, res) => {
     res.json({ message: 'Password reset successful' });
   } catch (error) {
     console.error('Reset password error:', error);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(400).json({ message: 'Invalid or expired token' });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Refresh token
+router.post('/refresh-token', auth, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        roles: {
+          include: {
+            role: true
+          }
+        },
+        userCompanies: {
+          select: {
+            companyId: true,
+            role: true
+          }
+        },
+        billingCompany: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-    res.status(500).json({ message: 'Internal server error' });
+
+    // Create new token
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Get company ID from either billing company or first company association
+    const defaultCompanyId = user.userCompanies?.[0]?.companyId;
+    const billingCompanyId = user.billingCompany?.id;
+    const companyId = billingCompanyId || defaultCompanyId;
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: user.roles.map(r => r.role.name),
+        companyId
+      }
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

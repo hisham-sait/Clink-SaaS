@@ -1,14 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { Subject, Observable, of } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators';
+
 import { CreateShareModalComponent } from './modal/create-share-modal.component';
 import { EditShareModalComponent } from './modal/edit-share-modal.component';
 import { ViewShareModalComponent } from './modal/view-share-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-import { Share, Activity } from '../statutory.types';
+import { ShareService } from '../../../services/statutory/share.service';
+import { CompanyService } from '../../../services/settings/company.service';
+import { ActivityService } from '../../../services/statutory/activity.service';
+import { AuthService } from '../../../services/auth/auth.service';
+
+import { Share, Activity, ActivityResponse } from '../statutory.types';
 
 @Component({
   selector: 'app-shares',
@@ -174,7 +182,7 @@ import { Share, Activity } from '../statutory.types';
       <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
           <h5 class="mb-0">Recent Activities</h5>
-          <button class="btn btn-link p-0 text-decoration-none">
+          <button class="btn btn-link p-0 text-decoration-none" (click)="refreshData()">
             <i class="bi bi-arrow-clockwise me-1"></i>
             <span>Refresh</span>
           </button>
@@ -205,32 +213,86 @@ import { Share, Activity } from '../statutory.types';
     </div>
   `
 })
-export class SharesComponent {
+export class SharesComponent implements OnInit, OnDestroy {
   shares: Share[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
-  private companyId: string = '1'; // This should be injected or retrieved from a service
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private modalService: NgbModal,
-    private router: Router
-  ) {
-    this.loadData();
+    private router: Router,
+    private shareService: ShareService,
+    private companyService: CompanyService,
+    private activityService: ActivityService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    this.refreshData();
   }
 
-  private loadData(): void {
-    const savedShares = localStorage.getItem('shares');
-    if (savedShares) {
-      this.shares = JSON.parse(savedShares);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  refreshData(): void {
+    // Get current company's shares
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
     }
 
-    const savedActivities = localStorage.getItem('shareActivities');
-    if (savedActivities) {
-      this.recentActivities = JSON.parse(savedActivities);
-    }
+    this.loading = true;
+    this.error = null;
+
+    // First get company details
+    this.companyService.getCompany(companyId).pipe(
+      takeUntil(this.destroy$),
+      switchMap(company => 
+        this.shareService.getShares(companyId, this.showAll ? undefined : 'Active').pipe(
+          map(shares => shares.map(s => ({ ...s, company })))
+        )
+      ),
+      catchError(error => {
+        console.error('Error loading shares:', error);
+        this.error = 'Failed to load shares. Please try again.';
+        return of([]);
+      }),
+      finalize(() => this.loading = false)
+    ).subscribe(sharesArrays => {
+      this.shares = sharesArrays.flat();
+      this.loadActivities(companyId);
+    });
+  }
+
+  private loadActivities(companyId: string): void {
+    this.activityService.getActivities(companyId, {
+      entityType: 'share',
+      limit: 10
+    }).pipe(
+      catchError(error => {
+        console.error('Error loading activities:', error);
+        return of({ activities: [], total: 0 } as ActivityResponse);
+      })
+    ).subscribe(response => {
+      this.recentActivities = response.activities;
+    });
   }
 
   openAddShareModal(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateShareModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -238,19 +300,32 @@ export class SharesComponent {
 
     modalRef.result.then(
       (newShare: Share) => {
-        this.shares.push(newShare);
-        localStorage.setItem('shares', JSON.stringify(this.shares));
-
-        this.addActivity({
-          id: crypto.randomUUID(),
-          type: 'added',
-          entityType: 'share',
-          entityId: newShare.class,
-          description: `${newShare.class} share class added with ${newShare.totalIssued} shares`,
-          user: 'System',
-          time: new Date().toLocaleString(),
-          companyId: this.companyId
-        });
+        this.shareService.createShare(companyId, newShare)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to create share class. Please try again.';
+              console.error('Error creating share class:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(share => {
+              if (share) {
+                return this.addActivity(companyId, {
+                  type: 'added',
+                  entityType: 'share',
+                  entityId: share.id,
+                  description: `${share.class} share class added with ${share.totalIssued} shares`,
+                  user: 'System'
+                }).pipe(map(() => share));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(share => {
+            if (share) {
+              this.refreshData();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -279,6 +354,13 @@ export class SharesComponent {
   }
 
   editShare(share: Share): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(EditShareModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -288,28 +370,45 @@ export class SharesComponent {
     
     modalRef.result.then(
       (updatedShare: Share) => {
-        const index = this.shares.findIndex(s => s.class === share.class);
-        if (index !== -1) {
-          this.shares[index] = updatedShare;
-          localStorage.setItem('shares', JSON.stringify(this.shares));
-
-          this.addActivity({
-            id: crypto.randomUUID(),
-            type: 'updated',
-            entityType: 'share',
-            entityId: updatedShare.class,
-            description: `${updatedShare.class} share class details updated`,
-            user: 'System',
-            time: new Date().toLocaleString(),
-            companyId: this.companyId
+        this.shareService.updateShare(companyId, share.id, updatedShare)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to update share class. Please try again.';
+              console.error('Error updating share class:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(result => {
+              if (result) {
+                return this.addActivity(companyId, {
+                  type: 'updated',
+                  entityType: 'share',
+                  entityId: share.id,
+                  description: `${share.class} share class details updated`,
+                  user: 'System'
+                }).pipe(map(() => result));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              this.refreshData();
+            }
           });
-        }
       },
       () => {} // Modal dismissed
     );
   }
 
   removeShare(share: Share): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
@@ -323,22 +422,29 @@ export class SharesComponent {
     modalRef.result.then(
       (result: boolean) => {
         if (result === true) {
-          const index = this.shares.findIndex(s => s.class === share.class);
-          if (index !== -1) {
-            this.shares.splice(index, 1);
-            localStorage.setItem('shares', JSON.stringify(this.shares));
-
-            this.addActivity({
-              id: crypto.randomUUID(),
-              type: 'removed',
-              entityType: 'share',
-              entityId: share.class,
-              description: `${share.class} share class removed`,
-              user: 'System',
-              time: new Date().toLocaleString(),
-              companyId: this.companyId
+          this.shareService.deleteShare(companyId, share.id)
+            .pipe(
+              catchError(error => {
+                const errorMsg = error.error?.message || 'Failed to remove share class. Please try again.';
+                console.error('Error removing share class:', error);
+                this.error = errorMsg;
+                return of(null);
+              }),
+              switchMap(() => {
+                return this.addActivity(companyId, {
+                  type: 'removed',
+                  entityType: 'share',
+                  entityId: share.id,
+                  description: `${share.class} share class removed`,
+                  user: 'System'
+                });
+              })
+            )
+            .subscribe(activity => {
+              if (activity) {
+                this.refreshData();
+              }
             });
-          }
         }
       },
       () => {} // Modal dismissed
@@ -347,6 +453,7 @@ export class SharesComponent {
 
   toggleShowAll(): void {
     this.showAll = !this.showAll;
+    this.refreshData();
   }
 
   getFilteredShares(): Share[] {
@@ -401,11 +508,16 @@ export class SharesComponent {
     }
   }
 
-  private addActivity(activity: Activity): void {
-    this.recentActivities.unshift(activity);
-    if (this.recentActivities.length > 10) {
-      this.recentActivities.pop();
-    }
-    localStorage.setItem('shareActivities', JSON.stringify(this.recentActivities));
+  private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {
+    return this.activityService.createActivity(companyId, {
+      ...activity,
+      companyId,
+      time: new Date().toISOString()
+    }).pipe(
+      catchError(error => {
+        console.error('Error creating activity:', error);
+        return of(null);
+      })
+    );
   }
 }

@@ -4,10 +4,22 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Get all board minutes for a company
-router.get('/:companyId', async (req, res) => {
+router.get('/:companyId?', async (req, res) => {
   try {
+    const { status } = req.query;
+    const where = {
+      status: status || {
+        in: ['Final', 'Signed'] // Default to Final and Signed if no status provided
+      }
+    };
+
+    // If not super_admin/platform_admin or if companyId is provided, filter by company
+    if (req.params.companyId || (!req.user.roles.includes('super_admin') && !req.user.roles.includes('platform_admin'))) {
+      where.companyId = req.params.companyId || req.user.companyId;
+    }
+
     const boardMinutes = await prisma.boardMinute.findMany({
-      where: { companyId: req.params.companyId },
+      where,
       orderBy: { meetingDate: 'desc' },
       include: {
         discussions: {
@@ -15,7 +27,13 @@ router.get('/:companyId', async (req, res) => {
             actionItems: true
           }
         },
-        resolutions: true
+        resolutions: true,
+        company: {
+          select: {
+            name: true,
+            legalName: true
+          }
+        }
       }
     });
     res.json(boardMinutes);

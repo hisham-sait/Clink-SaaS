@@ -101,7 +101,11 @@ interface Section {
   styles: [`
     :host {
       display: block;
-      z-index: 1030;
+      z-index: var(--z-index-fixed);
+    }
+
+    aside {
+      z-index: var(--z-index-fixed);
     }
 
     .nav-link {

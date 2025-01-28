@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Role } from '../../settings.types';
+import { RoleService } from '../../../../services/settings/role.service';
 
 @Component({
   selector: 'app-add-user-modal',
@@ -87,10 +88,9 @@ import { Role } from '../../settings.types';
             <label for="role" class="form-label">Role</label>
             <select class="form-select" id="role" formControlName="role">
               <option value="">Select a role</option>
-              <option value="Super Administrator">Super Administrator</option>
-              <option value="Administrator">Administrator</option>
-              <option value="Billing Administrator">Billing Administrator</option>
-              <option value="User Manager">User Manager</option>
+              <option *ngFor="let role of availableRoles" [ngValue]="role">
+                {{ role.name }}
+              </option>
             </select>
             <div class="form-text text-danger" *ngIf="addForm.get('role')?.errors?.['required'] && addForm.get('role')?.touched">
               Role is required
@@ -163,12 +163,14 @@ import { Role } from '../../settings.types';
     </form>
   `
 })
-export class AddUserModalComponent {
+export class AddUserModalComponent implements OnInit {
   addForm: FormGroup;
+  availableRoles: Role[] = [];
 
   constructor(
     public activeModal: NgbActiveModal,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private roleService: RoleService
   ) {
     this.addForm = this.fb.group({
       title: [''],
@@ -184,6 +186,14 @@ export class AddUserModalComponent {
     }, { validators: this.passwordMatchValidator });
   }
 
+  ngOnInit(): void {
+    // Load available roles
+    this.roleService.getRoles().subscribe(roles => {
+      // Filter for active roles only
+      this.availableRoles = roles.filter(role => role.status === 'Active');
+    });
+  }
+
   passwordMatchValidator(g: FormGroup) {
     return g.get('password')?.value === g.get('confirmPassword')?.value
       ? null
@@ -195,27 +205,10 @@ export class AddUserModalComponent {
       const formValue = this.addForm.value;
       const selectedRole = formValue.role;
       
-      // Create role object
-      const role: Role = {
-        id: selectedRole,
-        name: selectedRole,
-        description: '',
-        scope: 'Company',
-        permissions: [],
-        status: 'Active',
-        isCustom: false,
-        isSystem: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        metadata: {
-          allowedModules: []
-        }
-      };
-
-      // Replace role string with role object array
+      // Create user data with role object
       const userData = {
         ...formValue,
-        roles: [role]
+        roles: [selectedRole] // Use the actual role object
       };
       delete userData.role;
       delete userData.confirmPassword;

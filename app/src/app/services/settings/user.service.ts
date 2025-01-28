@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment.development';
 import { User, Role } from '../../components/settings/settings.types';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -13,19 +13,23 @@ export class UserService {
   constructor(private http: HttpClient) {}
 
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.apiUrl);
+    return this.http.get<User[]>(this.apiUrl, {
+      params: {
+        include: 'roles,plan,billingCompany'
+      }
+    });
   }
 
   getUser(id: string): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/${id}`);
+    return this.http.get<User>(`${this.apiUrl}/${id}`, {
+      params: {
+        include: 'roles,plan,billingCompany'
+      }
+    });
   }
 
   createUser(user: Partial<User> & { password: string }): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/create`, user);
-  }
-
-  inviteUser(email: string, roleId: string): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/invite`, { email, roleId });
+    return this.http.post<User>(this.apiUrl, user);
   }
 
   updateUser(id: string, user: Partial<User>): Observable<User> {
@@ -34,6 +38,10 @@ export class UserService {
 
   deleteUser(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  inviteUser(email: string, roleId: string): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/invite`, { email, roleId });
   }
 
   resendInvite(id: string): Observable<void> {

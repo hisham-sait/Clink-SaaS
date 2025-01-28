@@ -15,6 +15,7 @@ import { ConfirmModalComponent } from '../../../components/settings/users/modal/
 import { DirectorService } from '../../../services/statutory/director.service';
 import { ActivityService } from '../../../services/statutory/activity.service';
 import { CompanyService } from '../../../services/settings/company.service';
+import { AuthService } from '../../../services/auth/auth.service';
 import { Director, Activity } from '../statutory.types';
 import type { Company } from '../../../components/settings/settings.types';
 
@@ -243,32 +244,12 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     private router: Router,
     private directorService: DirectorService,
     private companyService: CompanyService,
-    private activityService: ActivityService
+    private activityService: ActivityService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
-    // Load accessible companies and their directors
-    this.companyService.getAccessibleCompanies().pipe(
-      takeUntil(this.destroy$),
-      switchMap(companies => {
-        this.accessibleCompanies = companies;
-        return forkJoin(
-          companies.map(company => 
-            this.directorService.getDirectors(company.id).pipe(
-              map(directors => directors.map(d => ({ ...d, company })))
-            )
-          )
-        );
-      }),
-      catchError(error => {
-        console.error('Error loading directors:', error);
-        this.error = 'Failed to load directors. Please try again.';
-        return of([]);
-      })
-    ).subscribe(directorsArrays => {
-      this.directors = directorsArrays.flat();
-      this.loadActivities();
-    });
+    this.refreshData();
   }
 
   ngOnDestroy(): void {
@@ -276,31 +257,49 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadActivities(): void {
+  refreshData(): void {
+    // Get current company's directors
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     this.loading = true;
     this.error = null;
 
-    // Load activities for all accessible companies
-    forkJoin(
-      this.accessibleCompanies.map(company =>
-        this.activityService.getActivities(company.id, {
-          entityType: 'director',
-          limit: 10
-        }).pipe(
-          catchError(error => {
-            console.error('Error loading activities:', error);
-            return of({ activities: [], total: 0 } as ActivityResponse);
-          })
+    // First get company details
+    this.companyService.getCompany(companyId).pipe(
+      takeUntil(this.destroy$),
+      switchMap(company => 
+        this.directorService.getDirectors(companyId, this.showAllDirectors ? undefined : 'Active').pipe(
+          map(directors => directors.map(d => ({ ...d, company })))
         )
-      )
-    ).pipe(
+      ),
+      catchError(error => {
+        console.error('Error loading directors:', error);
+        this.error = 'Failed to load directors. Please try again.';
+        return of([]);
+      }),
       finalize(() => this.loading = false)
-    ).subscribe(activitiesArrays => {
-      this.recentActivities = activitiesArrays
-        .map(response => response.activities)
-        .flat()
-        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-        .slice(0, 10);
+    ).subscribe(directorsArrays => {
+      this.directors = directorsArrays.flat();
+      this.loadActivities(companyId);
+    });
+  }
+
+  private loadActivities(companyId: string): void {
+    this.activityService.getActivities(companyId, {
+      entityType: 'director',
+      limit: 10
+    }).pipe(
+      catchError(error => {
+        console.error('Error loading activities:', error);
+        return of({ activities: [], total: 0 } as ActivityResponse);
+      })
+    ).subscribe(response => {
+      this.recentActivities = response.activities;
     });
   }
 
@@ -315,10 +314,6 @@ export class DirectorsComponent implements OnInit, OnDestroy {
         return of(null);
       })
     );
-  }
-
-  refreshData(): void {
-    this.ngOnInit();
   }
 
   openAddDirectorModal(): void {
@@ -508,6 +503,7 @@ export class DirectorsComponent implements OnInit, OnDestroy {
 
   toggleShowAllDirectors(): void {
     this.showAllDirectors = !this.showAllDirectors;
+    this.refreshData();
   }
 
   getFilteredDirectors(): Director[] {

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Charge } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -12,8 +12,12 @@ export class ChargeService {
 
   constructor(private http: HttpClient) {}
 
-  getCharges(companyId: string): Observable<Charge[]> {
-    return this.http.get<Charge[]>(`${this.apiUrl}/${companyId}`);
+  getCharges(companyId: string, status?: string): Observable<Charge[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<Charge[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   getCharge(companyId: string, id: string): Observable<Charge> {

@@ -18,8 +18,10 @@ export const authInterceptor: HttpInterceptorFn = (
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Skip auth header for auth endpoints
-  if (request.url.includes('/auth/')) {
+  // Skip auth header for login/register/forgot-password endpoints
+  if (request.url.includes('/auth/login') || 
+      request.url.includes('/auth/register') || 
+      request.url.includes('/auth/forgot-password')) {
     return next(request);
   }
 
@@ -28,11 +30,18 @@ export const authInterceptor: HttpInterceptorFn = (
   const token = localStorage.getItem('token');
 
   if (user && token) {
-    // Clone the request and add auth header
+    // Clone the request and add auth header and company ID
+    const headers: { [key: string]: string } = {
+      Authorization: `Bearer ${token}`
+    };
+    
+    // Add company ID header if available and not an auth route
+    if (user.companyId) {
+      headers['X-Company-ID'] = user.companyId;
+    }
+
     request = request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
+      setHeaders: headers
     });
   }
 

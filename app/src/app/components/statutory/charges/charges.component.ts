@@ -1,14 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { Subject, Observable, of } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators';
+
 import { CreateChargeModalComponent } from './modal/create-charge-modal.component';
 import { EditChargeModalComponent } from './modal/edit-charge-modal.component';
 import { ViewChargeModalComponent } from './modal/view-charge-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-import { Charge, Activity } from '../statutory.types';
+import { ChargeService } from '../../../services/statutory/charge.service';
+import { CompanyService } from '../../../services/settings/company.service';
+import { ActivityService } from '../../../services/statutory/activity.service';
+import { AuthService } from '../../../services/auth/auth.service';
+
+import { Charge, Activity, ActivityResponse } from '../statutory.types';
 
 type ChargeStatus = 'Active' | 'Satisfied' | 'Released';
 
@@ -123,7 +131,7 @@ type ChargeStatus = 'Active' | 'Satisfied' | 'Released';
                   <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-shield-lock text-secondary"></i>
                     <a href="#" class="text-decoration-none" (click)="viewCharge(charge, $event)">
-                      {{ charge.chargeId }}
+                      {{ charge.id }}
                     </a>
                   </div>
                 </td>
@@ -165,7 +173,7 @@ type ChargeStatus = 'Active' | 'Satisfied' | 'Released';
       <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
           <h5 class="mb-0">Recent Activities</h5>
-          <button class="btn btn-link p-0 text-decoration-none">
+          <button class="btn btn-link p-0 text-decoration-none" (click)="refreshData()">
             <i class="bi bi-arrow-clockwise me-1"></i>
             <span>Refresh</span>
           </button>
@@ -196,32 +204,86 @@ type ChargeStatus = 'Active' | 'Satisfied' | 'Released';
     </div>
   `
 })
-export class ChargesComponent {
+export class ChargesComponent implements OnInit, OnDestroy {
   charges: Charge[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
-  private companyId: string = '1'; // This should be injected or retrieved from a service
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private modalService: NgbModal,
-    private router: Router
-  ) {
-    this.loadData();
+    private router: Router,
+    private chargeService: ChargeService,
+    private companyService: CompanyService,
+    private activityService: ActivityService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    this.refreshData();
   }
 
-  private loadData(): void {
-    const savedCharges = localStorage.getItem('charges');
-    if (savedCharges) {
-      this.charges = JSON.parse(savedCharges);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  refreshData(): void {
+    // Get current company's charges
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
     }
 
-    const savedActivities = localStorage.getItem('chargeActivities');
-    if (savedActivities) {
-      this.recentActivities = JSON.parse(savedActivities);
-    }
+    this.loading = true;
+    this.error = null;
+
+    // First get company details
+    this.companyService.getCompany(companyId).pipe(
+      takeUntil(this.destroy$),
+      switchMap(company => 
+        this.chargeService.getCharges(companyId, this.showAll ? undefined : 'Active').pipe(
+          map(charges => charges.map(c => ({ ...c, company })))
+        )
+      ),
+      catchError(error => {
+        console.error('Error loading charges:', error);
+        this.error = 'Failed to load charges. Please try again.';
+        return of([]);
+      }),
+      finalize(() => this.loading = false)
+    ).subscribe(chargesArrays => {
+      this.charges = chargesArrays.flat();
+      this.loadActivities(companyId);
+    });
+  }
+
+  private loadActivities(companyId: string): void {
+    this.activityService.getActivities(companyId, {
+      entityType: 'charge',
+      limit: 10
+    }).pipe(
+      catchError(error => {
+        console.error('Error loading activities:', error);
+        return of({ activities: [], total: 0 } as ActivityResponse);
+      })
+    ).subscribe(response => {
+      this.recentActivities = response.activities;
+    });
   }
 
   openAddChargeModal(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateChargeModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -229,19 +291,32 @@ export class ChargesComponent {
 
     modalRef.result.then(
       (newCharge: Charge) => {
-        this.charges.push(newCharge);
-        localStorage.setItem('charges', JSON.stringify(this.charges));
-
-        this.addActivity({
-          id: crypto.randomUUID(),
-          type: 'added',
-          entityType: 'charge',
-          entityId: newCharge.chargeId,
-          description: `New ${newCharge.chargeType} (${newCharge.chargeId}) created for ${this.formatAmount(newCharge.amount, newCharge.currency)}`,
-          user: 'System',
-          time: new Date().toLocaleString(),
-          companyId: this.companyId
-        });
+        this.chargeService.createCharge(companyId, newCharge)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to create charge. Please try again.';
+              console.error('Error creating charge:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(charge => {
+              if (charge) {
+                return this.addActivity(companyId, {
+                  type: 'added',
+                  entityType: 'charge',
+                  entityId: charge.id,
+                  description: `New ${charge.chargeType} (${charge.id}) created for ${this.formatAmount(charge.amount, charge.currency)}`,
+                  user: 'System'
+                }).pipe(map(() => charge));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(charge => {
+            if (charge) {
+              this.refreshData();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -270,6 +345,13 @@ export class ChargesComponent {
   }
 
   editCharge(charge: Charge): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(EditChargeModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -279,60 +361,84 @@ export class ChargesComponent {
     
     modalRef.result.then(
       (updatedCharge: Charge) => {
-        const index = this.charges.findIndex(c => c.chargeId === charge.chargeId);
-        if (index !== -1) {
-          this.charges[index] = updatedCharge;
-          localStorage.setItem('charges', JSON.stringify(this.charges));
-
-          const statusChanged = charge.status !== updatedCharge.status;
-          this.addActivity({
-            id: crypto.randomUUID(),
-            type: statusChanged ? 'status_changed' : 'updated',
-            entityType: 'charge',
-            entityId: updatedCharge.chargeId,
-            description: statusChanged 
-              ? `${updatedCharge.chargeId} status changed to ${updatedCharge.status}`
-              : `${updatedCharge.chargeId} details updated`,
-            user: 'System',
-            time: new Date().toLocaleString(),
-            companyId: this.companyId
+        this.chargeService.updateCharge(companyId, charge.id, updatedCharge)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to update charge. Please try again.';
+              console.error('Error updating charge:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(result => {
+              if (result) {
+                const statusChanged = charge.status !== updatedCharge.status;
+                return this.addActivity(companyId, {
+                  type: statusChanged ? 'status_changed' : 'updated',
+                  entityType: 'charge',
+                  entityId: charge.id,
+                  description: statusChanged 
+                    ? `${charge.id} status changed to ${updatedCharge.status}`
+                    : `${charge.id} details updated`,
+                  user: 'System'
+                }).pipe(map(() => result));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              this.refreshData();
+            }
           });
-        }
       },
       () => {} // Modal dismissed
     );
   }
 
   removeCharge(charge: Charge): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
     });
 
     modalRef.componentInstance.title = 'Confirm Removal';
-    modalRef.componentInstance.message = `Are you sure you want to remove charge ${charge.chargeId}?`;
+    modalRef.componentInstance.message = `Are you sure you want to remove charge ${charge.id}?`;
     modalRef.componentInstance.confirmButtonText = 'Remove';
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
       (result: boolean) => {
         if (result === true) {
-          const index = this.charges.findIndex(c => c.chargeId === charge.chargeId);
-          if (index !== -1) {
-            this.charges.splice(index, 1);
-            localStorage.setItem('charges', JSON.stringify(this.charges));
-
-            this.addActivity({
-              id: crypto.randomUUID(),
-              type: 'removed',
-              entityType: 'charge',
-              entityId: charge.chargeId,
-              description: `${charge.chargeId} removed from charges register`,
-              user: 'System',
-              time: new Date().toLocaleString(),
-              companyId: this.companyId
+          this.chargeService.deleteCharge(companyId, charge.id)
+            .pipe(
+              catchError(error => {
+                const errorMsg = error.error?.message || 'Failed to remove charge. Please try again.';
+                console.error('Error removing charge:', error);
+                this.error = errorMsg;
+                return of(null);
+              }),
+              switchMap(() => {
+                return this.addActivity(companyId, {
+                  type: 'removed',
+                  entityType: 'charge',
+                  entityId: charge.id,
+                  description: `${charge.id} removed from charges register`,
+                  user: 'System'
+                });
+              })
+            )
+            .subscribe(activity => {
+              if (activity) {
+                this.refreshData();
+              }
             });
-          }
         }
       },
       () => {} // Modal dismissed
@@ -365,6 +471,7 @@ export class ChargesComponent {
 
   toggleShowAll(): void {
     this.showAll = !this.showAll;
+    this.refreshData();
   }
 
   getFilteredCharges(): Charge[] {
@@ -417,11 +524,16 @@ export class ChargesComponent {
     }
   }
 
-  private addActivity(activity: Activity): void {
-    this.recentActivities.unshift(activity);
-    if (this.recentActivities.length > 10) {
-      this.recentActivities.pop();
-    }
-    localStorage.setItem('chargeActivities', JSON.stringify(this.recentActivities));
+  private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {
+    return this.activityService.createActivity(companyId, {
+      ...activity,
+      companyId,
+      time: new Date().toISOString()
+    }).pipe(
+      catchError(error => {
+        console.error('Error creating activity:', error);
+        return of(null);
+      })
+    );
   }
 }

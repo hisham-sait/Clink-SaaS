@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BeneficialOwner } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -12,8 +12,12 @@ export class BeneficialOwnerService {
 
   constructor(private http: HttpClient) {}
 
-  getBeneficialOwners(companyId: string): Observable<BeneficialOwner[]> {
-    return this.http.get<BeneficialOwner[]>(`${this.apiUrl}/${companyId}`);
+  getBeneficialOwners(companyId: string, status?: string): Observable<BeneficialOwner[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<BeneficialOwner[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   getBeneficialOwner(companyId: string, id: string): Observable<BeneficialOwner> {

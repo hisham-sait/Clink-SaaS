@@ -155,7 +155,8 @@ import { User, Role, UserStatus } from '../settings.types';
                 <tr>
                   <th class="text-uppercase small fw-semibold text-secondary">User</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Role</th>
-                  <th class="text-uppercase small fw-semibold text-secondary">Department</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Plan</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Billing Company</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Last Login</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Status</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Actions</th>
@@ -175,7 +176,13 @@ import { User, Role, UserStatus } from '../settings.types';
                     </div>
                   </td>
                   <td>{{ user.roles.length > 0 ? user.roles[0].name : 'No Role' }}</td>
-                  <td>{{ user.department || 'Not assigned' }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi" [class.bi-box-seam]="!user.plan?.isCustom" [class.bi-gear]="user.plan?.isCustom"></i>
+                      <span>{{ user.plan?.name || 'No Plan' }}</span>
+                    </div>
+                  </td>
+                  <td>{{ user.billingCompany?.name || 'Not Set' }}</td>
                   <td>
                     <small class="text-muted">
                       {{ user.lastLogin ? (user.lastLogin | date:'medium') : 'Never' }}
@@ -225,7 +232,7 @@ import { User, Role, UserStatus } from '../settings.types';
                   </td>
                 </tr>
                 <tr *ngIf="getFilteredUsers().length === 0">
-                  <td colspan="6" class="text-center py-4 text-muted">
+                  <td colspan="7" class="text-center py-4 text-muted">
                     <i class="bi bi-info-circle me-2"></i>
                     No users found
                   </td>

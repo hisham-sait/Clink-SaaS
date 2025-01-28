@@ -60,6 +60,16 @@ export const SETTINGS_ROUTES: Routes = [
         }
       },
       {
+        path: 'plans',
+        loadComponent: () => 
+          import('../../components/settings/plans/plans.component').then(m => m.PlansComponent),
+        data: {
+          title: 'Subscription Plans',
+          breadcrumb: 'Plans',
+          description: 'Manage subscription plans and pricing'
+        }
+      },
+      {
         path: 'security',
         loadComponent: () => 
           import('../../components/settings/security/security.component').then(m => m.SettingsSecurityComponent),
@@ -92,7 +102,7 @@ export const SETTINGS_ROUTES: Routes = [
       {
         path: 'billing',
         loadComponent: () => 
-          import('../../components/settings/billing/billing.component').then(m => m.SettingsBillingComponent),
+          import('../../components/settings/billing/billing.component').then(m => m.BillingComponent),
         data: {
           title: 'Billing & Subscription',
           breadcrumb: 'Billing',

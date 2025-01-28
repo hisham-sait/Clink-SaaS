@@ -50,6 +50,17 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  // Z-index layers
+  --z-index-loading: 1000;
+  --z-index-dropdown: 1020;
+  --z-index-sticky: 1030;
+  --z-index-fixed: 1040;
+  --z-index-modal-backdrop: 1050;
+  --z-index-modal: 1060;
+  --z-index-popover: 1070;
+  --z-index-tooltip: 1080;
+  --z-index-floating: 9999;
 }
 
 // Base Styles
@@ -174,6 +185,53 @@ a {
   }
 }
 
+// Loading States
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-loading);
+  pointer-events: none;
+}
+
+.loading-spinner {
+  pointer-events: none;
+}
+
+// Modals
+.modal {
+  z-index: var(--z-index-modal);
+}
+
+.modal-backdrop {
+  z-index: var(--z-index-modal-backdrop);
+}
+
+// Dropdowns
+.dropdown-menu {
+  z-index: var(--z-index-dropdown);
+}
+
+// Fixed and Sticky Elements
+.fixed-top, .fixed-bottom {
+  z-index: var(--z-index-fixed);
+}
+
+.sticky-top {
+  z-index: var(--z-index-sticky);
+}
+
+// Floating Elements (like company selector)
+.floating {
+  z-index: var(--z-index-floating);
+}
+
 // Utilities
 .shadow-sm { box-shadow: var(--shadow-sm) !important; }
 .shadow-md { box-shadow: var(--shadow-md) !important; }
@@ -187,6 +245,10 @@ a {
     --text-primary: var(--neutral-100);
     --text-secondary: var(--neutral-400);
     --border-color: var(--neutral-700);
+  }
+
+  .loading-overlay {
+    background: rgba(0, 0, 0, 0.7);
   }
 
   .btn-secondary {

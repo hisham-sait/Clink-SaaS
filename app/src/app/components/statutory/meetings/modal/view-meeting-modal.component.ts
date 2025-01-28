@@ -26,7 +26,7 @@ import { Meeting } from '../../statutory.types';
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label small text-muted">Meeting ID</label>
-              <div class="form-control-plaintext">{{ meeting.meetingId }}</div>
+              <div class="form-control-plaintext">{{ meeting.id }}</div>
             </div>
             <div class="col-md-4">
               <label class="form-label small text-muted">Type</label>
@@ -100,7 +100,7 @@ import { Meeting } from '../../statutory.types';
         </div>
 
         <!-- Quorum -->
-        <div class="col-12">
+        <div class="col-12" *ngIf="meeting.quorum">
           <div class="d-flex align-items-center gap-2 mb-3">
             <h6 class="fw-bold mb-0">Quorum Details</h6>
             <div class="border-bottom flex-grow-1"></div>
@@ -109,17 +109,17 @@ import { Meeting } from '../../statutory.types';
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label small text-muted">Required</label>
-              <div class="form-control-plaintext">{{ meeting.quorum.required }}</div>
+              <div class="form-control-plaintext">{{ meeting.quorum?.required || 0 }}</div>
             </div>
             <div class="col-md-4">
               <label class="form-label small text-muted">Present</label>
-              <div class="form-control-plaintext">{{ meeting.quorum.present }}</div>
+              <div class="form-control-plaintext">{{ meeting.quorum?.present || 0 }}</div>
             </div>
             <div class="col-md-4">
               <label class="form-label small text-muted">Status</label>
               <div class="form-control-plaintext">
-                <span [class]="'badge ' + (meeting.quorum.achieved ? 'text-bg-success' : 'text-bg-danger')">
-                  {{ meeting.quorum.achieved ? 'Achieved' : 'Not Achieved' }}
+                <span [class]="'badge ' + (meeting.quorum?.achieved ? 'text-bg-success' : 'text-bg-danger')">
+                  {{ meeting.quorum?.achieved ? 'Achieved' : 'Not Achieved' }}
                 </span>
               </div>
             </div>
@@ -137,7 +137,7 @@ import { Meeting } from '../../statutory.types';
         </div>
 
         <!-- Resolutions -->
-        <div class="col-12">
+        <div class="col-12" *ngIf="meeting.resolutions?.length">
           <div class="d-flex align-items-center gap-2 mb-3">
             <h6 class="fw-bold mb-0">Resolutions</h6>
             <div class="border-bottom flex-grow-1"></div>

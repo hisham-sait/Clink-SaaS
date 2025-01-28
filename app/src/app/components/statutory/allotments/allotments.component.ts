@@ -1,14 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { Subject, Observable, of } from 'rxjs';
+import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators';
+
 import { CreateAllotmentModalComponent } from './modal/create-allotment-modal.component';
 import { EditAllotmentModalComponent } from './modal/edit-allotment-modal.component';
 import { ViewAllotmentModalComponent } from './modal/view-allotment-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
-import { Allotment, Activity } from '../statutory.types';
+import { AllotmentService } from '../../../services/statutory/allotment.service';
+import { CompanyService } from '../../../services/settings/company.service';
+import { ActivityService } from '../../../services/statutory/activity.service';
+import { AuthService } from '../../../services/auth/auth.service';
+
+import { Allotment, Activity, ActivityResponse } from '../statutory.types';
 
 @Component({
   selector: 'app-allotments',
@@ -122,7 +130,7 @@ import { Allotment, Activity } from '../statutory.types';
                   <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-diagram-3 text-secondary"></i>
                     <a href="#" class="text-decoration-none" (click)="viewAllotment(allotment, $event)">
-                      {{ allotment.allotmentId }}
+                      {{ allotment.id }}
                     </a>
                   </div>
                 </td>
@@ -169,7 +177,7 @@ import { Allotment, Activity } from '../statutory.types';
       <div class="card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
           <h5 class="mb-0">Recent Activities</h5>
-          <button class="btn btn-link p-0 text-decoration-none">
+          <button class="btn btn-link p-0 text-decoration-none" (click)="refreshData()">
             <i class="bi bi-arrow-clockwise me-1"></i>
             <span>Refresh</span>
           </button>
@@ -200,32 +208,86 @@ import { Allotment, Activity } from '../statutory.types';
     </div>
   `
 })
-export class AllotmentsComponent {
+export class AllotmentsComponent implements OnInit, OnDestroy {
   allotments: Allotment[] = [];
   showAll = false;
   recentActivities: Activity[] = [];
-  private companyId: string = '1'; // This should be injected or retrieved from a service
+  loading = false;
+  error: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private modalService: NgbModal,
-    private router: Router
-  ) {
-    this.loadData();
+    private router: Router,
+    private allotmentService: AllotmentService,
+    private companyService: CompanyService,
+    private activityService: ActivityService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    this.refreshData();
   }
 
-  private loadData(): void {
-    const savedAllotments = localStorage.getItem('allotments');
-    if (savedAllotments) {
-      this.allotments = JSON.parse(savedAllotments);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  refreshData(): void {
+    // Get current company's allotments
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
     }
 
-    const savedActivities = localStorage.getItem('allotmentActivities');
-    if (savedActivities) {
-      this.recentActivities = JSON.parse(savedActivities);
-    }
+    this.loading = true;
+    this.error = null;
+
+    // First get company details
+    this.companyService.getCompany(companyId).pipe(
+      takeUntil(this.destroy$),
+      switchMap(company => 
+        this.allotmentService.getAllotments(companyId, this.showAll ? undefined : 'Active').pipe(
+          map(allotments => allotments.map(a => ({ ...a, company })))
+        )
+      ),
+      catchError(error => {
+        console.error('Error loading allotments:', error);
+        this.error = 'Failed to load allotments. Please try again.';
+        return of([]);
+      }),
+      finalize(() => this.loading = false)
+    ).subscribe(allotmentsArrays => {
+      this.allotments = allotmentsArrays.flat();
+      this.loadActivities(companyId);
+    });
+  }
+
+  private loadActivities(companyId: string): void {
+    this.activityService.getActivities(companyId, {
+      entityType: 'allotment',
+      limit: 10
+    }).pipe(
+      catchError(error => {
+        console.error('Error loading activities:', error);
+        return of({ activities: [], total: 0 } as ActivityResponse);
+      })
+    ).subscribe(response => {
+      this.recentActivities = response.activities;
+    });
   }
 
   openAddAllotmentModal(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(CreateAllotmentModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -233,19 +295,32 @@ export class AllotmentsComponent {
 
     modalRef.result.then(
       (newAllotment: Allotment) => {
-        this.allotments.push(newAllotment);
-        localStorage.setItem('allotments', JSON.stringify(this.allotments));
-
-        this.addActivity({
-          id: crypto.randomUUID(),
-          type: 'added',
-          entityType: 'allotment',
-          entityId: newAllotment.allotmentId,
-          description: `New allotment ${newAllotment.allotmentId} created for ${newAllotment.numberOfShares} ${newAllotment.shareClass}`,
-          user: 'System',
-          time: new Date().toLocaleString(),
-          companyId: this.companyId
-        });
+        this.allotmentService.createAllotment(companyId, newAllotment)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to create allotment. Please try again.';
+              console.error('Error creating allotment:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(allotment => {
+              if (allotment) {
+                return this.addActivity(companyId, {
+                  type: 'added',
+                  entityType: 'allotment',
+                  entityId: allotment.id,
+                  description: `New allotment ${allotment.id} created for ${allotment.numberOfShares} ${allotment.shareClass}`,
+                  user: 'System'
+                }).pipe(map(() => allotment));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(allotment => {
+            if (allotment) {
+              this.refreshData();
+            }
+          });
       },
       () => {} // Modal dismissed
     );
@@ -274,6 +349,13 @@ export class AllotmentsComponent {
   }
 
   editAllotment(allotment: Allotment): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(EditAllotmentModalComponent, {
       size: 'lg',
       backdrop: 'static'
@@ -283,60 +365,84 @@ export class AllotmentsComponent {
     
     modalRef.result.then(
       (updatedAllotment: Allotment) => {
-        const index = this.allotments.findIndex(a => a.allotmentId === allotment.allotmentId);
-        if (index !== -1) {
-          this.allotments[index] = updatedAllotment;
-          localStorage.setItem('allotments', JSON.stringify(this.allotments));
-
-          const statusChanged = allotment.status !== updatedAllotment.status;
-          this.addActivity({
-            id: crypto.randomUUID(),
-            type: statusChanged ? 'status_changed' : 'updated',
-            entityType: 'allotment',
-            entityId: updatedAllotment.allotmentId,
-            description: statusChanged 
-              ? `${updatedAllotment.allotmentId} status changed to ${updatedAllotment.status}`
-              : `${updatedAllotment.allotmentId} details updated`,
-            user: 'System',
-            time: new Date().toLocaleString(),
-            companyId: this.companyId
+        this.allotmentService.updateAllotment(companyId, allotment.id, updatedAllotment)
+          .pipe(
+            catchError(error => {
+              const errorMsg = error.error?.message || 'Failed to update allotment. Please try again.';
+              console.error('Error updating allotment:', error);
+              this.error = errorMsg;
+              return of(null);
+            }),
+            switchMap(result => {
+              if (result) {
+                const statusChanged = allotment.status !== updatedAllotment.status;
+                return this.addActivity(companyId, {
+                  type: statusChanged ? 'status_changed' : 'updated',
+                  entityType: 'allotment',
+                  entityId: allotment.id,
+                  description: statusChanged 
+                    ? `${allotment.id} status changed to ${updatedAllotment.status}`
+                    : `${allotment.id} details updated`,
+                  user: 'System'
+                }).pipe(map(() => result));
+              }
+              return of(null);
+            })
+          )
+          .subscribe(result => {
+            if (result) {
+              this.refreshData();
+            }
           });
-        }
       },
       () => {} // Modal dismissed
     );
   }
 
   removeAllotment(allotment: Allotment): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
     const modalRef = this.modalService.open(ConfirmModalComponent, {
       size: 'sm',
       backdrop: 'static'
     });
 
     modalRef.componentInstance.title = 'Confirm Removal';
-    modalRef.componentInstance.message = `Are you sure you want to remove allotment ${allotment.allotmentId}?`;
+    modalRef.componentInstance.message = `Are you sure you want to remove allotment ${allotment.id}?`;
     modalRef.componentInstance.confirmButtonText = 'Remove';
     modalRef.componentInstance.confirmButtonClass = 'btn-danger';
 
     modalRef.result.then(
       (result: boolean) => {
         if (result === true) {
-          const index = this.allotments.findIndex(a => a.allotmentId === allotment.allotmentId);
-          if (index !== -1) {
-            this.allotments.splice(index, 1);
-            localStorage.setItem('allotments', JSON.stringify(this.allotments));
-
-            this.addActivity({
-              id: crypto.randomUUID(),
-              type: 'removed',
-              entityType: 'allotment',
-              entityId: allotment.allotmentId,
-              description: `${allotment.allotmentId} removed from allotments register`,
-              user: 'System',
-              time: new Date().toLocaleString(),
-              companyId: this.companyId
+          this.allotmentService.deleteAllotment(companyId, allotment.id)
+            .pipe(
+              catchError(error => {
+                const errorMsg = error.error?.message || 'Failed to remove allotment. Please try again.';
+                console.error('Error removing allotment:', error);
+                this.error = errorMsg;
+                return of(null);
+              }),
+              switchMap(() => {
+                return this.addActivity(companyId, {
+                  type: 'removed',
+                  entityType: 'allotment',
+                  entityId: allotment.id,
+                  description: `${allotment.id} removed from allotments register`,
+                  user: 'System'
+                });
+              })
+            )
+            .subscribe(activity => {
+              if (activity) {
+                this.refreshData();
+              }
             });
-          }
         }
       },
       () => {} // Modal dismissed
@@ -369,6 +475,7 @@ export class AllotmentsComponent {
 
   toggleShowAll(): void {
     this.showAll = !this.showAll;
+    this.refreshData();
   }
 
   getFilteredAllotments(): Allotment[] {
@@ -427,11 +534,16 @@ export class AllotmentsComponent {
     }
   }
 
-  private addActivity(activity: Activity): void {
-    this.recentActivities.unshift(activity);
-    if (this.recentActivities.length > 10) {
-      this.recentActivities.pop();
-    }
-    localStorage.setItem('allotmentActivities', JSON.stringify(this.recentActivities));
+  private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {
+    return this.activityService.createActivity(companyId, {
+      ...activity,
+      companyId,
+      time: new Date().toISOString()
+    }).pipe(
+      catchError(error => {
+        console.error('Error creating activity:', error);
+        return of(null);
+      })
+    );
   }
 }

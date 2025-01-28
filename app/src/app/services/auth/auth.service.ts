@@ -166,6 +166,21 @@ export class AuthService {
     }
   }
 
+  async updateUserCompany(companyId: string): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<AuthResponse>(`${this.apiUrl}/update-company`, { companyId })
+      );
+
+      if (response?.token && response?.user) {
+        this.setSession(response);
+      }
+    } catch (error) {
+      console.error('Update company error:', error);
+      throw error;
+    }
+  }
+
   private async refreshToken(): Promise<void> {
     try {
       const response = await firstValueFrom(

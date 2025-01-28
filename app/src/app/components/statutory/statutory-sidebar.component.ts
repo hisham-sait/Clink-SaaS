@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -13,24 +13,34 @@ interface NavItem {
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="py-4">
-      <div class="px-4 mb-2">
-        <span class="text-uppercase small fw-semibold text-secondary">STATUTORY REGISTERS</span>
+    <div class="d-flex flex-column h-100">
+      <!-- Navigation -->
+      <div class="py-4">
+        <div class="px-4 mb-2" *ngIf="isExpanded">
+          <span class="text-uppercase small fw-semibold text-secondary">STATUTORY REGISTERS</span>
+        </div>
+        <ul class="nav flex-column">
+          <li class="nav-item" *ngFor="let item of navItems">
+            <a class="nav-link d-flex align-items-center py-2" 
+               [class.px-4]="isExpanded"
+               [class.px-2]="!isExpanded"
+               [routerLink]="item.route" 
+               routerLinkActive="active bg-primary-subtle text-primary fw-medium"
+               [class.hover-primary]="!item.route">
+              <i class="bi fs-5" [class.me-3]="isExpanded" [class]="item.icon"></i>
+              <span class="small" *ngIf="isExpanded">{{item.label}}</span>
+            </a>
+          </li>
+        </ul>
       </div>
-      <ul class="nav flex-column">
-        <li class="nav-item" *ngFor="let item of navItems">
-          <a class="nav-link d-flex align-items-center py-2 px-4 text-body-secondary" 
-             [routerLink]="item.route" 
-             routerLinkActive="active bg-primary-subtle text-primary fw-medium"
-             [class.hover-primary]="!item.route">
-            <i class="bi fs-5 me-3" [class]="item.icon"></i>
-            <span class="small">{{item.label}}</span>
-          </a>
-        </li>
-      </ul>
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      height: 100%;
+    }
+
     .nav-link:hover {
       background-color: var(--bs-primary-bg-subtle);
       color: var(--bs-primary) !important;
@@ -41,6 +51,8 @@ interface NavItem {
   `]
 })
 export class StatutorySidebarComponent {
+  @Input() isExpanded = true;
+
   navItems: NavItem[] = [
     {
       label: 'Dashboard',

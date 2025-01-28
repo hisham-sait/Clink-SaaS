@@ -2,366 +2,270 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function createSettingsData() {
-  // First, delete all existing data in the correct order
-  await prisma.activity.deleteMany({});
-  await prisma.actionItem.deleteMany({});
-  await prisma.discussion.deleteMany({});
-  await prisma.resolution.deleteMany({});
-  await prisma.director.deleteMany({});
-  await prisma.shareholder.deleteMany({});
-  await prisma.share.deleteMany({});
-  await prisma.beneficialOwner.deleteMany({});
-  await prisma.charge.deleteMany({});
-  await prisma.allotment.deleteMany({});
-  await prisma.meeting.deleteMany({});
-  await prisma.boardMinute.deleteMany({});
-  await prisma.primaryContact.deleteMany({});
-  await prisma.company.deleteMany({});
-  await prisma.rolePermission.deleteMany({});
-  await prisma.userRole.deleteMany({});
-  await prisma.role.deleteMany({});
-  await prisma.permission.deleteMany({});
-  await prisma.user.deleteMany({});
+  try {
+    console.log('Creating settings data...');
+    
+    // First, delete all existing data in the correct order
+    await prisma.payment.deleteMany({});
+    await prisma.invoice.deleteMany({});
+    await prisma.paymentMethod.deleteMany({});
+    await prisma.billingDetails.deleteMany({});
+    await prisma.notification.deleteMany({});
+    await prisma.userPreference.deleteMany({});
+    await prisma.securitySettings.deleteMany({});
+    await prisma.activity.deleteMany({});
+    await prisma.actionItem.deleteMany({});
+    await prisma.discussion.deleteMany({});
+    await prisma.resolution.deleteMany({});
+    await prisma.director.deleteMany({});
+    await prisma.shareholder.deleteMany({});
+    await prisma.share.deleteMany({});
+    await prisma.beneficialOwner.deleteMany({});
+    await prisma.charge.deleteMany({});
+    await prisma.allotment.deleteMany({});
+    await prisma.meeting.deleteMany({});
+    await prisma.boardMinute.deleteMany({});
+    await prisma.primaryContact.deleteMany({});
+    await prisma.userCompany.deleteMany({});
+    await prisma.company.deleteMany({});
 
-  // Create initial permissions
-  const permissions = [
-    // Users module permissions
-    {
-      name: 'View Users',
-      code: 'users:view',
-      description: 'View user list and details',
-      module: 'users',
-      accessLevel: 'Read'
-    },
-    {
-      name: 'Create Users',
-      code: 'users:create',
-      description: 'Create new users',
-      module: 'users',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Edit Users',
-      code: 'users:edit',
-      description: 'Edit user details',
-      module: 'users',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Delete Users',
-      code: 'users:delete',
-      description: 'Delete users',
-      module: 'users',
-      accessLevel: 'Admin'
-    },
-    // Roles module permissions
-    {
-      name: 'View Roles',
-      code: 'roles:view',
-      description: 'View roles and permissions',
-      module: 'roles',
-      accessLevel: 'Read'
-    },
-    {
-      name: 'Create Roles',
-      code: 'roles:create',
-      description: 'Create new roles',
-      module: 'roles',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Edit Roles',
-      code: 'roles:edit',
-      description: 'Edit role details and permissions',
-      module: 'roles',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Delete Roles',
-      code: 'roles:delete',
-      description: 'Delete custom roles',
-      module: 'roles',
-      accessLevel: 'Admin'
-    },
-    // Companies module permissions
-    {
-      name: 'View Companies',
-      code: 'companies:view',
-      description: 'View company list and details',
-      module: 'companies',
-      accessLevel: 'Read'
-    },
-    {
-      name: 'Create Companies',
-      code: 'companies:create',
-      description: 'Create new companies',
-      module: 'companies',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Edit Companies',
-      code: 'companies:edit',
-      description: 'Edit company details',
-      module: 'companies',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Delete Companies',
-      code: 'companies:delete',
-      description: 'Delete companies',
-      module: 'companies',
-      accessLevel: 'Admin'
-    },
-    // Billing module permissions
-    {
-      name: 'View Billing',
-      code: 'billing:view',
-      description: 'View billing and subscription details',
-      module: 'billing',
-      accessLevel: 'Read'
-    },
-    {
-      name: 'Manage Billing',
-      code: 'billing:manage',
-      description: 'Manage billing and subscriptions',
-      module: 'billing',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Billing Admin',
-      code: 'billing:admin',
-      description: 'Full billing administration',
-      module: 'billing',
-      accessLevel: 'Admin'
-    },
-    // Settings module permissions
-    {
-      name: 'View Settings',
-      code: 'settings:view',
-      description: 'View system settings',
-      module: 'settings',
-      accessLevel: 'Read'
-    },
-    {
-      name: 'Edit Settings',
-      code: 'settings:edit',
-      description: 'Edit system settings',
-      module: 'settings',
-      accessLevel: 'Write'
-    },
-    {
-      name: 'Settings Admin',
-      code: 'settings:admin',
-      description: 'Full settings administration',
-      module: 'settings',
-      accessLevel: 'Admin'
-    }
-  ];
-
-  // Create permissions
-  const createdPermissions = {};
-  for (const permission of permissions) {
-    const created = await prisma.permission.create({
-      data: permission
-    });
-    createdPermissions[permission.code] = created;
-  }
-
-  // Create system roles
-  const roles = [
-    {
-      name: 'Super Administrator',
-      description: 'Full system access with all permissions',
-      scope: 'Global',
-      status: 'Active',
-      isCustom: false,
-      isSystem: true,
-      metadata: {
-        maxUsers: null,
-        allowedModules: ['*']
-      },
-      permissions: Object.values(createdPermissions)
-    },
-    {
-      name: 'Administrator',
-      description: 'Company-wide administrative access',
-      scope: 'Company',
-      status: 'Active',
-      isCustom: false,
-      isSystem: true,
-      metadata: {
-        maxUsers: null,
-        allowedModules: ['users', 'roles', 'companies', 'settings']
-      },
-      permissions: Object.values(createdPermissions).filter(p => 
-        p.accessLevel !== 'Admin' || p.module === 'settings'
-      )
-    },
-    {
-      name: 'Billing Administrator',
-      description: 'Manage billing, subscriptions, and payments',
-      scope: 'Company',
-      status: 'Active',
-      isCustom: false,
-      isSystem: true,
-      metadata: {
-        maxUsers: null,
-        allowedModules: ['billing']
-      },
-      permissions: Object.values(createdPermissions).filter(p => 
-        p.module === 'billing' || (p.module === 'users' && p.accessLevel === 'Read')
-      )
-    },
-    {
-      name: 'User Manager',
-      description: 'Manage user accounts and permissions',
-      scope: 'Company',
-      status: 'Active',
-      isCustom: false,
-      isSystem: true,
-      metadata: {
-        maxUsers: null,
-        allowedModules: ['users']
-      },
-      permissions: Object.values(createdPermissions).filter(p => 
-        p.module === 'users'
-      )
-    }
-  ];
-
-  // Create roles and assign permissions
-  const createdRoles = {};
-  for (const roleData of roles) {
-    const { permissions: rolePermissions, ...role } = roleData;
-    const createdRole = await prisma.role.create({
-      data: role
+    // Get users from auth seed
+    const superAdmin = await prisma.user.findUnique({
+      where: { email: 'superadmin@bradan.com' }
     });
 
-    // Assign permissions
-    for (const permission of rolePermissions) {
-      await prisma.rolePermission.create({
-        data: {
-          roleId: createdRole.id,
-          permissionId: permission.id
-        }
-      });
+    const platformAdmin = await prisma.user.findUnique({
+      where: { email: 'platformadmin@bradan.com' }
+    });
+
+    if (!superAdmin || !platformAdmin) {
+      throw new Error('Required users not found. Please ensure auth seed has been run first.');
     }
 
-    createdRoles[role.name] = createdRole;
-  }
-
-  // Create initial users
-  const users = [
-    {
-      firstName: 'System',
-      lastName: 'Administrator',
-      email: 'admin@bradan.com',
-      status: 'Active',
-      jobTitle: 'System Administrator',
-      department: 'IT',
-      roles: ['Super Administrator']
-    },
-    {
-      firstName: 'Company',
-      lastName: 'Admin',
-      email: 'company.admin@bradan.com',
-      status: 'Active',
-      jobTitle: 'Company Administrator',
-      department: 'Administration',
-      roles: ['Administrator']
-    },
-    {
-      firstName: 'Billing',
-      lastName: 'Manager',
-      email: 'billing@bradan.com',
-      status: 'Active',
-      jobTitle: 'Billing Manager',
-      department: 'Finance',
-      roles: ['Billing Administrator']
-    },
-    {
-      firstName: 'User',
-      lastName: 'Manager',
-      email: 'users@bradan.com',
-      status: 'Active',
-      jobTitle: 'User Manager',
-      department: 'HR',
-      roles: ['User Manager']
-    }
-  ];
-
-  // Create users and assign roles
-  const createdUsers = [];
-  for (const userData of users) {
-    const { roles: userRoles, ...user } = userData;
-
-    // Create new user
-    const createdUser = await prisma.user.create({
-      data: {
-        ...user,
-        roles: {
-          create: userRoles.map(roleName => ({
-            role: {
-              connect: { id: createdRoles[roleName].id }
-            },
-            assignedAt: new Date()
-          }))
+    // Create initial companies
+    const companies = [
+      {
+        name: 'Bradán Accountants',
+        legalName: 'Bradán Accountants Limited',
+        registrationNumber: 'BR123456',
+        vatNumber: 'VAT123456',
+        status: 'Active',
+        isPrimary: true,
+        isMyOrg: true,
+        tags: ['Accounting', 'Professional Services'],
+        createdById: superAdmin.id,
+        userCompanies: {
+          create: [{
+            userId: superAdmin.id,
+            role: 'Super Admin'
+          }]
+        },
+        billingDetails: {
+          create: {
+            address: '123 Business Park',
+            city: 'Dublin',
+            state: 'Dublin',
+            country: 'Ireland',
+            postalCode: 'D01 AB12',
+            taxId: 'TAX123456',
+            currency: 'EUR',
+            paymentTerms: 30,
+            paymentMethods: {
+              create: [
+                {
+                  type: 'card',
+                  provider: 'stripe',
+                  lastFour: '4242',
+                  expiryDate: new Date('2025-12-31'),
+                  isDefault: true,
+                  status: 'Active'
+                }
+              ]
+            }
+          }
         }
       },
-      include: {
-        roles: {
-          include: {
-            role: true
+      {
+        name: 'Tech Solutions Ltd',
+        legalName: 'Tech Solutions Limited',
+        registrationNumber: 'TS789012',
+        vatNumber: 'VAT789012',
+        status: 'Active',
+        isPrimary: false,
+        isMyOrg: false,
+        tags: ['Technology', 'Software'],
+        createdById: superAdmin.id,
+        userCompanies: {
+          create: [{
+            userId: superAdmin.id,
+            role: 'Super Admin'
+          }]
+        },
+        billingDetails: {
+          create: {
+            address: '456 Tech Hub',
+            city: 'Dublin',
+            state: 'Dublin',
+            country: 'Ireland',
+            postalCode: 'D02 CD34',
+            taxId: 'TAX789012',
+            currency: 'EUR',
+            paymentTerms: 30,
+            paymentMethods: {
+              create: [
+                {
+                  type: 'bank',
+                  provider: 'stripe',
+                  lastFour: '1234',
+                  isDefault: true,
+                  status: 'Active'
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        name: 'Green Energy Co',
+        legalName: 'Green Energy Company Limited',
+        registrationNumber: 'GE345678',
+        vatNumber: 'VAT345678',
+        status: 'Active',
+        isPrimary: false,
+        isMyOrg: false,
+        tags: ['Energy', 'Renewable'],
+        createdById: superAdmin.id,
+        userCompanies: {
+          create: [{
+            userId: superAdmin.id,
+            role: 'Super Admin'
+          }]
+        },
+        billingDetails: {
+          create: {
+            address: '789 Green Park',
+            city: 'Cork',
+            state: 'Cork',
+            country: 'Ireland',
+            postalCode: 'T12 EF56',
+            taxId: 'TAX345678',
+            currency: 'EUR',
+            paymentTerms: 30,
+            paymentMethods: {
+              create: [
+                {
+                  type: 'card',
+                  provider: 'stripe',
+                  lastFour: '9876',
+                  expiryDate: new Date('2024-12-31'),
+                  isDefault: true,
+                  status: 'Active'
+                }
+              ]
+            }
           }
         }
       }
-    });
+    ];
 
-    createdUsers.push(createdUser);
-  }
-
-  // Create initial companies
-  const companies = [
-    {
-      name: 'Bradán Accountants',
-      status: 'Active',
-      isPrimary: true,
-      isMyOrg: true,
-      tags: ['Accounting', 'Professional Services']
-    },
-    {
-      name: 'Tech Solutions Ltd',
-      status: 'Active',
-      isPrimary: false,
-      isMyOrg: false,
-      tags: ['Technology', 'Software']
-    },
-    {
-      name: 'Green Energy Co',
-      status: 'Active',
-      isPrimary: false,
-      isMyOrg: false,
-      tags: ['Energy', 'Renewable']
+    // Create companies
+    console.log('Creating companies...');
+    const createdCompanies = [];
+    for (const companyData of companies) {
+      const createdCompany = await prisma.company.create({
+        data: companyData,
+        include: {
+          userCompanies: true,
+          billingDetails: {
+            include: {
+              paymentMethods: true
+            }
+          }
+        }
+      });
+      createdCompanies.push(createdCompany);
     }
-  ];
 
-  // Create companies
-  const createdCompanies = [];
-  for (const companyData of companies) {
-    // Create new company
-    const createdCompany = await prisma.company.create({
-      data: companyData
+    // Create sample invoices
+    console.log('Creating invoices...');
+    const invoices = [];
+    for (const company of createdCompanies) {
+      if (!company.isMyOrg) { // Only create invoices for client companies
+        const invoice = await prisma.invoice.create({
+          data: {
+            number: `INV-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+            companyId: company.id,
+            amount: 1000.00,
+            currency: company.billingDetails.currency,
+            status: 'Pending',
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+            items: {
+              "items": [
+                {
+                  "description": "Professional Services",
+                  "quantity": 1,
+                  "unitPrice": 1000.00,
+                  "total": 1000.00
+                }
+              ],
+              "subtotal": 1000.00,
+              "tax": 230.00,
+              "total": 1230.00
+            },
+            createdById: platformAdmin.id
+          }
+        });
+        invoices.push(invoice);
+      }
+    }
+
+    // Create user preferences and security settings
+    console.log('Creating user preferences and security settings...');
+    await prisma.userPreference.create({
+      data: {
+        userId: superAdmin.id,
+        theme: 'Light',
+        language: 'English',
+        dateFormat: 'DD/MM/YYYY',
+        timeFormat: '24h',
+        timezone: 'Europe/Dublin',
+        emailDigest: true,
+        pushNotifications: true
+      }
     });
 
-    createdCompanies.push(createdCompany);
-  }
+    await prisma.securitySettings.create({
+      data: {
+        userId: superAdmin.id,
+        twoFactorEnabled: true,
+        twoFactorMethod: 'app',
+        passwordLastChanged: new Date(),
+        lastSecurityAudit: new Date()
+      }
+    });
 
-  return {
-    permissions: Object.values(createdPermissions),
-    roles: Object.values(createdRoles),
-    users: createdUsers,
-    companies: createdCompanies
-  };
+    // Create sample notifications
+    console.log('Creating notifications...');
+    await prisma.notification.create({
+      data: {
+        userId: superAdmin.id,
+        type: 'system',
+        title: 'Welcome to Bradán',
+        message: 'Welcome to Bradán Accountants platform. Get started by exploring the dashboard.',
+        read: false
+      }
+    });
+
+    console.log('Settings data created successfully');
+    return {
+      companies: createdCompanies,
+      invoices: invoices
+    };
+
+  } catch (error) {
+    console.error('Error creating settings data:', error);
+    throw error;
+  }
 }
 
 module.exports = createSettingsData;

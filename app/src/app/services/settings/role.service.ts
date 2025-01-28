@@ -1,13 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { 
   Role, 
-  Permission, 
-  RoleTemplate, 
-  ROLE_TEMPLATES, 
+  Permission,
+  RoleTemplate,
   MODULE_PERMISSIONS 
 } from '../../components/settings/settings.types';
 
@@ -42,69 +40,35 @@ export class RoleService {
 
   // Role Templates
   getRoleTemplates(): Observable<RoleTemplate[]> {
-    // In a real app, this would fetch from the server
-    // For now, return predefined templates
-    return of(ROLE_TEMPLATES).pipe(
-      map(templates => {
-        // Populate permissions for each template
-        return templates.map(template => {
-          switch (template.id) {
-            case 'super-admin':
-              template.permissions = this.getAllPermissions();
-              break;
-            case 'admin':
-              template.permissions = this.getAdminPermissions();
-              break;
-            case 'billing-admin':
-              template.permissions = this.getBillingAdminPermissions();
-              break;
-            case 'compliance-manager':
-              template.permissions = this.getComplianceManagerPermissions();
-              break;
-            case 'accountant':
-              template.permissions = this.getAccountantPermissions();
-              break;
-            case 'tax-specialist':
-              template.permissions = this.getTaxSpecialistPermissions();
-              break;
-            case 'team-manager':
-              template.permissions = this.getTeamManagerPermissions();
-              break;
-            case 'user-manager':
-              template.permissions = this.getUserManagerPermissions();
-              break;
-            case 'report-viewer':
-              template.permissions = this.getReportViewerPermissions();
-              break;
-            case 'basic-user':
-              template.permissions = this.getBasicUserPermissions();
-              break;
-          }
-          return template;
-        });
-      })
+    // Instead of using hardcoded templates, fetch from API and transform into templates
+    return this.getRoles().pipe(
+      map(roles => roles
+        .filter(role => role.isSystem) // Only use system roles as templates
+        .map(role => ({
+          id: role.id,
+          name: role.name,
+          description: role.description,
+          isDefault: false, // Default value since it's not in metadata
+          permissions: role.permissions
+        }))
+      )
     );
   }
 
   createRoleFromTemplate(templateId: string): Observable<Role> {
-    return this.getRoleTemplates().pipe(
-      map(templates => {
-        const template = templates.find(t => t.id === templateId);
-        if (!template) {
-          throw new Error('Template not found');
-        }
-        return {
-          name: template.name,
-          description: template.description,
-          permissions: template.permissions,
-          scope: 'Company',
-          status: 'Active',
-          isCustom: false,
-          isSystem: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } as Role;
-      })
+    // Get the template role and create a new role based on it
+    return this.getRole(templateId).pipe(
+      map(template => ({
+        name: template.name,
+        description: template.description,
+        permissions: template.permissions,
+        scope: 'Company',
+        status: 'Active',
+        isCustom: true,
+        isSystem: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as Role))
     );
   }
 
@@ -115,85 +79,6 @@ export class RoleService {
 
   getModulePermissions(module: string): Permission[] {
     return MODULE_PERMISSIONS[module] || [];
-  }
-
-  // Helper methods to get permissions for different role templates
-  private getAdminPermissions(): Permission[] {
-    return this.getAllPermissions().filter(p => 
-      p.module !== 'billing' || p.accessLevel !== 'Admin'
-    );
-  }
-
-  private getBillingAdminPermissions(): Permission[] {
-    return [
-      ...MODULE_PERMISSIONS['billing'],
-      ...this.getReadPermissions(['users', 'companies'])
-    ];
-  }
-
-  private getComplianceManagerPermissions(): Permission[] {
-    return [
-      ...this.getReadPermissions(['users', 'companies', 'roles']),
-      ...this.getWritePermissions(['settings'])
-    ];
-  }
-
-  private getAccountantPermissions(): Permission[] {
-    return [
-      ...this.getReadPermissions(['users', 'companies']),
-      ...MODULE_PERMISSIONS['billing'].filter(p => p.accessLevel !== 'Admin')
-    ];
-  }
-
-  private getTaxSpecialistPermissions(): Permission[] {
-    return [
-      ...this.getReadPermissions(['users', 'companies']),
-      ...MODULE_PERMISSIONS['billing'].filter(p => p.accessLevel === 'Read')
-    ];
-  }
-
-  private getTeamManagerPermissions(): Permission[] {
-    return [
-      ...this.getWritePermissions(['users']),
-      ...this.getReadPermissions(['companies', 'roles'])
-    ];
-  }
-
-  private getUserManagerPermissions(): Permission[] {
-    return [
-      ...MODULE_PERMISSIONS['users'],
-      ...this.getReadPermissions(['roles', 'companies'])
-    ];
-  }
-
-  private getReportViewerPermissions(): Permission[] {
-    return this.getReadPermissions([
-      'users',
-      'companies',
-      'billing'
-    ]);
-  }
-
-  private getBasicUserPermissions(): Permission[] {
-    return this.getReadPermissions([
-      'users',
-      'companies'
-    ]);
-  }
-
-  // Helper methods for permission filtering
-  private getReadPermissions(modules: string[]): Permission[] {
-    return modules.flatMap(module => 
-      MODULE_PERMISSIONS[module]?.filter(p => p.accessLevel === 'Read') || []
-    );
-  }
-
-  private getWritePermissions(modules: string[]): Permission[] {
-    return modules.flatMap(module => 
-      MODULE_PERMISSIONS[module]?.filter(p => 
-        p.accessLevel === 'Read' || p.accessLevel === 'Write'
-      ) || []
-    );
   }
 
   // Role Assignment

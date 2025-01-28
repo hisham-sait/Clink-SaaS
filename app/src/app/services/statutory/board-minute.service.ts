@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BoardMinute, Discussion, ActionItem, Resolution } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -12,8 +12,12 @@ export class BoardMinuteService {
 
   constructor(private http: HttpClient) {}
 
-  getBoardMinutes(companyId: string): Observable<BoardMinute[]> {
-    return this.http.get<BoardMinute[]>(`${this.apiUrl}/${companyId}`);
+  getBoardMinutes(companyId: string, status?: 'Draft' | 'Final' | 'Signed'): Observable<BoardMinute[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<BoardMinute[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   getBoardMinute(companyId: string, id: string): Observable<BoardMinute> {

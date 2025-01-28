@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User and Authentication
 model User {
   id            String        @id @default(uuid())
   title         String?
@@ -23,13 +24,46 @@ model User {
   invitedAt     DateTime?
   joinedAt      DateTime?
   status        UserStatus    @default(Pending)
+  planId        String?       // Added: User's selected plan
+  billingCompanyId String?    // Added: Company selected for billing
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   roles         UserRole[]
   createdCompanies Company[]  @relation("CreatedBy")
   userCompanies UserCompany[]
+  createdRoles  Role[]       @relation("RoleCreatedBy")
+  createdInvoices Invoice[]  @relation("InvoiceCreatedBy")
+  notifications Notification[]
+  preferences   UserPreference?
+  securitySettings SecuritySettings?
+  plan          Plan?        @relation(fields: [planId], references: [id])  // Added: Relation to Plan
+  billingCompany Company?    @relation("UserBillingCompany", fields: [billingCompanyId], references: [id]) // Added: Relation to billing Company
 }
 
+model SecuritySettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  twoFactorEnabled    Boolean  @default(false)
+  twoFactorMethod     String?  // app, sms, email
+  passwordLastChanged DateTime?
+  lastSecurityAudit   DateTime?
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+model UserPreference {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  theme           String   @default("Light")
+  language        String   @default("English")
+  dateFormat      String   @default("DD/MM/YYYY")
+  timeFormat      String   @default("24h")
+  timezone        String   @default("UTC")
+  emailDigest     Boolean  @default(true)
+  pushNotifications Boolean @default(true)
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+// Role and Permission Management
 model Permission {
   id          String           @id @default(uuid())
   name        String
@@ -56,6 +90,10 @@ model Role {
   metadata    Json?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  createdById String?
+  createdBy   User?           @relation("RoleCreatedBy", fields: [createdById], references: [id])
+  companyId   String?
+  company     Company?        @relation(fields: [companyId], references: [id])
   permissions RolePermission[]
   users       UserRole[]
 
@@ -87,6 +125,40 @@ model UserRole {
   @@index([roleId])
 }
 
+// Company and Organization
+model Company {
+  id               String            @id @default(cuid())
+  name             String
+  legalName        String?
+  registrationNumber String?
+  vatNumber        String?
+  status           Status            @default(Active)
+  isPrimary        Boolean           @default(false)
+  isMyOrg          Boolean           @default(false)
+  tags             String[]          @default([])
+  logo             String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdById      String
+  createdBy        User              @relation("CreatedBy", fields: [createdById], references: [id])
+  userCompanies    UserCompany[]
+  roles            Role[]
+  activities       Activity[]
+  allotments       Allotment[]
+  beneficialOwners BeneficialOwner[]
+  boardMinutes     BoardMinute[]
+  charges          Charge[]
+  directors        Director[]
+  meetings         Meeting[]
+  primaryContact   PrimaryContact?
+  shares           Share[]
+  shareholders     Shareholder[]
+  billingDetails   BillingDetails?
+  invoices         Invoice[]         @relation("CompanyInvoices")
+  payments         Payment[]         @relation("CompanyPayments")
+  billingForUsers  User[]           @relation("UserBillingCompany") // Added: Users who selected this company for billing
+}
+
 model UserCompany {
   userId     String
   companyId  String
@@ -100,6 +172,107 @@ model UserCompany {
   @@index([companyId])
 }
 
+// Billing and Payments
+model Plan {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String
+  price       Float
+  billingCycle String    // Monthly, Yearly, etc.
+  features    String[]
+  maxUsers    Int
+  maxCompanies Int
+  status      PlanStatus @default(Active)
+  isCustom    Boolean    @default(false)
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  users       User[]     // Added: Users on this plan
+
+  @@index([status])
+}
+
+model BillingDetails {
+  id            String   @id @default(uuid())
+  companyId     String   @unique
+  address       String
+  city          String
+  state         String
+  country       String
+  postalCode    String
+  taxId         String?
+  currency      String   @default("USD")
+  paymentTerms  Int      @default(30) // Days
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id])
+  paymentMethods PaymentMethod[]
+}
+
+model PaymentMethod {
+  id              String   @id @default(uuid())
+  billingDetailsId String
+  type            String   // card, bank, etc.
+  provider        String   // stripe, paypal, etc.
+  lastFour        String?
+  expiryDate      DateTime?
+  isDefault       Boolean  @default(false)
+  status          Status   @default(Active)
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  billingDetails  BillingDetails @relation(fields: [billingDetailsId], references: [id])
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  number      String   @unique
+  companyId   String
+  amount      Float
+  currency    String
+  status      InvoiceStatus @default(Draft)
+  dueDate     DateTime
+  paidDate    DateTime?
+  items       Json
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  createdBy   User     @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  company     Company  @relation("CompanyInvoices", fields: [companyId], references: [id])
+  payments    Payment[]
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  companyId   String
+  amount      Float
+  currency    String
+  method      String
+  status      PaymentStatus
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  company     Company  @relation("CompanyPayments", fields: [companyId], references: [id])
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // email, push, etc.
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// Existing Statutory Models
 model Director {
   id                 String         @id @default(cuid())
   title              String
@@ -338,31 +511,7 @@ model PrimaryContact {
   company   Company  @relation(fields: [companyId], references: [id])
 }
 
-model Company {
-  id               String            @id @default(cuid())
-  name             String
-  status           Status            @default(Active)
-  isPrimary        Boolean           @default(false)
-  isMyOrg          Boolean           @default(false)
-  tags             String[]          @default([])
-  logo             String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  createdById      String
-  createdBy        User              @relation("CreatedBy", fields: [createdById], references: [id])
-  userCompanies    UserCompany[]
-  activities       Activity[]
-  allotments       Allotment[]
-  beneficialOwners BeneficialOwner[]
-  boardMinutes     BoardMinute[]
-  charges          Charge[]
-  directors        Director[]
-  meetings         Meeting[]
-  primaryContact   PrimaryContact?
-  shares           Share[]
-  shareholders     Shareholder[]
-}
-
+// Enums
 enum Status {
   Active
   Inactive
@@ -387,9 +536,10 @@ enum ShareType {
 }
 
 enum PaymentStatus {
-  Paid
-  Unpaid
-  Partially_Paid
+  Pending
+  Completed
+  Failed
+  Refunded
 }
 
 enum ResolutionType {
@@ -439,6 +589,12 @@ enum RoleStatus {
   Deprecated
 }
 
+enum PlanStatus {
+  Active
+  Inactive
+  Deprecated
+}
+
 enum AccessLevel {
   None
   Read
@@ -451,4 +607,12 @@ enum UserStatus {
   Inactive
   Pending
   Suspended
+}
+
+enum InvoiceStatus {
+  Draft
+  Pending
+  Paid
+  Overdue
+  Cancelled
 }

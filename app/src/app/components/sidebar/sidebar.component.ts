@@ -1,11 +1,14 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { ComplianceSidebarComponent } from '../compliance/compliance-sidebar/compliance-sidebar.component';
+import { ComplianceSidebarComponent } from '../compliance/compliance-sidebar.component';
 import { TaxSidebarComponent } from '../tax/tax-sidebar/tax-sidebar.component';
 import { SettingsSidebarComponent } from '../settings/settings-sidebar.component';
 import { HelpSidebarComponent } from '../help/help-sidebar/help-sidebar.component';
 import { StatutorySidebarComponent } from '../statutory/statutory-sidebar.component';
+import { AuthService } from '../../services/auth/auth.service';
+import { CompanyService } from '../../services/settings/company.service';
+import { firstValueFrom } from 'rxjs';
 
 type SectionType = 'statutory' | 'compliance' | 'tax' | 'settings' | 'help';
 
@@ -23,18 +26,16 @@ interface ModuleConfig {
            'left': '48px',
            'width': isExpanded ? '220px' : '40px',
            'transition': 'width 0.3s ease, transform 0.3s ease',
-           'z-index': 1000
+           'z-index': 'var(--z-index-fixed)'
          }">
-      <!-- Header with toggle -->
-      <div class="d-flex align-items-center justify-content-between border-bottom px-2" style="height: 48px;">
-        <div class="d-flex align-items-center gap-3 overflow-hidden">
-          <i [class]="'bi ' + getModuleIcon() + ' fs-5 text-secondary'" style="min-width: 24px;"></i>
-          <span class="fw-medium text-body" *ngIf="isExpanded" style="font-size: 14px; white-space: nowrap;">
-            {{ getModuleTitle() }}
-          </span>
+      <!-- Header -->
+      <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+        <div class="d-flex align-items-center" *ngIf="isExpanded">
+          <i [class]="'bi fs-5 me-2 ' + getModuleIcon()"></i>
+          <span class="small">{{ companyName || getModuleTitle() }}</span>
         </div>
-        <button class="btn btn-link btn-sm p-1 text-secondary border-0"
-                style="width: 24px; height: 24px;"
+        <button class="btn btn-link btn-sm p-0 text-body-secondary" 
+                [class.ms-auto]="!isExpanded"
                 (click)="onToggleSidebar()">
           <i class="bi" [class.bi-chevron-left]="isExpanded" [class.bi-chevron-right]="!isExpanded"></i>
         </button>
@@ -43,7 +44,7 @@ interface ModuleConfig {
       <!-- Module-specific Sidebar -->
       <div class="h-100 overflow-auto" style="scrollbar-width: thin;">
         <ng-container [ngSwitch]="activeSection">
-          <app-statutory-sidebar *ngSwitchCase="'statutory'"></app-statutory-sidebar>
+          <app-statutory-sidebar *ngSwitchCase="'statutory'" [isExpanded]="isExpanded"></app-statutory-sidebar>
           <app-compliance-sidebar *ngSwitchCase="'compliance'"></app-compliance-sidebar>
           <app-tax-sidebar *ngSwitchCase="'tax'"></app-tax-sidebar>
           <app-settings-sidebar *ngSwitchCase="'settings'"></app-settings-sidebar>
@@ -92,12 +93,14 @@ interface ModuleConfig {
     HelpSidebarComponent
   ]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   @Input() isExpanded = true;
   @Input() isMobile = false;
   @Input() activeSection: SectionType = 'statutory';
 
   @Output() toggleSidebar = new EventEmitter<void>();
+
+  companyName: string | null = null;
 
   private readonly moduleConfigs: Record<SectionType, ModuleConfig> = {
     statutory: { icon: 'bi-journal-bookmark', title: 'Statutory' },
@@ -106,6 +109,23 @@ export class SidebarComponent {
     settings: { icon: 'bi-gear', title: 'Settings' },
     help: { icon: 'bi-question-circle', title: 'Help' }
   };
+
+  constructor(
+    private authService: AuthService,
+    private companyService: CompanyService
+  ) {}
+
+  async ngOnInit() {
+    const user = this.authService.currentUserValue;
+    if (user?.companyId) {
+      try {
+        const company = await firstValueFrom(this.companyService.getCompany(user.companyId));
+        this.companyName = company.name;
+      } catch (error) {
+        console.error('Error loading company:', error);
+      }
+    }
+  }
 
   onToggleSidebar() {
     this.toggleSidebar.emit();

@@ -4,11 +4,29 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Get all shareholders for a company
-router.get('/:companyId', async (req, res) => {
+router.get('/:companyId?', async (req, res) => {
   try {
+    const { status } = req.query;
+    const where = {
+      companyId: req.params.companyId || req.user.companyId
+    };
+
+    // Only add status filter if it's not an empty string (which means show all)
+    if (status !== '') {
+      where.status = status || 'Active'; // Default to Active if status is undefined/null
+    }
+
     const shareholders = await prisma.shareholder.findMany({
-      where: { companyId: req.params.companyId },
-      orderBy: { lastName: 'asc' }
+      where,
+      orderBy: { lastName: 'asc' },
+      include: {
+        company: {
+          select: {
+            name: true,
+            legalName: true
+          }
+        }
+      }
     });
     res.json(shareholders);
   } catch (error) {

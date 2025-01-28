@@ -8,10 +8,12 @@ import { catchError } from 'rxjs/operators';
 import { AddCompanyModalComponent } from './modal/add-company-modal.component';
 import { EditCompanyModalComponent } from './modal/edit-company-modal.component';
 import { ViewCompanyModalComponent } from './modal/view-company-modal.component';
+import { ManageCompanyPlanModalComponent } from './modal/manage-company-plan-modal.component';
 import { ConfirmModalComponent } from '../users/modal/confirm-modal.component';
 
 import { CompanyService } from '../../../services/settings/company.service';
-import { Company, CompanyType, CompanyStatus } from '../settings.types';
+import { BillingService } from '../../../services/settings/billing.service';
+import { Company, CompanyType, CompanyStatus, Plan } from '../settings.types';
 
 @Component({
   selector: 'app-companies',
@@ -23,6 +25,7 @@ import { Company, CompanyType, CompanyStatus } from '../settings.types';
     AddCompanyModalComponent,
     EditCompanyModalComponent,
     ViewCompanyModalComponent,
+    ManageCompanyPlanModalComponent,
     ConfirmModalComponent
   ],
   template: `
@@ -150,6 +153,7 @@ import { Company, CompanyType, CompanyStatus } from '../settings.types';
                 <tr>
                   <th class="text-uppercase small fw-semibold text-secondary">Company</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Type</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Plan</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Tags</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Primary Contact</th>
                   <th class="text-uppercase small fw-semibold text-secondary">Status</th>
@@ -171,6 +175,19 @@ import { Company, CompanyType, CompanyStatus } from '../settings.types';
                   </td>
                   <td>{{ company.type }}</td>
                   <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div *ngIf="companyPlans[company.id]">
+                        <span class="fw-medium">{{ companyPlans[company.id].name }}</span>
+                        <small class="d-block text-muted">
+                          {{ companyPlans[company.id].price | currency }}/{{ companyPlans[company.id].billingCycle.toLowerCase() }}
+                        </small>
+                      </div>
+                      <div *ngIf="!companyPlans[company.id]">
+                        <small class="text-muted">No plan selected</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
                     <span *ngFor="let tag of company.tags" class="badge text-bg-primary me-1">{{ tag }}</span>
                   </td>
                   <td>
@@ -190,6 +207,9 @@ import { Company, CompanyType, CompanyStatus } from '../settings.types';
                       </button>
                       <button class="btn btn-link btn-sm text-body px-2" (click)="editCompany(company)" title="Edit">
                         <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-link btn-sm text-body px-2" (click)="managePlan(company)" title="Manage Plan">
+                        <i class="bi bi-box-seam"></i>
                       </button>
                       <button 
                         class="btn btn-link btn-sm text-body px-2" 
@@ -214,7 +234,7 @@ import { Company, CompanyType, CompanyStatus } from '../settings.types';
                   </td>
                 </tr>
                 <tr *ngIf="getFilteredCompanies().length === 0">
-                  <td colspan="6" class="text-center py-4 text-muted">
+                  <td colspan="7" class="text-center py-4 text-muted">
                     <i class="bi bi-info-circle me-2"></i>
                     No companies found
                   </td>
@@ -229,6 +249,7 @@ import { Company, CompanyType, CompanyStatus } from '../settings.types';
 })
 export class CompaniesComponent implements OnInit {
   companies: Company[] = [];
+  companyPlans: { [key: string]: Plan } = {};
   loading = false;
   error: string | null = null;
   searchTerm = '';
@@ -237,7 +258,8 @@ export class CompaniesComponent implements OnInit {
 
   constructor(
     private modalService: NgbModal,
-    private companyService: CompanyService
+    private companyService: CompanyService,
+    private billingService: BillingService
   ) {}
 
   ngOnInit(): void {
@@ -258,8 +280,24 @@ export class CompaniesComponent implements OnInit {
       )
       .subscribe(companies => {
         this.companies = companies;
+        this.loadCompanyPlans();
         this.loading = false;
       });
+  }
+
+  loadCompanyPlans(): void {
+    this.companies.forEach(company => {
+      this.billingService.getCurrentPlan(company.id).subscribe({
+        next: (plan) => {
+          this.companyPlans[company.id] = plan;
+        },
+        error: (error) => {
+          if (error.status !== 404) {
+            console.error(`Error loading plan for company ${company.id}:`, error);
+          }
+        }
+      });
+    });
   }
 
   getStatusClass(status: CompanyStatus): string {
@@ -340,11 +378,30 @@ export class CompaniesComponent implements OnInit {
     });
     
     modalRef.componentInstance.company = {...company};
+    modalRef.componentInstance.plan = this.companyPlans[company.id];
     
     modalRef.result.then(
       (result: { action: string; company: Company }) => {
         if (result?.action === 'edit') {
           this.editCompany(result.company);
+        }
+      },
+      () => {} // Modal dismissed
+    );
+  }
+
+  managePlan(company: Company): void {
+    const modalRef = this.modalService.open(ManageCompanyPlanModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+    
+    modalRef.componentInstance.company = company;
+    
+    modalRef.result.then(
+      (plan: Plan) => {
+        if (plan) {
+          this.companyPlans[company.id] = plan;
         }
       },
       () => {} // Modal dismissed

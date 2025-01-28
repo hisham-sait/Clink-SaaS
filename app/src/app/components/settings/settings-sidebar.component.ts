@@ -82,6 +82,12 @@ export class SettingsSidebarComponent {
       description: 'Manage roles and their permissions'
     },
     {
+      path: '/settings/plans',
+      title: 'Plans',
+      icon: 'bi-box',
+      description: 'Manage subscription plans and pricing'
+    },
+    {
       path: '/settings/security',
       title: 'Security',
       icon: 'bi-shield-lock',

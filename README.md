@@ -1,6 +1,6 @@
 # Bradán Accountants
 
-A modern accounting and CRM platform built with Angular, inspired by XERO's functionality and design patterns.
+A modern corporate compliance and management platform built with Angular, focusing on statutory compliance, tax management, and corporate governance.
 
 ## Roles and Demo Users
 
@@ -50,58 +50,92 @@ A modern accounting and CRM platform built with Angular, inspired by XERO's func
    - External consultant access
    - Demo Account: consultant@bradan.com / consultant123
 
-## Features
+## Core Modules
 
-### Books Module
-- **Dashboard**: Overview of financial metrics and activities
-- **Accounting**: General ledger and accounting operations
-- **Banking**: Bank connections and reconciliation
-- **Invoicing**: Create and manage invoices
-- **Bills**: Track and manage bills and payments
-- **Expenses**: Expense tracking and management
-- **Payroll**: Employee payroll management
-- **Projects**: Project tracking and billing
-- **Reports**: Financial reports and analytics
-- **Files**: Document management system
-- **Contacts**: Customer and vendor management
+### Statutory Module
+- **Dashboard**: Overview of statutory compliance
+- **Directors**: Director management and documentation
+- **Shareholders**: Shareholder records and communications
+- **Shares**: Share allocation and transfer management
+- **Board Minutes**: Board meeting minutes and resolutions
+- **Beneficial Owners**: UBO tracking and documentation
+- **Charges**: Company charges and securities
+- **Meetings**: Meeting management and minutes
+- **Allotments**: Share allotment tracking
+- **Forms**: Statutory form management
 
-### CRM Module
-- **Dashboard**: CRM metrics and activity overview
-- **Contacts**: Contact management and tracking
-- **Companies**: Company profiles and relationships
-- **Marketing Hub**: Marketing campaign management
-- **Sales Hub**: Sales pipeline and opportunity tracking
-- **Service Hub**: Customer service and support
-- **Operations Hub**: Business operations management
-- **CMS Hub**: Content management system
+### Compliance Module
+- **Dashboard**: Compliance overview and metrics
+- **Tracking**: Compliance monitoring and tracking
+- **Audits**: Internal and external audit management
+- **ESG**: Environmental, Social, and Governance tracking
+- **Filing**: Regulatory filing management
+- **Governance**: Corporate governance framework
+- **Policies**: Policy management and distribution
+- **Regulatory**: Regulatory compliance tracking
+- **Reports**: Compliance reporting
+- **Requirements**: Compliance requirement management
 
-## Technical Features
+### Tax Module
+- **Dashboard**: Tax overview and deadlines
+- **Corporation Tax**: Corporate tax management
+- **Income Tax**: Income tax calculations and filing
+- **Capital Gains**: Capital gains tracking
+- **VAT**: VAT returns and management
+- **Payroll Tax**: Payroll tax calculations
+- **Tax Planning**: Strategic tax planning tools
 
-- **Modern Angular Architecture**
+### Settings Module
+- **Company Management**: Multi-company administration
+- **User Management**: User access and permissions
+- **Role Management**: Role definition and assignment
+- **Billing**: Subscription and payment management
+- **Plans**: Service plan configuration
+- **Security**: Security settings and protocols
+- **Notifications**: Alert and notification preferences
+- **Integrations**: Third-party service connections
+- **Forms**: Custom form management
+- **Organization**: Organization-wide settings
+
+## Technical Architecture
+
+### Frontend (Angular)
+- **Modern Architecture**
   - Standalone components
   - Lazy loading
   - Route-based code splitting
+  - State management
   - Responsive design
 
 - **UI/UX Features**
-  - Responsive sidebar with expand/collapse functionality
-  - Dark mode support
-  - Mobile-first design
-  - Smooth transitions and animations
-  - Bootstrap Icons integration
+  - Dynamic sidebar navigation
+  - Role-based interface adaptation
+  - Bootstrap-based responsive design
+  - Modern iconography
+  - Intuitive workflows
 
-- **Performance Optimizations**
-  - Lazy-loaded modules
-  - Component-based architecture
-  - Efficient routing system
-  - Optimized asset loading
+### Backend (Node.js/Express)
+- **API Structure**
+  - RESTful endpoints
+  - JWT authentication
+  - Role-based access control
+  - File upload handling
+  - Background workers
+
+### Database (Prisma)
+- **Data Management**
+  - Structured migrations
+  - Relationship management
+  - Data seeding
+  - Type safety
+  - Query optimization
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- npm (v6 or higher)
-- Angular CLI (v16 or higher)
+- Node.js (v18 or higher)
+- npm (v9 or higher)
+- Angular CLI (v17 or higher)
 
 ### Installation
 
@@ -122,71 +156,83 @@ cd ../app
 npm install
 ```
 
-3. Start the development servers:
+3. Set up the database:
+```bash
+# From the api directory
+npx prisma generate
+npx prisma migrate dev
+npx prisma db seed
+```
+
+4. Start the development servers:
 ```bash
 # Start API server (from api directory)
 npm run dev
 
 # Start Angular development server (from app directory)
-ng serve
+npm run start
 ```
 
-4. Open your browser and navigate to `http://localhost:4200`
+5. Access the application at `http://localhost:4200`
 
 ## Project Structure
 
 ```
 bradan-accountants/
-├── api/                 # Backend API
-└── app/                 # Angular frontend
-    ├── src/
-    │   ├── app/
-    │   │   ├── components/
-    │   │   │   ├── books/       # Books module components
-    │   │   │   ├── crm/         # CRM module components
-    │   │   │   ├── shared/      # Shared components
-    │   │   │   └── sidebar/     # Sidebar component
-    │   │   ├── app.component.*  # Root component
-    │   │   └── app.routes.ts    # Main routes
-    │   ├── assets/
-    │   └── styles/
-    └── package.json
+├── api/                    # Backend API
+│   ├── prisma/            # Database schema and migrations
+│   ├── routes/            # API endpoints
+│   ├── services/          # Business logic
+│   ├── middleware/        # Custom middleware
+│   └── workers/           # Background workers
+│
+└── app/                   # Angular frontend
+    └── src/
+        ├── app/
+        │   ├── components/
+        │   │   ├── statutory/    # Statutory module
+        │   │   ├── compliance/   # Compliance module
+        │   │   ├── tax/         # Tax module
+        │   │   ├── settings/    # Settings module
+        │   │   └── shared/      # Shared components
+        │   ├── services/        # Angular services
+        │   ├── guards/          # Route guards
+        │   └── interceptors/    # HTTP interceptors
+        ├── assets/             # Static assets
+        └── environments/       # Environment configurations
 ```
 
-## Development
+## Development Guidelines
 
-### Code Style
+### Code Standards
 - Follow Angular style guide
-- Use TypeScript strict mode
-- Implement proper type checking
-- Maintain consistent component structure
+- Implement proper TypeScript types
+- Write comprehensive unit tests
+- Document complex functionality
+- Use meaningful commit messages
 
 ### Component Structure
-- Standalone components
-- Separate routing modules
-- Lazy-loaded feature modules
-- Shared components for reusability
+- Feature-based organization
+- Shared component library
+- Lazy-loaded modules
+- State management patterns
+- Service abstraction
 
 ### Styling
-- SCSS for styling
-- Bootstrap Icons for iconography
-- Responsive design patterns
-- Dark mode support
+- SCSS methodology
+- Bootstrap framework
+- Responsive design
+- Consistent theming
+- Accessibility compliance
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create your feature branch (`git checkout -b feature/NewFeature`)
+3. Commit your changes (`git commit -m 'Add NewFeature'`)
+4. Push to the branch (`git push origin feature/NewFeature`)
+5. Create a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Inspired by XERO's functionality and design
-- Built with Angular framework
-- Uses Bootstrap Icons for iconography

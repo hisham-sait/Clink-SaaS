@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Allotment } from '../../components/statutory/statutory.types';
 import { environment } from '../../../environments/environment';
@@ -12,8 +12,12 @@ export class AllotmentService {
 
   constructor(private http: HttpClient) {}
 
-  getAllotments(companyId: string): Observable<Allotment[]> {
-    return this.http.get<Allotment[]>(`${this.apiUrl}/${companyId}`);
+  getAllotments(companyId: string, status?: string): Observable<Allotment[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    return this.http.get<Allotment[]>(`${this.apiUrl}/${companyId}`, { params });
   }
 
   getAllotment(companyId: string, id: string): Observable<Allotment> {
