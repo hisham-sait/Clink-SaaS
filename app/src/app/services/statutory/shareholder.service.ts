@@ -37,4 +37,20 @@ export class ShareholderService {
   deleteShareholder(companyId: string, id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${companyId}/${id}`);
   }
+
+  // Import shareholders from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<Shareholder>[] }> {
+    return this.http.post<{ data: Partial<Shareholder>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import shareholders from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }

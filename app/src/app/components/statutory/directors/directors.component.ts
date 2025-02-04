@@ -10,6 +10,7 @@ import { CreateDirectorModalComponent } from './modal/create-director-modal.comp
 import { EditDirectorModalComponent } from './modal/edit-director-modal.component';
 import { ViewDirectorModalComponent } from './modal/view-director-modal.component';
 import { ResignDirectorModalComponent } from './modal/resign-director-modal.component';
+import { ImportDirectorsModalComponent } from './modal/import-directors-modal.component';
 import { ConfirmModalComponent } from '../../../components/settings/users/modal/confirm-modal.component';
 
 import { DirectorService } from '../../../services/statutory/director.service';
@@ -35,7 +36,8 @@ interface ActivityResponse {
     EditDirectorModalComponent,
     ViewDirectorModalComponent,
     ResignDirectorModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportDirectorsModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -61,10 +63,16 @@ interface ActivityResponse {
             <p class="text-muted mb-0">Record and manage company directors and their appointments</p>
           </div>
           <div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importDirectors()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
             <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddDirectorModal()">
               <i class="bi bi-plus-lg"></i>
               <span>Add Director</span>
             </button>
+          </div>
           </div>
         </div>
 
@@ -232,7 +240,7 @@ interface ActivityResponse {
 })
 export class DirectorsComponent implements OnInit, OnDestroy {
   directors: Director[] = [];
-  showAllDirectors = false;
+  showAllDirectors = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -273,7 +281,7 @@ export class DirectorsComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.directorService.getDirectors(companyId, this.showAllDirectors ? undefined : 'Active').pipe(
+        this.directorService.getDirectors(companyId).pipe(
           map(directors => directors.map(d => ({ ...d, company })))
         )
       ),
@@ -580,6 +588,39 @@ export class DirectorsComponent implements OnInit, OnDestroy {
               this.refreshData();
             }
           });
+      },
+      () => {} // Modal dismissed
+    );
+  }
+
+  importDirectors(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportDirectorsModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'director',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} directors`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
       },
       () => {} // Modal dismissed
     );

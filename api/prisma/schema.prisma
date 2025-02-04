@@ -132,6 +132,16 @@ model Company {
   legalName        String?
   registrationNumber String?
   vatNumber        String?
+  email            String?
+  phone            String?
+  website          String?
+  address          Json?
+  industry         String?
+  size             String?
+  type             String?
+  fiscalYearEnd    String?
+  currency         String?
+  notes            String?
   status           Status            @default(Active)
   isPrimary        Boolean           @default(false)
   isMyOrg          Boolean           @default(false)

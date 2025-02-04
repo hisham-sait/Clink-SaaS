@@ -24,13 +24,15 @@ import { Invoice } from '../settings.types';
         <div class="col-md-6">
           <h6 class="text-muted mb-3">To</h6>
           <p class="mb-1">{{ invoice.company?.legalName }}</p>
-          <p class="mb-1">{{ invoice.company?.address?.street }}</p>
-          <p class="mb-1">
-            {{ invoice.company?.address?.city }}, 
-            {{ invoice.company?.address?.state }}<br>
-            {{ invoice.company?.address?.country }} 
-            {{ invoice.company?.address?.postalCode }}
-          </p>
+          <ng-container *ngIf="getAddress() as address">
+            <p class="mb-1">{{ address.street }}</p>
+            <p class="mb-1">
+              {{ address.city }}, 
+              {{ address.state }}<br>
+              {{ address.country }} 
+              {{ address.postalCode }}
+            </p>
+          </ng-container>
         </div>
       </div>
 
@@ -178,6 +180,15 @@ export class InvoiceViewerComponent {
       default:
         return 'bg-secondary';
     }
+  }
+
+  getAddress() {
+    if (!this.invoice.company?.address) {
+      return null;
+    }
+    return typeof this.invoice.company.address === 'string'
+      ? JSON.parse(this.invoice.company.address)
+      : this.invoice.company.address;
   }
 
   payInvoice() {

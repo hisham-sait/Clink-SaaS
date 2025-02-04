@@ -205,7 +205,7 @@ export interface Company {
   legalName: string;
   registrationNumber: string;
   vatNumber?: string;
-  address: Address;
+  address: string | Address;
   phone: string;
   email: string;
   website?: string;
@@ -217,6 +217,8 @@ export interface Company {
   fiscalYearEnd: string;
   currency: Currency;
   status: CompanyStatus;
+  isPrimary: boolean;
+  isMyOrg: boolean;
   createdAt: string;
   updatedAt: string;
   primaryContact?: {

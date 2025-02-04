@@ -82,4 +82,20 @@ export class AllotmentService {
       currency: string;
     }>(`${this.apiUrl}/${companyId}/total`);
   }
+
+  // Import allotments from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<Allotment>[] }> {
+    return this.http.post<{ data: Partial<Allotment>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import allotments from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }

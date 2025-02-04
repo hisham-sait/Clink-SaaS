@@ -45,4 +45,20 @@ export class DirectorService {
   deleteDirector(companyId: string, id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${companyId}/${id}`);
   }
+
+  // Import directors from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<Director>[] }> {
+    return this.http.post<{ data: Partial<Director>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import directors from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }

@@ -220,7 +220,7 @@ export interface BoardMinute {
 export interface Activity {
   id: string;
   type: 'appointment' | 'resignation' | 'update' | 'removal' | 
-        'added' | 'updated' | 'removed' | 'status_changed';
+        'added' | 'updated' | 'removed' | 'status_changed' | 'imported';
   entityType?: string;
   entityId?: string;
   description: string;

@@ -9,6 +9,7 @@ import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators'
 import { CreateShareholderModalComponent } from './modal/create-shareholder-modal.component';
 import { EditShareholderModalComponent } from './modal/edit-shareholder-modal.component';
 import { ViewShareholderModalComponent } from './modal/view-shareholder-modal.component';
+import { ImportShareholdersModalComponent } from './modal/import-shareholders-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { ShareholderService } from '../../../services/statutory/shareholder.service';
@@ -28,7 +29,8 @@ import { Shareholder, Activity, ActivityResponse } from '../statutory.types';
     CreateShareholderModalComponent,
     EditShareholderModalComponent,
     ViewShareholderModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportShareholdersModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -54,10 +56,16 @@ import { Shareholder, Activity, ActivityResponse } from '../statutory.types';
           <p class="text-muted mb-0">Record and manage company shareholders and their holdings</p>
         </div>
         <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddShareholderModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Shareholder</span>
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importShareholders()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddShareholderModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Shareholder</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -220,7 +228,7 @@ import { Shareholder, Activity, ActivityResponse } from '../statutory.types';
 })
 export class ShareholdersComponent implements OnInit, OnDestroy {
   shareholders: Shareholder[] = [];
-  showAll = false;
+  showAll = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -260,7 +268,7 @@ export class ShareholdersComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.shareholderService.getShareholders(companyId, this.showAll ? undefined : 'Active').pipe(
+        this.shareholderService.getShareholders(companyId).pipe( // Removed status filter to show all by default
           map(shareholders => shareholders.map(s => ({ ...s, company })))
         )
       ),
@@ -504,6 +512,39 @@ export class ShareholdersComponent implements OnInit, OnDestroy {
       default:
         return 'bi bi-activity';
     }
+  }
+
+  importShareholders(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportShareholdersModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'shareholder',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} shareholders`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {

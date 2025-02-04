@@ -346,22 +346,11 @@ export class CompaniesComponent implements OnInit {
     });
 
     modalRef.result.then(
-      (result: Partial<Company>) => {
-        this.companyService.createCompany(result)
-          .pipe(
-            catchError(error => {
-              const errorMsg = error.error?.message || 'Failed to create company. Please try again.';
-              console.error('Error creating company:', error);
-              this.error = errorMsg;
-              return of(null);
-            })
-          )
-          .subscribe(company => {
-            if (company) {
-              this.companies.push(company);
-              this.loadCompanies();
-            }
-          });
+      (company: Company) => {
+        if (company) {
+          this.companies.push(company);
+          this.loadCompanies();
+        }
       },
       () => {} // Modal dismissed
     );

@@ -9,6 +9,7 @@ import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators'
 import { CreateShareModalComponent } from './modal/create-share-modal.component';
 import { EditShareModalComponent } from './modal/edit-share-modal.component';
 import { ViewShareModalComponent } from './modal/view-share-modal.component';
+import { ImportSharesModalComponent } from './modal/import-shares-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { ShareService } from '../../../services/statutory/share.service';
@@ -28,7 +29,8 @@ import { Share, Activity, ActivityResponse } from '../statutory.types';
     CreateShareModalComponent,
     EditShareModalComponent,
     ViewShareModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportSharesModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -39,10 +41,16 @@ import { Share, Activity, ActivityResponse } from '../statutory.types';
           <p class="text-muted mb-0">Manage and track company share classes and their details</p>
         </div>
         <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddShareModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Share Class</span>
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importShares()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddShareModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Share Class</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -215,7 +223,7 @@ import { Share, Activity, ActivityResponse } from '../statutory.types';
 })
 export class SharesComponent implements OnInit, OnDestroy {
   shares: Share[] = [];
-  showAll = false;
+  showAll = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -255,7 +263,7 @@ export class SharesComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.shareService.getShares(companyId, this.showAll ? undefined : 'Active').pipe(
+        this.shareService.getShares(companyId).pipe( // Removed status filter to show all by default
           map(shares => shares.map(s => ({ ...s, company })))
         )
       ),
@@ -506,6 +514,39 @@ export class SharesComponent implements OnInit, OnDestroy {
       default:
         return 'bi bi-activity';
     }
+  }
+
+  importShares(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportSharesModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'share',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} share classes`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {

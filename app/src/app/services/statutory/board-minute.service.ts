@@ -171,4 +171,20 @@ export class BoardMinuteService {
       resolutionsPassed: number;
     }>(`${this.apiUrl}/${companyId}/statistics`);
   }
+
+  // Import board minutes from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<BoardMinute>[] }> {
+    return this.http.post<{ data: Partial<BoardMinute>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import board minutes from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }

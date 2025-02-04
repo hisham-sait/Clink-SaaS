@@ -9,6 +9,7 @@ import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators'
 import { CreateAllotmentModalComponent } from './modal/create-allotment-modal.component';
 import { EditAllotmentModalComponent } from './modal/edit-allotment-modal.component';
 import { ViewAllotmentModalComponent } from './modal/view-allotment-modal.component';
+import { ImportAllotmentsModalComponent } from './modal/import-allotments-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { AllotmentService } from '../../../services/statutory/allotment.service';
@@ -28,7 +29,8 @@ import { Allotment, Activity, ActivityResponse } from '../statutory.types';
     CreateAllotmentModalComponent,
     EditAllotmentModalComponent,
     ViewAllotmentModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportAllotmentsModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -39,10 +41,16 @@ import { Allotment, Activity, ActivityResponse } from '../statutory.types';
           <p class="text-muted mb-0">Record and track share allotments and transfers</p>
         </div>
         <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddAllotmentModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Allotment</span>
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importAllotments()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddAllotmentModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Allotment</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -210,7 +218,7 @@ import { Allotment, Activity, ActivityResponse } from '../statutory.types';
 })
 export class AllotmentsComponent implements OnInit, OnDestroy {
   allotments: Allotment[] = [];
-  showAll = false;
+  showAll = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -250,7 +258,7 @@ export class AllotmentsComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.allotmentService.getAllotments(companyId, this.showAll ? undefined : 'Active').pipe(
+        this.allotmentService.getAllotments(companyId).pipe( // Removed status filter to show all by default
           map(allotments => allotments.map(a => ({ ...a, company })))
         )
       ),
@@ -532,6 +540,39 @@ export class AllotmentsComponent implements OnInit, OnDestroy {
       default:
         return 'bi bi-activity';
     }
+  }
+
+  importAllotments(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportAllotmentsModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'allotment',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} allotments`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {

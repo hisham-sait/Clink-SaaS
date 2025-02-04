@@ -60,4 +60,20 @@ export class ChargeService {
   getChargesByType(companyId: string, chargeType: string): Observable<Charge[]> {
     return this.http.get<Charge[]>(`${this.apiUrl}/${companyId}/type/${chargeType}`);
   }
+
+  // Import charges from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<Charge>[] }> {
+    return this.http.post<{ data: Partial<Charge>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import charges from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }

@@ -44,4 +44,20 @@ export class ShareService {
   getTotalIssued(companyId: string, shareClass: string): Observable<number> {
     return this.http.get<number>(`${this.apiUrl}/${companyId}/total-issued/${shareClass}`);
   }
+
+  // Import shares from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<Share>[] }> {
+    return this.http.post<{ data: Partial<Share>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import shares from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }

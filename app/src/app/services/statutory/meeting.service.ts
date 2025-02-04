@@ -131,6 +131,26 @@ export class MeetingService {
       .pipe(map(meetings => meetings.map(m => this.transformToMeeting(m))));
   }
 
+  // Import meetings from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<Meeting>[] }> {
+    return this.http.post<{ data: ApiMeeting[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    ).pipe(
+      map(response => ({
+        data: response.data.map(m => this.transformToMeeting(m))
+      }))
+    );
+  }
+
+  // Import meetings from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
+
   getMeetingStatistics(companyId: string): Observable<{
     totalMeetings: number;
     agmCount: number;

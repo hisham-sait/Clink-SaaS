@@ -165,9 +165,46 @@ router.post('/create', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const { 
+      name,
+      legalName,
+      registrationNumber,
+      vatNumber,
+      email,
+      phone,
+      website,
+      address,
+      industry,
+      size,
+      type,
+      fiscalYearEnd,
+      currency,
+      notes,
+      isPrimary,
+      isMyOrg,
+      tags = []
+    } = req.body;
+
     const company = await prisma.company.create({
       data: {
-        ...req.body,
+        name,
+        legalName,
+        registrationNumber,
+        vatNumber,
+        email,
+        phone,
+        website,
+        address: typeof address === 'string' ? address : JSON.stringify(address),
+        industry,
+        size,
+        type,
+        fiscalYearEnd,
+        currency,
+        notes,
+        isPrimary: isPrimary || false,
+        isMyOrg: isMyOrg || false,
+        tags,
+        status: 'Active',
         createdById: userId,
         userCompanies: {
           create: {
@@ -226,9 +263,49 @@ router.put('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    const { 
+      name,
+      legalName,
+      registrationNumber,
+      vatNumber,
+      email,
+      phone,
+      website,
+      address,
+      industry,
+      size,
+      type,
+      fiscalYearEnd,
+      currency,
+      notes,
+      isPrimary,
+      isMyOrg,
+      tags,
+      status
+    } = req.body;
+
     const company = await prisma.company.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: {
+        name,
+        legalName,
+        registrationNumber,
+        vatNumber,
+        email,
+        phone,
+        website,
+        address: typeof address === 'string' ? address : JSON.stringify(address),
+        industry,
+        size,
+        type,
+        fiscalYearEnd,
+        currency,
+        notes,
+        isPrimary,
+        isMyOrg,
+        tags,
+        status
+      },
       include: {
         directors: true,
         shareholders: true,

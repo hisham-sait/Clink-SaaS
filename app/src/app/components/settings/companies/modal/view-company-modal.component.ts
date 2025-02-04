@@ -90,30 +90,32 @@ import { Company } from '../../settings.types';
             <div class="card-body">
               <h6 class="card-subtitle mb-3 text-muted">Address</h6>
               
-              <div class="mb-2">
-                <small class="text-muted d-block">Street</small>
-                <span>{{ company.address.street || 'Not specified' }}</span>
-              </div>
-              
-              <div class="mb-2">
-                <small class="text-muted d-block">City</small>
-                <span>{{ company.address.city || 'Not specified' }}</span>
-              </div>
-              
-              <div class="mb-2">
-                <small class="text-muted d-block">State/Province</small>
-                <span>{{ company.address.state || 'Not specified' }}</span>
-              </div>
+              <ng-container *ngIf="getAddress() as address">
+                <div class="mb-2">
+                  <small class="text-muted d-block">Street</small>
+                  <span>{{ address.street || 'Not specified' }}</span>
+                </div>
+                
+                <div class="mb-2">
+                  <small class="text-muted d-block">City</small>
+                  <span>{{ address.city || 'Not specified' }}</span>
+                </div>
+                
+                <div class="mb-2">
+                  <small class="text-muted d-block">State/Province</small>
+                  <span>{{ address.state || 'Not specified' }}</span>
+                </div>
 
-              <div class="mb-2">
-                <small class="text-muted d-block">Postal Code</small>
-                <span>{{ company.address.postalCode || 'Not specified' }}</span>
-              </div>
+                <div class="mb-2">
+                  <small class="text-muted d-block">Postal Code</small>
+                  <span>{{ address.postalCode || 'Not specified' }}</span>
+                </div>
 
-              <div class="mb-2">
-                <small class="text-muted d-block">Country</small>
-                <span>{{ company.address.country || 'Not specified' }}</span>
-              </div>
+                <div class="mb-2">
+                  <small class="text-muted d-block">Country</small>
+                  <span>{{ address.country || 'Not specified' }}</span>
+                </div>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -209,6 +211,21 @@ export class ViewCompanyModalComponent {
   @Input() company!: Company;
 
   constructor(public activeModal: NgbActiveModal) {}
+
+  getAddress() {
+    if (!this.company.address) {
+      return {
+        street: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: ''
+      };
+    }
+    return typeof this.company.address === 'string' 
+      ? JSON.parse(this.company.address)
+      : this.company.address;
+  }
 
   onEdit(): void {
     this.activeModal.close({ action: 'edit', company: this.company });

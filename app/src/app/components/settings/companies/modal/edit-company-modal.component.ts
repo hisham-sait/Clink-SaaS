@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types';
+import { CompanyService } from '../../../../services/settings/company.service';
 
 @Component({
   selector: 'app-edit-company-modal',
@@ -15,6 +16,7 @@ import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types
     </div>
     <form [formGroup]="editForm" (ngSubmit)="onSubmit()">
       <div class="modal-body">
+        <div class="text-muted small mb-3">Fields marked with an asterisk (*) are required</div>
         <div class="row g-3">
           <!-- Basic Information -->
           <div class="col-12">
@@ -22,7 +24,7 @@ import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types
           </div>
 
           <div class="col-md-6">
-            <label for="name" class="form-label">Company Name</label>
+            <label for="name" class="form-label">Company Name *</label>
             <input
               type="text"
               class="form-control"
@@ -36,7 +38,7 @@ import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types
           </div>
 
           <div class="col-md-6">
-            <label for="legalName" class="form-label">Legal Name</label>
+            <label for="legalName" class="form-label">Legal Name *</label>
             <input
               type="text"
               class="form-control"
@@ -50,7 +52,7 @@ import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types
           </div>
 
           <div class="col-md-6">
-            <label for="registrationNumber" class="form-label">Registration Number</label>
+            <label for="registrationNumber" class="form-label">Registration Number *</label>
             <input
               type="text"
               class="form-control"
@@ -80,7 +82,7 @@ import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types
           </div>
 
           <div class="col-md-6">
-            <label for="email" class="form-label">Email Address</label>
+            <label for="email" class="form-label">Email Address *</label>
             <input
               type="email"
               class="form-control"
@@ -97,7 +99,7 @@ import { Company, CompanyType, CompanyTag, Currency } from '../../settings.types
           </div>
 
           <div class="col-md-6">
-            <label for="phone" class="form-label">Phone Number</label>
+            <label for="phone" class="form-label">Phone Number *</label>
             <input
               type="tel"
               class="form-control"
@@ -340,7 +342,8 @@ export class EditCompanyModalComponent implements OnInit {
 
   constructor(
     public activeModal: NgbActiveModal,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private companyService: CompanyService
   ) {
     this.editForm = this.fb.group({
       name: ['', Validators.required],
@@ -370,8 +373,24 @@ export class EditCompanyModalComponent implements OnInit {
     });
   }
 
+  private getAddress() {
+    if (!this.company.address) {
+      return {
+        street: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: ''
+      };
+    }
+    return typeof this.company.address === 'string' 
+      ? JSON.parse(this.company.address)
+      : this.company.address;
+  }
+
   ngOnInit(): void {
     if (this.company) {
+      const address = this.getAddress();
       this.editForm.patchValue({
         name: this.company.name,
         legalName: this.company.legalName,
@@ -380,11 +399,11 @@ export class EditCompanyModalComponent implements OnInit {
         email: this.company.email,
         phone: this.company.phone,
         website: this.company.website,
-        street: this.company.address.street,
-        city: this.company.address.city,
-        state: this.company.address.state,
-        postalCode: this.company.address.postalCode,
-        country: this.company.address.country,
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        postalCode: address.postalCode,
+        country: address.country,
         industry: this.company.industry,
         size: this.company.size,
         type: this.company.type,
@@ -437,7 +456,7 @@ export class EditCompanyModalComponent implements OnInit {
         email: formValue.email,
         phone: formValue.phone,
         website: formValue.website,
-        address,
+        address: JSON.stringify(address),
         industry: formValue.industry,
         size: formValue.size,
         type: formValue.type as CompanyType,
@@ -448,7 +467,16 @@ export class EditCompanyModalComponent implements OnInit {
         notes: formValue.notes
       };
 
-      this.activeModal.close(updatedCompany);
+      // Save to database
+      this.companyService.updateCompany(this.company.id, updatedCompany).subscribe({
+        next: (company) => {
+          this.activeModal.close(company);
+        },
+        error: (error) => {
+          console.error('Error updating company:', error);
+          // You might want to show an error message to the user here
+        }
+      });
     }
   }
 }

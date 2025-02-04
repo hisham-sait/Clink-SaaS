@@ -2,7 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { CompanyType, CompanyTag, Currency } from '../../settings.types';
+import { CompanyType, CompanyTag, Currency, CompanyStatus, Address, Company } from '../../settings.types';
+import { CompanyService } from '../../../../services/settings/company.service';
 
 @Component({
   selector: 'app-add-company-modal',
@@ -15,6 +16,7 @@ import { CompanyType, CompanyTag, Currency } from '../../settings.types';
     </div>
     <form [formGroup]="addForm" (ngSubmit)="onSubmit()">
       <div class="modal-body">
+        <div class="text-muted small mb-3">Fields marked with an asterisk (*) are required</div>
         <div class="row g-3">
           <!-- Basic Information -->
           <div class="col-12">
@@ -22,7 +24,7 @@ import { CompanyType, CompanyTag, Currency } from '../../settings.types';
           </div>
 
           <div class="col-md-6">
-            <label for="name" class="form-label">Company Name</label>
+            <label for="name" class="form-label">Company Name *</label>
             <input
               type="text"
               class="form-control"
@@ -36,7 +38,7 @@ import { CompanyType, CompanyTag, Currency } from '../../settings.types';
           </div>
 
           <div class="col-md-6">
-            <label for="legalName" class="form-label">Legal Name</label>
+            <label for="legalName" class="form-label">Legal Name *</label>
             <input
               type="text"
               class="form-control"
@@ -50,7 +52,7 @@ import { CompanyType, CompanyTag, Currency } from '../../settings.types';
           </div>
 
           <div class="col-md-6">
-            <label for="registrationNumber" class="form-label">Registration Number</label>
+            <label for="registrationNumber" class="form-label">Registration Number *</label>
             <input
               type="text"
               class="form-control"
@@ -80,7 +82,7 @@ import { CompanyType, CompanyTag, Currency } from '../../settings.types';
           </div>
 
           <div class="col-md-6">
-            <label for="email" class="form-label">Email Address</label>
+            <label for="email" class="form-label">Email Address *</label>
             <input
               type="email"
               class="form-control"
@@ -97,7 +99,7 @@ import { CompanyType, CompanyTag, Currency } from '../../settings.types';
           </div>
 
           <div class="col-md-6">
-            <label for="phone" class="form-label">Phone Number</label>
+            <label for="phone" class="form-label">Phone Number *</label>
             <input
               type="tel"
               class="form-control"
@@ -339,7 +341,8 @@ export class AddCompanyModalComponent {
 
   constructor(
     public activeModal: NgbActiveModal,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private companyService: CompanyService
   ) {
     this.addForm = this.fb.group({
       name: ['', Validators.required],
@@ -396,7 +399,7 @@ export class AddCompanyModalComponent {
       } : undefined;
 
       // Create final company object
-      const company = {
+      const company: Partial<Company> = {
         name: formValue.name,
         legalName: formValue.legalName,
         registrationNumber: formValue.registrationNumber,
@@ -404,18 +407,59 @@ export class AddCompanyModalComponent {
         email: formValue.email,
         phone: formValue.phone,
         website: formValue.website,
-        address,
-        industry: formValue.industry,
-        size: formValue.size,
-        type: formValue.type as CompanyType,
-        tags,
-        fiscalYearEnd: formValue.fiscalYearEnd,
-        currency: formValue.currency as Currency,
-        primaryContact,
-        notes: formValue.notes
+        address: JSON.stringify({
+          street: formValue.street || '',
+          city: formValue.city || '',
+          state: formValue.state || '',
+          postalCode: formValue.postalCode || '',
+          country: formValue.country || ''
+        }),
+        industry: formValue.industry || '',
+        size: formValue.size || '',
+        type: formValue.type as CompanyType || 'Other',
+        tags: tags || [],
+        fiscalYearEnd: formValue.fiscalYearEnd || '',
+        currency: formValue.currency as Currency || 'USD',
+        notes: formValue.notes || '',
+        status: 'Active' as CompanyStatus,
+        isPrimary: formValue.isPrimaryOrg,
+        isMyOrg: formValue.isMyOrg
       };
 
-      this.activeModal.close(company);
+      // If primary contact details are provided, create it after company creation
+      const hasPrimaryContact = formValue.contactName && formValue.contactEmail;
+
+      // Save to database
+      this.companyService.createCompany(company).subscribe({
+        next: (createdCompany) => {
+          // If primary contact details are provided, create the primary contact
+          if (hasPrimaryContact) {
+            const primaryContactData = {
+              name: formValue.contactName,
+              email: formValue.contactEmail,
+              phone: formValue.contactPhone || '',
+              role: formValue.contactRole || ''
+            };
+            
+            this.companyService.updatePrimaryContact(createdCompany.id, primaryContactData).subscribe({
+              next: () => {
+                this.activeModal.close(createdCompany);
+              },
+              error: (error) => {
+                console.error('Error creating primary contact:', error);
+                // Still close the modal as the company was created successfully
+                this.activeModal.close(createdCompany);
+              }
+            });
+          } else {
+            this.activeModal.close(createdCompany);
+          }
+        },
+        error: (error) => {
+          console.error('Error creating company:', error);
+          // You might want to show an error message to the user here
+        }
+      });
     }
   }
 }

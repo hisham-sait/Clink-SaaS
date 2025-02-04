@@ -9,6 +9,7 @@ import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators'
 import { CreateOwnerModalComponent } from './modal/create-owner-modal.component';
 import { EditOwnerModalComponent } from './modal/edit-owner-modal.component';
 import { ViewOwnerModalComponent } from './modal/view-owner-modal.component';
+import { ImportBeneficialOwnersModalComponent } from './modal/import-beneficial-owners-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { BeneficialOwnerService } from '../../../services/statutory/beneficial-owner.service';
@@ -35,7 +36,8 @@ interface ControlType {
     CreateOwnerModalComponent,
     EditOwnerModalComponent,
     ViewOwnerModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportBeneficialOwnersModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -46,10 +48,16 @@ interface ControlType {
           <p class="text-muted mb-0">Record and manage company beneficial owners and their control details</p>
         </div>
         <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddOwnerModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Beneficial Owner</span>
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importOwners()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddOwnerModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Beneficial Owner</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -215,7 +223,7 @@ interface ControlType {
 })
 export class BeneficialOwnersComponent implements OnInit, OnDestroy {
   owners: BeneficialOwner[] = [];
-  showAll = false;
+  showAll = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -264,7 +272,7 @@ export class BeneficialOwnersComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.beneficialOwnerService.getBeneficialOwners(companyId, this.showAll ? undefined : 'Active').pipe(
+        this.beneficialOwnerService.getBeneficialOwners(companyId).pipe( // Removed status filter to show all by default
           map(owners => owners.map(o => ({ ...o, company })))
         )
       ),
@@ -521,6 +529,39 @@ export class BeneficialOwnersComponent implements OnInit, OnDestroy {
       default:
         return 'bi bi-activity';
     }
+  }
+
+  importOwners(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportBeneficialOwnersModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'beneficial-owner',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} beneficial owners`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {

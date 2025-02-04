@@ -9,6 +9,7 @@ import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators'
 import { CreateMeetingModalComponent } from './modal/create-meeting-modal.component';
 import { EditMeetingModalComponent } from './modal/edit-meeting-modal.component';
 import { ViewMeetingModalComponent } from './modal/view-meeting-modal.component';
+import { ImportMeetingsModalComponent } from './modal/import-meetings-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { MeetingService } from '../../../services/statutory/meeting.service';
@@ -28,7 +29,8 @@ import { Meeting, Activity, DocumentStatus, ActivityResponse } from '../statutor
     CreateMeetingModalComponent,
     EditMeetingModalComponent,
     ViewMeetingModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportMeetingsModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -39,10 +41,16 @@ import { Meeting, Activity, DocumentStatus, ActivityResponse } from '../statutor
           <p class="text-muted mb-0">Record and manage company general meetings and resolutions</p>
         </div>
         <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddMeetingModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Meeting</span>
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importMeetings()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddMeetingModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Meeting</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -223,7 +231,7 @@ import { Meeting, Activity, DocumentStatus, ActivityResponse } from '../statutor
 })
 export class MeetingsComponent implements OnInit, OnDestroy {
   meetings: Meeting[] = [];
-  showAll = false;
+  showAll = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -263,7 +271,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.meetingService.getMeetings(companyId, this.showAll ? undefined : 'Final').pipe(
+        this.meetingService.getMeetings(companyId).pipe( // Removed status filter to show all by default
           map(meetings => meetings.map(m => ({ ...m, company })))
         )
       ),
@@ -528,6 +536,39 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       default:
         return 'bi bi-activity';
     }
+  }
+
+  importMeetings(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportMeetingsModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'meeting',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} meetings`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {

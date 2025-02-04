@@ -9,6 +9,7 @@ import { takeUntil, catchError, finalize, switchMap, map } from 'rxjs/operators'
 import { CreateBoardMinuteModalComponent } from './modal/create-board-minute-modal.component';
 import { EditBoardMinuteModalComponent } from './modal/edit-board-minute-modal.component';
 import { ViewBoardMinuteModalComponent } from './modal/view-board-minute-modal.component';
+import { ImportBoardMinutesModalComponent } from './modal/import-board-minutes-modal.component';
 import { ConfirmModalComponent } from './modal/confirm-modal.component';
 
 import { BoardMinuteService } from '../../../services/statutory/board-minute.service';
@@ -30,7 +31,8 @@ type MinuteStatus = 'Draft' | 'Final' | 'Signed';
     CreateBoardMinuteModalComponent,
     EditBoardMinuteModalComponent,
     ViewBoardMinuteModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    ImportBoardMinutesModalComponent
   ],
   template: `
     <div class="container-fluid p-4">
@@ -41,10 +43,16 @@ type MinuteStatus = 'Draft' | 'Final' | 'Signed';
           <p class="text-muted mb-0">Record and manage board meetings and resolutions</p>
         </div>
         <div>
-          <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddMinuteModal()">
-            <i class="bi bi-plus-lg"></i>
-            <span>Add Board Meeting</span>
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary d-inline-flex align-items-center gap-2" (click)="importMinutes()">
+              <i class="bi bi-upload"></i>
+              <span>Import</span>
+            </button>
+            <button class="btn btn-primary d-inline-flex align-items-center gap-2" (click)="openAddMinuteModal()">
+              <i class="bi bi-plus-lg"></i>
+              <span>Add Board Meeting</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -237,7 +245,7 @@ type MinuteStatus = 'Draft' | 'Final' | 'Signed';
 })
 export class BoardMinutesComponent implements OnInit, OnDestroy {
   minutes: BoardMinute[] = [];
-  showAll = false;
+  showAll = true;
   recentActivities: Activity[] = [];
   loading = false;
   error: string | null = null;
@@ -277,7 +285,7 @@ export class BoardMinutesComponent implements OnInit, OnDestroy {
     this.companyService.getCompany(companyId).pipe(
       takeUntil(this.destroy$),
       switchMap(company => 
-        this.boardMinuteService.getBoardMinutes(companyId, this.showAll ? undefined : 'Final').pipe(
+        this.boardMinuteService.getBoardMinutes(companyId).pipe( // Removed status filter to show all by default
           map(minutes => minutes.map(m => ({ ...m, company })))
         )
       ),
@@ -569,6 +577,39 @@ export class BoardMinutesComponent implements OnInit, OnDestroy {
       default:
         return 'bi bi-activity';
     }
+  }
+
+  importMinutes(): void {
+    const user = this.authService.currentUserValue;
+    const companyId = user?.companyId;
+    if (!companyId) {
+      this.error = 'No company selected';
+      return;
+    }
+
+    const modalRef = this.modalService.open(ImportBoardMinutesModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.companyId = companyId;
+
+    modalRef.result.then(
+      (result: { imported: number }) => {
+        if (result) {
+          this.addActivity(companyId, {
+            type: 'imported',
+            entityType: 'board-minute',
+            entityId: 'bulk',
+            description: `Imported ${result.imported} board minutes`,
+            user: 'System'
+          }).subscribe(() => {
+            this.refreshData();
+          });
+        }
+      },
+      () => {} // Modal dismissed
+    );
   }
 
   private addActivity(companyId: string, activity: Omit<Activity, 'id' | 'companyId' | 'time'>): Observable<Activity | null> {

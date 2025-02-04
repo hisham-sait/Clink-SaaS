@@ -52,4 +52,20 @@ export class BeneficialOwnerService {
   getTotalOwnershipPercentage(companyId: string): Observable<number> {
     return this.http.get<number>(`${this.apiUrl}/${companyId}/total-ownership`);
   }
+
+  // Import beneficial owners from file - Preview step
+  previewImport(companyId: string, formData: FormData): Observable<{ data: Partial<BeneficialOwner>[] }> {
+    return this.http.post<{ data: Partial<BeneficialOwner>[] }>(
+      `${this.apiUrl}/${companyId}/import/preview`,
+      formData
+    );
+  }
+
+  // Import beneficial owners from file - Confirm step
+  confirmImport(companyId: string): Observable<{ imported: number }> {
+    return this.http.post<{ imported: number }>(
+      `${this.apiUrl}/${companyId}/import/confirm`,
+      {}
+    );
+  }
 }
