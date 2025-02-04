@@ -47,8 +47,9 @@ const auth = async (req, res, next) => {
     const billingCompanyId = user.billingCompany?.id;
     const companyId = headerCompanyId || billingCompanyId || defaultCompanyId;
 
-    // Verify user has access to the company
-    if (companyId && !user.userCompanies.some(uc => uc.companyId === companyId)) {
+    // Skip company access check for auth routes
+    const isAuthRoute = req.baseUrl === '/api/auth';
+    if (!isAuthRoute && companyId && !user.userCompanies.some(uc => uc.companyId === companyId)) {
       throw new Error('User does not have access to this company');
     }
 

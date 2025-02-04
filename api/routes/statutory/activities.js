@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const auth = require('../../middleware/auth');
 
 // Get all activities for a company
-router.get('/:companyId', async (req, res) => {
+router.get('/:companyId', auth, async (req, res) => {
   try {
     const { entityType, entityId, type, startDate, endDate, limit = 10, offset = 0 } = req.query;
     
@@ -38,7 +39,7 @@ router.get('/:companyId', async (req, res) => {
 });
 
 // Create a new activity
-router.post('/:companyId', async (req, res) => {
+router.post('/:companyId', auth, async (req, res) => {
   try {
     const activity = await prisma.activity.create({
       data: {
@@ -55,7 +56,7 @@ router.post('/:companyId', async (req, res) => {
 });
 
 // Get activities for a specific entity
-router.get('/:companyId/entity/:entityType/:entityId', async (req, res) => {
+router.get('/:companyId/entity/:entityType/:entityId', auth, async (req, res) => {
   try {
     const { type, startDate, endDate, limit = 10, offset = 0 } = req.query;
     
@@ -89,7 +90,7 @@ router.get('/:companyId/entity/:entityType/:entityId', async (req, res) => {
 });
 
 // Get activities by type
-router.get('/:companyId/type/:type', async (req, res) => {
+router.get('/:companyId/type/:type', auth, async (req, res) => {
   try {
     const { startDate, endDate, limit = 10, offset = 0 } = req.query;
     
@@ -121,7 +122,7 @@ router.get('/:companyId/type/:type', async (req, res) => {
 });
 
 // Get activity statistics
-router.get('/:companyId/statistics', async (req, res) => {
+router.get('/:companyId/statistics', auth, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     

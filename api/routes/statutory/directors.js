@@ -2,14 +2,18 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const auth = require('../../middleware/auth');
 
 // Get all directors for a company
-router.get('/:companyId?', async (req, res) => {
+router.get('/:companyId?', auth, async (req, res) => {
   try {
     const { status } = req.query;
-    const where = {
-      status: status || 'Active' // Default to Active if no status provided
-    };
+    const where = {};
+    
+    // Add status filter only if explicitly provided
+    if (status && status !== 'All') {
+      where.status = status;
+    }
 
     // If not super_admin/platform_admin or if companyId is provided, filter by company
     if (req.params.companyId || (!req.user.roles.includes('super_admin') && !req.user.roles.includes('platform_admin'))) {
@@ -35,7 +39,7 @@ router.get('/:companyId?', async (req, res) => {
 });
 
 // Get a specific director
-router.get('/:companyId/:id', async (req, res) => {
+router.get('/:companyId/:id', auth, async (req, res) => {
   try {
     const director = await prisma.director.findUnique({
       where: { 
@@ -53,7 +57,7 @@ router.get('/:companyId/:id', async (req, res) => {
 });
 
 // Create a new director
-router.post('/:companyId', async (req, res) => {
+router.post('/:companyId', auth, async (req, res) => {
   try {
     const { company, ...directorData } = req.body;
     const director = await prisma.director.create({
@@ -70,8 +74,10 @@ router.post('/:companyId', async (req, res) => {
     await prisma.activity.create({
       data: {
         type: 'appointment',
+        entityType: 'director',
+        entityId: director.id,
         description: `${director.firstName} ${director.lastName} appointed as ${director.directorType}`,
-        user: req.body.user || 'System',
+        user: req.user?.firstName || 'System',
         time: new Date(),
         companyId: req.params.companyId
       }
@@ -84,7 +90,7 @@ router.post('/:companyId', async (req, res) => {
 });
 
 // Update a director
-router.put('/:companyId/:id', async (req, res) => {
+router.put('/:companyId/:id', auth, async (req, res) => {
   try {
     const { company, id, ...directorData } = req.body;
     const director = await prisma.director.update({
@@ -104,8 +110,10 @@ router.put('/:companyId/:id', async (req, res) => {
     await prisma.activity.create({
       data: {
         type: 'update',
+        entityType: 'director',
+        entityId: director.id,
         description: `Director ${director.firstName} ${director.lastName}'s details updated`,
-        user: req.body.user || 'System',
+        user: req.user?.firstName || 'System',
         time: new Date(),
         companyId: req.params.companyId
       }
@@ -118,7 +126,7 @@ router.put('/:companyId/:id', async (req, res) => {
 });
 
 // Resign a director
-router.post('/:companyId/:id/resign', async (req, res) => {
+router.post('/:companyId/:id/resign', auth, async (req, res) => {
   try {
     const director = await prisma.director.update({
       where: { 
@@ -135,8 +143,10 @@ router.post('/:companyId/:id/resign', async (req, res) => {
     await prisma.activity.create({
       data: {
         type: 'resignation',
+        entityType: 'director',
+        entityId: director.id,
         description: `${director.firstName} ${director.lastName} resigned from position of ${director.directorType}`,
-        user: req.body.user || 'System',
+        user: req.user?.firstName || 'System',
         time: new Date(),
         companyId: req.params.companyId
       }

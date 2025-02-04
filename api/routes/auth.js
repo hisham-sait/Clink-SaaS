@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 
 // Login
 router.post('/login', async (req, res) => {
+  console.log('Login attempt:', req.body.email);
   try {
     const { email, password } = req.body;
 
@@ -32,12 +33,14 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) {
+      console.log('User not found:', req.body.email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Invalid password for user:', req.body.email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
