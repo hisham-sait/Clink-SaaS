@@ -1,0 +1,5 @@
+Title,First Name,Last Name,Date of Birth,Nationality,Address,Email,Phone,Nature of Control,Ownership Percentage,Registration Date,Status
+Mr,Sean,O'Brien,01/01/1980,Irish,"15 St. Stephen's Green, Dublin 2, D02 Y098",sean.obrien@example.com,+353 1 234 5678,Shares;Voting Rights,25.5,01/01/2025,Active
+Mr,Paul,O'Brien,02/01/1980,Irish,"16 St. Stephen's Green, Dublin 2, D02 Y098",sean.obrien@example.com,+353 1 234 5679,Shares;Voting Rights,26.5,02/01/2025,Active
+Mr,Jack,O'Brien,03/01/1980,Irish,"17 St. Stephen's Green, Dublin 2, D02 Y098",sean.obrien@example.com,+353 1 234 5680,Shares;Voting Rights,27.5,03/01/2025,Active
+Mr,Mac,O'Brien,04/01/1980,Irish,"18 St. Stephen's Green, Dublin 2, D02 Y098",sean.obrien@example.com,+353 1 234 5681,Shares;Voting Rights,28.5,04/01/2025,Active

@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 const auth = require('./middleware/auth');
+const { importQueue } = require('./services/queue');
 
 dotenv.config();
 
@@ -13,8 +14,58 @@ const app = express();
 app.use(cors());  // Allow all origins in development
 app.use(express.json());
 
+// Configure body parser limits
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Configure uploads directory
+const fs = require('fs');
+const path = require('path');
+const uploadsDir = path.join(__dirname, 'uploads/imports');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Remove express-fileupload as we're using multer for file uploads
+
+// Configure Prisma with better error logging
 const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],  // Enable logging for debugging
+  log: [
+    { level: 'query', emit: 'event' },
+    { level: 'info', emit: 'event' },
+    { level: 'warn', emit: 'event' },
+    { level: 'error', emit: 'event' }
+  ]
+});
+
+// Add Prisma logging events
+prisma.$on('error', (e) => {
+  console.error('Prisma Error:', e);
+});
+
+prisma.$on('warn', (e) => {
+  console.warn('Prisma Warning:', e);
+});
+
+prisma.$on('info', (e) => {
+  console.info('Prisma Info:', e);
+});
+
+prisma.$on('query', (e) => {
+  console.log('Prisma Query:', e);
+});
+
+// Initialize queue processor
+importQueue.on('completed', (job, result) => {
+  console.log(`Job ${job.id} completed with result:`, result);
+});
+
+importQueue.on('failed', (job, error) => {
+  console.error(`Job ${job.id} failed with error:`, error);
+});
+
+importQueue.on('progress', (job, progress) => {
+  console.log(`Job ${job.id} progress: ${progress}%`);
 });
 
 // Public auth routes (no auth middleware)
@@ -66,8 +117,11 @@ async function gracefulShutdown(signal) {
   console.log(`\n${signal} received. Shutting down gracefully...`);
   
   try {
-    // Close database connections
-    await prisma.$disconnect();
+    // Close database connections and queue
+    await Promise.all([
+      prisma.$disconnect(),
+      importQueue.close()
+    ]);
     
     // Clean up any temporary files
     const uploadsDir = 'uploads/';
@@ -125,6 +179,8 @@ app.listen(port, () => {
   console.log('  • Integrations');
   console.log('  • Billing');
   console.log('  • Notifications');
+  console.log('- Import/Export:');
+  console.log('  • Queue processor initialized');
 });
 
 // Export app for testing

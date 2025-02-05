@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Modal, Form, Button } from 'react-bootstrap';
+import { Modal, Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import api from '../../../../services/api';
 
 interface DirectorModalProps {
@@ -45,19 +46,49 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const formatDateForDisplay = (isoDate: string) => {
+    if (!isoDate) return '';
+    const date = new Date(isoDate);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
     if (director) {
       setFormData({
         ...director,
-        dateOfBirth: new Date(director.dateOfBirth).toISOString().split('T')[0],
-        appointmentDate: new Date(director.appointmentDate).toISOString().split('T')[0],
+        dateOfBirth: formatDateForDisplay(director.dateOfBirth),
+        appointmentDate: formatDateForDisplay(director.appointmentDate),
         resignationDate: director.resignationDate 
-          ? new Date(director.resignationDate).toISOString().split('T')[0]
+          ? formatDateForDisplay(director.resignationDate)
           : undefined
       });
     }
   }, [director]);
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const renderTooltip = (text: string) => (
+    <Tooltip>{text}</Tooltip>
+  );
+
+  const RequiredLabel: React.FC<{ text: string; tooltip?: string }> = ({ text, tooltip }) => (
+    <Form.Label className="d-flex align-items-center">
+      {text} <span className="text-danger ms-1">*</span>
+      {tooltip && (
+        <OverlayTrigger placement="top" overlay={renderTooltip(tooltip)}>
+          <span className="ms-1">
+            <FaInfoCircle className="text-muted" style={{ fontSize: '0.875rem' }} />
+          </span>
+        </OverlayTrigger>
+      )}
+    </Form.Label>
+  );
 
   const { user } = useAuth();
 
@@ -72,17 +103,55 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
       return;
     }
 
+    // Ensure all required fields are filled
+    if (!formData.title || !formData.firstName || !formData.lastName || 
+        !formData.dateOfBirth || !formData.nationality || !formData.address || 
+        !formData.appointmentDate || !formData.directorType || !formData.occupation) {
+      setError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+
+    // Convert ISO dates to DD/MM/YYYY format
+    const formatDateForAPI = (isoDate: string) => {
+      if (!isoDate) return '';
+      const date = new Date(isoDate);
+      return date.toLocaleDateString('en-IE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    };
+
+    const apiData = {
+      ...formData,
+      dateOfBirth: formatDateForAPI(formData.dateOfBirth),
+      appointmentDate: formatDateForAPI(formData.appointmentDate),
+      resignationDate: formData.resignationDate ? formatDateForAPI(formData.resignationDate) : undefined,
+      status: 'Active'  // Ensure status is set for new directors
+    };
+
+    console.log('Sending data to API:', apiData);  // Debug log
+
     try {
       if (director?.id) {
-        await api.put(`/statutory/directors/${user.companyId}/${director.id}`, formData);
+        await api.put(`/statutory/directors/${user.companyId}/${director.id}`, apiData);
       } else {
-        await api.post(`/statutory/directors/${user.companyId}`, formData);
+        await api.post(`/statutory/directors/${user.companyId}`, apiData);
       }
+      setSuccess(true);
       onSuccess();
-      onHide();
-    } catch (err) {
-      setError('Failed to save director');
+      // Wait for 1.5 seconds to show success message before closing
+      setTimeout(() => {
+        onHide();
+      }, 1500);
+    } catch (err: any) {
       console.error('Error saving director:', err);
+      if (err.response?.data?.error) {
+        setError(`Failed to save director: ${err.response.data.error}`);
+      } else {
+        setError('Failed to save director. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -94,19 +163,44 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>{director ? 'Edit Director' : 'Add Director'}</Modal.Title>
+    <Modal 
+      show={show} 
+      onHide={onHide} 
+      size="lg"
+      style={{
+        '--bs-modal-padding': '0.75rem',
+        '--bs-modal-margin': '0.75rem',
+      } as React.CSSProperties}
+    >
+      <Modal.Header closeButton style={{ padding: '0.75rem 1rem' }}>
+        <Modal.Title style={{ fontSize: '1.1rem' }}>{director ? 'Edit Director' : 'Add Director'}</Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
-        <Modal.Body>
+        <Modal.Body style={{ padding: '0.75rem 1rem' }}>
           {error && <div className="alert alert-danger">{error}</div>}
+          {success && (
+            <div className="alert alert-success">
+              <div className="d-flex align-items-center">
+                <div className="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                  <FaCheck className="text-success" />
+                </div>
+                <div>
+                  Director {director ? 'updated' : 'added'} successfully!
+                </div>
+              </div>
+            </div>
+          )}
           
-          <div className="row">
+          <div className="row g-2">
             <div className="col-md-4">
-              <Form.Group className="mb-3">
-                <Form.Label>Title</Form.Label>
+              <Form.Group className="mb-2">
+                <RequiredLabel text="Title" tooltip="Professional or honorific title" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="text"
                   name="title"
                   value={formData.title}
@@ -117,8 +211,13 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
             </div>
             <div className="col-md-4">
               <Form.Group className="mb-3">
-                <Form.Label>First Name</Form.Label>
+                <RequiredLabel text="First Name" tooltip="Legal first name as per identification documents" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="text"
                   name="firstName"
                   value={formData.firstName}
@@ -129,8 +228,13 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
             </div>
             <div className="col-md-4">
               <Form.Group className="mb-3">
-                <Form.Label>Last Name</Form.Label>
+                <RequiredLabel text="Last Name" tooltip="Legal last name as per identification documents" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="text"
                   name="lastName"
                   value={formData.lastName}
@@ -144,20 +248,31 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
           <div className="row">
             <div className="col-md-6">
               <Form.Group className="mb-3">
-                <Form.Label>Date of Birth</Form.Label>
+                <RequiredLabel text="Date of Birth" tooltip="Must be at least 18 years old" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="date"
                   name="dateOfBirth"
                   value={formData.dateOfBirth}
-                  onChange={handleChange}
+                  onChange={handleDateChange}
                   required
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
                 />
               </Form.Group>
             </div>
             <div className="col-md-6">
               <Form.Group className="mb-3">
-                <Form.Label>Nationality</Form.Label>
+                <RequiredLabel text="Nationality" tooltip="Country of citizenship" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="text"
                   name="nationality"
                   value={formData.nationality}
@@ -169,8 +284,13 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
           </div>
 
           <Form.Group className="mb-3">
-            <Form.Label>Address</Form.Label>
+            <RequiredLabel text="Address" tooltip="Current residential address" />
             <Form.Control
+              style={{ 
+                fontSize: '0.875rem',
+                padding: '0.375rem 0.75rem',
+                height: 'calc(1.5em + 0.75rem + 2px)'
+              }}
               type="text"
               name="address"
               value={formData.address}
@@ -182,20 +302,31 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
           <div className="row">
             <div className="col-md-6">
               <Form.Group className="mb-3">
-                <Form.Label>Appointment Date</Form.Label>
+                <RequiredLabel text="Appointment Date" tooltip="Date of appointment to the board" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="date"
                   name="appointmentDate"
                   value={formData.appointmentDate}
-                  onChange={handleChange}
+                  onChange={handleDateChange}
                   required
+                  max={new Date().toISOString().split('T')[0]}
                 />
               </Form.Group>
             </div>
             <div className="col-md-6">
               <Form.Group className="mb-3">
-                <Form.Label>Director Type</Form.Label>
+                <RequiredLabel text="Director Type" tooltip="Role and capacity on the board" />
                 <Form.Select
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   name="directorType"
                   value={formData.directorType}
                   onChange={handleChange}
@@ -215,8 +346,13 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
           <div className="row">
             <div className="col-md-6">
               <Form.Group className="mb-3">
-                <Form.Label>Occupation</Form.Label>
+                <RequiredLabel text="Occupation" tooltip="Current professional occupation" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="text"
                   name="occupation"
                   value={formData.occupation}
@@ -227,8 +363,13 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
             </div>
             <div className="col-md-6">
               <Form.Group className="mb-3">
-                <Form.Label>Shareholding</Form.Label>
+                <RequiredLabel text="Shareholding" tooltip="Number and class of shares held in the company" />
                 <Form.Control
+                  style={{ 
+                    fontSize: '0.875rem',
+                    padding: '0.375rem 0.75rem',
+                    height: 'calc(1.5em + 0.75rem + 2px)'
+                  }}
                   type="text"
                   name="shareholding"
                   value={formData.shareholding}
@@ -240,8 +381,13 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
           </div>
 
           <Form.Group className="mb-3">
-            <Form.Label>Other Directorships</Form.Label>
+            <RequiredLabel text="Other Directorships" tooltip="Other companies where the person serves as a director" />
             <Form.Control
+              style={{ 
+                fontSize: '0.875rem',
+                padding: '0.375rem 0.75rem',
+                height: 'calc(1.5em + 0.75rem + 2px)'
+              }}
               type="text"
               name="otherDirectorships"
               value={formData.otherDirectorships}
@@ -250,11 +396,22 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
             />
           </Form.Group>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={onHide}>
+        <Modal.Footer style={{ padding: '0.75rem 1rem', borderTop: '1px solid #dee2e6' }}>
+          <Button 
+            variant="secondary" 
+            onClick={onHide}
+            size="sm"
+            style={{ fontSize: '0.875rem', padding: '0.375rem 0.75rem' }}
+          >
             Cancel
           </Button>
-          <Button variant="primary" type="submit" disabled={loading}>
+          <Button 
+            variant="primary" 
+            type="submit" 
+            disabled={loading}
+            size="sm"
+            style={{ fontSize: '0.875rem', padding: '0.375rem 0.75rem' }}
+          >
             {loading ? 'Saving...' : 'Save'}
           </Button>
         </Modal.Footer>

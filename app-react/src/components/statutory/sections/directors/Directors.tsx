@@ -4,8 +4,8 @@ import ResignDirectorModal from './ResignDirectorModal';
 import ImportDirectorModal from './ImportDirectorModal';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Table, Button, Badge, Row, Col, Card } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaSignOutAlt, FaFileImport, FaUsers, FaUserCheck, FaUserMinus, FaClock } from 'react-icons/fa';
+import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
+import { FaPlus, FaEdit, FaSignOutAlt, FaFileImport, FaUsers, FaUserCheck, FaUserMinus, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 
 interface Director {
   id?: string;
@@ -30,7 +30,7 @@ interface Director {
 
 interface Activity {
   id: string;
-  type: 'appointment' | 'update' | 'resignation';
+  type: 'appointment' | 'update' | 'resignation' | 'deletion';
   entityType: string;
   entityId: string;
   description: string;
@@ -57,6 +57,7 @@ const Directors: React.FC = () => {
   const [directors, setDirectors] = useState<Director[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Resigned'>('All');
   const { user } = useAuth();
@@ -73,12 +74,15 @@ const Directors: React.FC = () => {
 
   const fetchRecentActivities = async () => {
     try {
+      setActivitiesLoading(true);
       const response = await api.get(`/statutory/activities/${user?.companyId}?entityType=director&limit=5`);
       if (response.data?.activities) {
         setRecentActivities(response.data.activities);
       }
     } catch (err) {
       console.error('Error fetching recent activities:', err);
+    } finally {
+      setActivitiesLoading(false);
     }
   };
 
@@ -101,6 +105,32 @@ const Directors: React.FC = () => {
     }
   };
 
+  const handleExport = async (type: 'pdf' | 'excel') => {
+    try {
+      const response = await api.get(`/statutory/directors/${user?.companyId}/export/${type}`, {
+        responseType: 'blob'
+      });
+      
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `directors.${type === 'pdf' ? 'pdf' : 'xlsx'}`);
+      
+      // Append to html link element page
+      document.body.appendChild(link);
+      
+      // Start download
+      link.click();
+      
+      // Clean up and remove the link
+      link.parentNode?.removeChild(link);
+    } catch (error) {
+      console.error('Error exporting directors:', error);
+      alert('Failed to export directors. Please try again.');
+    }
+  };
+
   const handleAddDirector = () => {
     setSelectedDirector(undefined);
     setShowAddModal(true);
@@ -114,6 +144,19 @@ const Directors: React.FC = () => {
   const handleResignDirector = (director: Director) => {
     setSelectedDirector(director);
     setShowResignModal(true);
+  };
+
+  const handleDeleteDirector = async (director: Director) => {
+    if (window.confirm(`Are you sure you want to delete ${director.firstName} ${director.lastName}? This action cannot be undone.`)) {
+      try {
+        await api.delete(`/statutory/directors/${user?.companyId}/${director.id}`);
+        fetchDirectors();
+        fetchRecentActivities();
+      } catch (error) {
+        console.error('Error deleting director:', error);
+        alert('Failed to delete director. Please try again.');
+      }
+    }
   };
 
   const handleConfirmResign = async (resignationDate: string) => {
@@ -175,7 +218,20 @@ const Directors: React.FC = () => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="h3 mb-0">Directors & Secretaries</h1>
-          <div>
+          <div className="d-flex">
+            <Dropdown className="me-2">
+              <Dropdown.Toggle variant="outline-primary" id="export-dropdown">
+                <FaFileExport className="me-2" /> Export
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item onClick={() => handleExport('pdf')}>
+                  <FaFilePdf className="me-2" /> Export as PDF
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => handleExport('excel')}>
+                  <FaFileExcel className="me-2" /> Export as Excel
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
             <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
               <FaFileImport className="me-2" /> Import
             </Button>
@@ -288,7 +344,11 @@ const Directors: React.FC = () => {
                       </div>
                     </td>
                     <td>{director.directorType}</td>
-                    <td>{new Date(director.appointmentDate).toLocaleDateString()}</td>
+                    <td>{new Date(director.appointmentDate).toLocaleDateString('en-IE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    })}</td>
                     <td>
                       <Badge bg={director.status === 'Active' ? 'success' : 'secondary'}>
                         {director.status}
@@ -306,12 +366,30 @@ const Directors: React.FC = () => {
                         <FaEdit className="text-primary" />
                       </Button>
                       {director.status === 'Active' && (
+                        <>
+                          <Button
+                            variant="link"
+                            className="p-0 me-3"
+                            onClick={() => handleResignDirector(director)}
+                          >
+                            <FaSignOutAlt className="text-danger" />
+                          </Button>
+                          <Button
+                            variant="link"
+                            className="p-0"
+                            onClick={() => handleDeleteDirector(director)}
+                          >
+                            <FaTrash className="text-danger" />
+                          </Button>
+                        </>
+                      )}
+                      {director.status === 'Resigned' && (
                         <Button
                           variant="link"
                           className="p-0"
-                          onClick={() => handleResignDirector(director)}
+                          onClick={() => handleDeleteDirector(director)}
                         >
-                          <FaSignOutAlt className="text-danger" />
+                          <FaTrash className="text-danger" />
                         </Button>
                       )}
                     </td>
@@ -338,7 +416,12 @@ const Directors: React.FC = () => {
                 Recent Activities
               </h5>
             </div>
-            {recentActivities.length > 0 ? (
+            {activitiesLoading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border spinner-border-sm text-primary"></div>
+                <p className="text-muted small mt-2 mb-0">Loading activities...</p>
+              </div>
+            ) : recentActivities.length > 0 ? (
               <div style={timelineStyles.timeline}>
                 {recentActivities.map((activity, index) => (
                   <div key={index} style={timelineStyles.timelineItem} className="pb-3">
@@ -351,6 +434,8 @@ const Directors: React.FC = () => {
                             <FaEdit className="text-primary" />
                           ) : activity.type === 'resignation' ? (
                             <FaSignOutAlt className="text-danger" />
+                          ) : activity.type === 'deletion' ? (
+                            <FaTrash className="text-danger" />
                           ) : (
                             <FaEdit className="text-primary" />
                           )}
@@ -359,7 +444,13 @@ const Directors: React.FC = () => {
                       <div>
                         <p className="mb-0">{activity.description}</p>
                         <small className="text-muted">
-                          {new Date(activity.time).toLocaleString()}
+                          {new Date(activity.time).toLocaleString('en-IE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </small>
                       </div>
                     </div>
