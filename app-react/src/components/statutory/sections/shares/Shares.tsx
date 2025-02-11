@@ -178,11 +178,11 @@ const Shares: React.FC = () => {
       <div className="container-fluid py-4">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h3 mb-0">Shares Register</h1>
+          <div>
+            <h1 className="h3 mb-0">Shares Register</h1>
+            <p className="text-muted mb-0">Record and manage company share classes and their details</p>
+          </div>
           <div className="d-flex">
-            <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
-              <FaFileImport className="me-2" /> Import
-            </Button>
             <Dropdown className="me-2">
               <Dropdown.Toggle variant="outline-primary" id="export-dropdown">
                 <FaFileExport className="me-2" /> Export
@@ -196,6 +196,9 @@ const Shares: React.FC = () => {
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
+            <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
+              <FaFileImport className="me-2" /> Import
+            </Button>
             <Button variant="primary" onClick={handleAddShare}>
               <FaPlus className="me-2" /> Add Share Class
             </Button>
@@ -354,8 +357,22 @@ const Shares: React.FC = () => {
                 ))}
                 {shares.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 8 : 7} className="text-center py-4">
-                      <div className="text-muted">No share classes found</div>
+                    <td colSpan={user?.role === 'super_admin' ? 8 : 7} className="text-center py-5">
+                      <div className="d-flex flex-column align-items-center">
+                        <div className="bg-light p-4 rounded-circle mb-3">
+                          <FaCoins className="text-muted" size={32} />
+                        </div>
+                        <h5 className="text-muted mb-2">No Share Classes Found</h5>
+                        <p className="text-muted mb-4">Get started by adding your first share class or importing data</p>
+                        <div>
+                          <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
+                            <FaFileImport className="me-2" /> Import Share Classes
+                          </Button>
+                          <Button variant="primary" onClick={handleAddShare}>
+                            <FaPlus className="me-2" /> Add Share Class
+                          </Button>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )}

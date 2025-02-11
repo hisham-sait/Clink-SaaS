@@ -1,0 +1,8 @@
+Allotment ID,Share Class,Number of Shares,Price per Share,Currency,Allotment Date,Allottee,Payment Status,Amount Paid,Payment Date,Certificate Number,Notes,Status
+ALT001,Ordinary Shares,1000,1,EUR,01/01/2025,John Smith,Completed,1000,01/01/2025,CERT001,Initial share allotment,Active
+ALT002,Ordinary Shares,1000,1,EUR,02/01/2025,John Smith,Completed,1001,02/01/2025,CERT002,Initial share allotment,Active
+ALT003,Ordinary Shares,1000,1,EUR,03/01/2025,John Smith,Completed,1002,03/01/2025,CERT003,Initial share allotment,Active
+ALT004,Ordinary Shares,1000,1,EUR,04/01/2025,John Smith,Completed,1003,04/01/2025,CERT004,Initial share allotment,Active
+ALT005,Ordinary Shares,1000,1,EUR,05/01/2025,John Smith,Completed,1004,05/01/2025,CERT005,Initial share allotment,Active
+ALT006,Ordinary Shares,1000,1,EUR,06/01/2025,John Smith,Completed,1005,06/01/2025,CERT006,Initial share allotment,Active
+ALT007,Ordinary Shares,1000,1,EUR,07/01/2025,John Smith,Completed,1006,07/01/2025,CERT007,Initial share allotment,Active

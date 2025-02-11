@@ -547,9 +547,9 @@ enum ShareType {
 
 enum PaymentStatus {
   Pending
-  Completed
+  Paid
+  Partially_Paid
   Failed
-  Refunded
 }
 
 enum ResolutionType {

@@ -200,7 +200,9 @@ async function parseCSV(filePath, mapping) {
           let cellValue = row[value]?.trim();
           
           // Handle date fields
-          if (key === 'dateOfBirth' || key === 'appointmentDate' || key === 'resignationDate') {
+          if (key === 'dateOfBirth' || key === 'appointmentDate' || key === 'resignationDate' || 
+              key === 'dateCreated' || key === 'registrationDate' || key === 'satisfactionDate' ||
+              key === 'allotmentDate' || key === 'paymentDate') {
             if (cellValue) {
               // Check if date is in DD/MM/YYYY format
               const dateMatch = cellValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -259,7 +261,7 @@ function parseExcel(filePath, mapping) {
 
 // Process batch of records
 async function processBatch(records, companyId, job, totalRecords, processedSoFar) {
-  const entityType = job.data.entityType || 'director'; // Default to director for backward compatibility
+  const { entityType = 'director' } = job.data; // Properly destructure entityType from job.data
   try {
     // Validate records
     const validRecords = records.filter(record => validateRecord(record, entityType));
@@ -294,11 +296,17 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
           case 'share':
             progressData.currentShare = record.class;
             break;
+          case 'charge':
+            progressData.currentCharge = record.chargeId;
+            break;
+          case 'allotment':
+            progressData.currentAllotment = `${record.numberOfShares} ${record.shareClass} shares to ${record.allottee}`;
+            break;
         }
         
         logger.debug(`Processing ${entityType}:`, {
           jobId: job.id,
-          name: entityType === 'share' ? record.class : `${record.firstName} ${record.lastName}`,
+          name: getEntityName(entityType, record),
           progress: currentProgress,
           recordNumber: processedSoFar + validRecords.indexOf(record) + 1,
           totalRecords
@@ -470,6 +478,88 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
             });
             break;
           }
+          case 'charge': {
+            // Process charge record
+            const chargeData = {
+              chargeId: record.chargeId,
+              chargeType: record.chargeType,
+              amount: parseFloat(record.amount) || 0,
+              currency: record.currency || 'EUR',
+              chargor: record.chargor,
+              chargee: record.chargee,
+              propertyCharged: record.propertyCharged,
+              dateCreated: parseDDMMYYYY(record.dateCreated),
+              registrationDate: parseDDMMYYYY(record.registrationDate),
+              description: record.description,
+              status: record.status || 'Active',
+              companyId
+            };
+
+            const charge = await prisma.charge.create({
+              data: chargeData
+            });
+
+            await prisma.activity.create({
+              data: {
+                type: 'added',
+                entityType: 'charge',
+                entityId: charge.id,
+                description: `New charge created: ${charge.chargeType} - ${charge.chargeId}`,
+                user: 'System',
+                time: new Date(),
+                companyId
+              }
+            });
+
+            logger.info('Charge created successfully:', {
+              chargeId: charge.id,
+              type: charge.chargeType,
+              companyId
+            });
+            break;
+          }
+          case 'allotment': {
+            // Process allotment record
+            const allotmentData = {
+              allotmentId: record.allotmentId,
+              shareClass: record.shareClass,
+              numberOfShares: parseInt(record.numberOfShares) || 0,
+              pricePerShare: parseFloat(record.pricePerShare) || 0,
+              currency: record.currency || 'EUR',
+              allotmentDate: parseDDMMYYYY(record.allotmentDate),
+              allottee: record.allottee,
+              paymentStatus: record.paymentStatus || 'Pending',
+              amountPaid: record.amountPaid ? parseFloat(record.amountPaid) : null,
+              paymentDate: record.paymentDate ? parseDDMMYYYY(record.paymentDate) : null,
+              certificateNumber: record.certificateNumber,
+              status: record.status || 'Active',
+              companyId
+            };
+
+            const allotment = await prisma.allotment.create({
+              data: allotmentData
+            });
+
+            await prisma.activity.create({
+              data: {
+                type: 'added',
+                entityType: 'allotment',
+                entityId: allotment.id,
+                description: `New allotment created: ${allotment.numberOfShares} ${allotment.shareClass} shares to ${allotment.allottee}`,
+                user: 'System',
+                time: new Date(),
+                companyId
+              }
+            });
+
+            logger.info('Allotment created successfully:', {
+              allotmentId: allotment.id,
+              shares: `${allotment.numberOfShares} ${allotment.shareClass}`,
+              allottedTo: allotment.allottee,
+              companyId
+            });
+            break;
+          }
         }
       } catch (error) {
         logger.error(`Error creating ${entityType}:`, {
@@ -488,6 +578,24 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
       companyId
     });
     throw error;
+  }
+}
+
+// Helper function to get entity name for logging
+function getEntityName(entityType, record) {
+  switch (entityType) {
+    case 'director':
+    case 'shareholder':
+    case 'beneficial-owner':
+      return `${record.firstName} ${record.lastName}`;
+    case 'share':
+      return record.class;
+    case 'charge':
+      return `${record.chargeType} - ${record.chargeId}`;
+    case 'allotment':
+      return `${record.numberOfShares} ${record.shareClass} shares to ${record.allottee}`;
+    default:
+      return 'Unknown';
   }
 }
 
@@ -538,6 +646,51 @@ function validateRecord(record, entityType = 'director') {
           'totalIssued'
         ];
         break;
+      case 'charge':
+        requiredFields = [
+          'chargeId',
+          'chargeType',
+          'amount',
+          'currency',
+          'chargor',
+          'chargee',
+          'propertyCharged',
+          'dateCreated',
+          'registrationDate',
+          'description'
+        ];
+        break;
+      case 'allotment':
+        requiredFields = [
+          'allotmentId',
+          'allotmentDate',
+          'shareClass',
+          'numberOfShares',
+          'pricePerShare',
+          'currency',
+          'allottee',
+          'paymentStatus',
+          'status'
+        ];
+        break;
+      case 'meeting':
+        requiredFields = [
+          'meetingDate',
+          'meetingType',
+          'venue',
+          'chairperson',
+          'agenda'
+        ];
+        break;
+      case 'minute':
+        requiredFields = [
+          'meetingDate',
+          'meetingType',
+          'chairperson',
+          'attendees',
+          'content'
+        ];
+        break;
       default:
         requiredFields = [];
     }
@@ -584,6 +737,28 @@ function validateRecord(record, entityType = 'director') {
         record.transferable = record.transferable === 'Yes' || record.transferable === 'true' || record.transferable === true;
         record.status = record.status || 'Active';
         break;
+      case 'charge':
+        record.status = record.status || 'Active';
+        record.amount = parseFloat(record.amount) || 0;
+        break;
+      case 'allotment':
+        record.numberOfShares = parseInt(record.numberOfShares) || 0;
+        record.pricePerShare = parseFloat(record.pricePerShare) || 0;
+        record.paymentStatus = record.paymentStatus || 'Pending';
+        record.status = record.status || 'Active';
+        break;
+      case 'meeting':
+        record.status = record.status || 'Scheduled';
+        record.attendees = record.attendees ? 
+          (Array.isArray(record.attendees) ? record.attendees : [record.attendees]) 
+          : [];
+        break;
+      case 'minute':
+        record.status = record.status || 'Draft';
+        record.attendees = record.attendees ? 
+          (Array.isArray(record.attendees) ? record.attendees : [record.attendees]) 
+          : [];
+        break;
     }
 
     // Check required fields after setting defaults
@@ -617,7 +792,7 @@ function validateRecord(record, entityType = 'director') {
     };
 
     // Validate required dates
-    if (entityType !== 'share' && !isValidDDMMYYYY(record.dateOfBirth)) {
+    if (entityType !== 'share' && entityType !== 'charge' && entityType !== 'allotment' && !isValidDDMMYYYY(record.dateOfBirth)) {
       logger.warn('Invalid date of birth:', record.dateOfBirth);
       return false;
     }
@@ -646,11 +821,43 @@ function validateRecord(record, entityType = 'director') {
           return false;
         }
         break;
+      case 'charge':
+        if (!isValidDDMMYYYY(record.dateCreated)) {
+          logger.warn('Invalid date created:', record.dateCreated);
+          return false;
+        }
+        if (!isValidDDMMYYYY(record.registrationDate)) {
+          logger.warn('Invalid registration date:', record.registrationDate);
+          return false;
+        }
+        break;
+      case 'allotment':
+        if (!isValidDDMMYYYY(record.allotmentDate)) {
+          logger.warn('Invalid allotment date:', record.allotmentDate);
+          return false;
+        }
+        if (record.paymentDate && !isValidDDMMYYYY(record.paymentDate)) {
+          logger.warn('Invalid payment date:', record.paymentDate);
+          return false;
+        }
+        break;
     }
 
     // Validate status for directors
     if (entityType === 'director' && record.status && !['Active', 'Resigned'].includes(record.status)) {
       logger.warn('Invalid director status:', record.status);
+      return false;
+    }
+
+    // Validate payment status for allotments
+    if (entityType === 'allotment' && !['Pending', 'Paid', 'Partially Paid'].includes(record.paymentStatus)) {
+      logger.warn('Invalid payment status:', record.paymentStatus);
+      return false;
+    }
+
+    // Validate status for allotments
+    if (entityType === 'allotment' && !['Active', 'Cancelled'].includes(record.status)) {
+      logger.warn('Invalid allotment status:', record.status);
       return false;
     }
 

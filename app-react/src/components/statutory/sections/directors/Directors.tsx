@@ -217,7 +217,10 @@ const Directors: React.FC = () => {
       <div className="container-fluid py-4">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h3 mb-0">Directors & Secretaries</h1>
+          <div>
+            <h1 className="h3 mb-0">Directors & Secretaries</h1>
+            <p className="text-muted mb-0">Record and manage company directors, secretaries and their details</p>
+          </div>
           <div className="d-flex">
             <Dropdown className="me-2">
               <Dropdown.Toggle variant="outline-primary" id="export-dropdown">
@@ -397,8 +400,22 @@ const Directors: React.FC = () => {
                 ))}
                 {directors.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 6 : 5} className="text-center py-4">
-                      <div className="text-muted">No directors found</div>
+                    <td colSpan={user?.role === 'super_admin' ? 6 : 5} className="text-center py-5">
+                      <div className="d-flex flex-column align-items-center">
+                        <div className="bg-light p-4 rounded-circle mb-3">
+                          <FaUsers className="text-muted" size={32} />
+                        </div>
+                        <h5 className="text-muted mb-2">No Directors Found</h5>
+                        <p className="text-muted mb-4">Get started by adding your first director or importing data</p>
+                        <div>
+                          <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
+                            <FaFileImport className="me-2" /> Import Directors
+                          </Button>
+                          <Button variant="primary" onClick={handleAddDirector}>
+                            <FaPlus className="me-2" /> Add Director
+                          </Button>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )}

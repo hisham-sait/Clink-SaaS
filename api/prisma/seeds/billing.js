@@ -121,7 +121,7 @@ async function seedBilling() {
             amount: invoice.amount,
             currency: invoice.currency,
             method: 'card',
-            status: 'Completed',
+            status: 'Paid',
             metadata: {
               paymentMethod: 'Visa ending in 4242',
               transactionId: `ch_${Date.now()}`

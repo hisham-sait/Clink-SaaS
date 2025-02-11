@@ -1,0 +1,10 @@
+Charge ID,Charge Type,Amount,Currency,Chargor,Chargee,Property Charged,Date Created,Registration Date,Description,Status
+CHG001,Fixed Charge,16208,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,01/01/2025,05/01/2025,Fixed charge over company assets,Active
+CHG002,Fixed Charge,10056,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,02/01/2025,06/01/2025,Fixed charge over company assets,Active
+CHG003,Fixed Charge,19952,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,03/01/2025,07/01/2025,Fixed charge over company assets,Active
+CHG004,Fixed Charge,10357,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,04/01/2025,08/01/2025,Fixed charge over company assets,Active
+CHG005,Fixed Charge,16983,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,05/01/2025,09/01/2025,Fixed charge over company assets,Active
+CHG006,Fixed Charge,14901,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,06/01/2025,10/01/2025,Fixed charge over company assets,Active
+CHG007,Fixed Charge,18691,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,07/01/2025,11/01/2025,Fixed charge over company assets,Active
+CHG008,Fixed Charge,18437,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,08/01/2025,12/01/2025,Fixed charge over company assets,Active
+CHG009,Fixed Charge,13193,EUR,Sample Company Ltd,Bank of Ireland,All present and future assets,09/01/2025,13/01/2025,Fixed charge over company assets,Active

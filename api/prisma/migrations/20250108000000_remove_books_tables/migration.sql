@@ -1,9 +1,0 @@
--- Drop tables in correct order of dependencies
-DROP TABLE IF EXISTS "Transaction" CASCADE;
-DROP TABLE IF EXISTS "CategoryRule" CASCADE;
-DROP TABLE IF EXISTS "Category" CASCADE;
-DROP TABLE IF EXISTS "BalanceAlert" CASCADE;
-DROP TABLE IF EXISTS "Reconciliation" CASCADE;
-DROP TABLE IF EXISTS "SyncLog" CASCADE;
-DROP TABLE IF EXISTS "BankAccount" CASCADE;
-DROP TABLE IF EXISTS "BankConnection" CASCADE;
