@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import StatutorySidebar from '../statutory/StatutorySidebar';
+import SettingsSidebar from '../settings/SettingsSidebar';
 import HelpSidebar from '../help/HelpSidebar';
 
 type SectionType = 'statutory' | 'compliance' | 'tax' | 'settings' | 'help';
@@ -69,6 +70,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     switch (activeSection) {
       case 'statutory':
         return <StatutorySidebar isExpanded={isExpanded} />;
+      case 'settings':
+        return <SettingsSidebar isExpanded={isExpanded} />;
       case 'help':
         return <HelpSidebar isExpanded={isExpanded} />;
       default:

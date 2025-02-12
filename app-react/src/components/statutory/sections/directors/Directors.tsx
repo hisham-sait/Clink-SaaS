@@ -331,7 +331,7 @@ const Directors: React.FC = () => {
                   <th>Type</th>
                   <th>Appointment Date</th>
                   <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
+                  {user?.roles.includes('Super Admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -357,7 +357,7 @@ const Directors: React.FC = () => {
                         {director.status}
                       </Badge>
                     </td>
-                    {user?.role === 'super_admin' && (
+                    {user?.roles.includes('Super Admin') && (
                       <td>{director.company?.name || director.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -400,7 +400,7 @@ const Directors: React.FC = () => {
                 ))}
                 {directors.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 6 : 5} className="text-center py-5">
+                    <td colSpan={user?.roles.includes('Super Admin') ? 6 : 5} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaUsers className="text-muted" size={32} />

@@ -3,6 +3,16 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Get all permissions
+router.get('/permissions', async (req, res, next) => {
+  try {
+    const permissions = await prisma.permission.findMany();
+    res.json(permissions);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get all roles
 router.get('/', async (req, res, next) => {
   try {

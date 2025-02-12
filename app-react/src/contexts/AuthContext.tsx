@@ -5,7 +5,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  roles: string[];
   companyId?: string;
 }
 
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: data.user.id,
             name: `${data.user.firstName} ${data.user.lastName}`,
             email: data.user.email,
-            role: data.user.roles[0],
+            roles: data.user.roles,
             companyId: data.user.companyId
           });
           localStorage.setItem('token', data.token);
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: data.user.id,
         name: `${data.user.firstName} ${data.user.lastName}`,
         email: data.user.email,
-        role: data.user.roles[0],
+        roles: data.user.roles,
         companyId: data.user.companyId
       });
 

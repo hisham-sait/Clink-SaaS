@@ -4,7 +4,6 @@ import ImportBeneficialOwnerModal from './ImportBeneficialOwnerModal';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaFileImport, FaUsers, FaUserCheck, FaUserMinus, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 
 interface BeneficialOwner {
   id?: string;
@@ -153,7 +152,7 @@ const BeneficialOwners: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container-fluid py-4">
+      <div className="container-fluid p-4">
         <div className="d-flex justify-content-center">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -183,28 +182,33 @@ const BeneficialOwners: React.FC = () => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="h3 mb-0">Beneficial Owners Register</h1>
+            <h1 className="h3 mb-2">Beneficial Owners Register</h1>
             <p className="text-muted mb-0">Record and manage company beneficial owners and their ownership details</p>
           </div>
-          <div className="d-flex">
-            <Dropdown className="me-2">
-              <Dropdown.Toggle variant="outline-primary" id="export-dropdown">
-                <FaFileExport className="me-2" /> Export
+          <div className="d-flex gap-2">
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="export-dropdown" className="d-inline-flex align-items-center gap-2">
+                <i className="bi bi-download"></i>
+                <span>Export</span>
               </Dropdown.Toggle>
               <Dropdown.Menu>
-                <Dropdown.Item onClick={() => handleExport('pdf')}>
-                  <FaFilePdf className="me-2" /> Export as PDF
+                <Dropdown.Item onClick={() => handleExport('pdf')} className="d-flex align-items-center gap-2">
+                  <i className="bi bi-file-pdf"></i>
+                  <span>Export as PDF</span>
                 </Dropdown.Item>
-                <Dropdown.Item onClick={() => handleExport('excel')}>
-                  <FaFileExcel className="me-2" /> Export as Excel
+                <Dropdown.Item onClick={() => handleExport('excel')} className="d-flex align-items-center gap-2">
+                  <i className="bi bi-file-excel"></i>
+                  <span>Export as Excel</span>
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
-            <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
-              <FaFileImport className="me-2" /> Import
+            <Button variant="outline-primary" className="d-inline-flex align-items-center gap-2" onClick={() => setShowImportModal(true)}>
+              <i className="bi bi-upload"></i>
+              <span>Import</span>
             </Button>
-            <Button variant="primary" onClick={handleAddOwner}>
-              <FaPlus className="me-2" /> Add Beneficial Owner
+            <Button variant="primary" className="d-inline-flex align-items-center gap-2" onClick={handleAddOwner}>
+              <i className="bi bi-plus-lg"></i>
+              <span>Add Beneficial Owner</span>
             </Button>
           </div>
         </div>
@@ -222,11 +226,12 @@ const BeneficialOwners: React.FC = () => {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
-                    <div className="text-muted mb-1">Total Beneficial Owners</div>
+                    <span className="text-muted">Total Beneficial Owners</span>
                     <h3 className="mb-0">{owners.length}</h3>
+                    <small className="text-muted">All registered owners</small>
                   </div>
-                  <div className="bg-primary bg-opacity-10 p-3 rounded">
-                    <FaUsers className="text-primary" size={24} />
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <i className="bi bi-people fs-4 text-primary"></i>
                   </div>
                 </div>
               </Card.Body>
@@ -237,11 +242,12 @@ const BeneficialOwners: React.FC = () => {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
-                    <div className="text-muted mb-1">Active Owners</div>
+                    <span className="text-muted">Active Owners</span>
                     <h3 className="mb-0">{owners.filter(o => o.status === 'Active').length}</h3>
+                    <small className="text-muted">Currently active owners</small>
                   </div>
-                  <div className="bg-success bg-opacity-10 p-3 rounded">
-                    <FaUserCheck className="text-success" size={24} />
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <i className="bi bi-person-check fs-4 text-success"></i>
                   </div>
                 </div>
               </Card.Body>
@@ -252,11 +258,12 @@ const BeneficialOwners: React.FC = () => {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
-                    <div className="text-muted mb-1">Inactive/Archived</div>
+                    <span className="text-muted">Inactive/Archived</span>
                     <h3 className="mb-0">{owners.filter(o => o.status !== 'Active').length}</h3>
+                    <small className="text-muted">Inactive or archived owners</small>
                   </div>
-                  <div className="bg-secondary bg-opacity-10 p-3 rounded">
-                    <FaUserMinus className="text-secondary" size={24} />
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <i className="bi bi-person-dash fs-4 text-secondary"></i>
                   </div>
                 </div>
               </Card.Body>
@@ -267,44 +274,43 @@ const BeneficialOwners: React.FC = () => {
         {/* Beneficial Owners Table */}
         <div className="card mb-4">
           <div className="card-body">
-            <div className="d-flex justify-content-end mb-3">
-              <div className="btn-group">
-                <Button
-                  variant={statusFilter === 'All' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('All')}
+            <div className="card-header bg-white d-flex justify-content-between align-items-center py-3">
+              <h5 className="mb-0">All Beneficial Owners</h5>
+              <div className="d-flex gap-2">
+                <div className="input-group">
+                  <span className="input-group-text border-end-0 bg-white">
+                    <i className="bi bi-search text-muted"></i>
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-start-0"
+                    placeholder="Search owners..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <select
+                  className="form-select w-auto"
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value as 'All' | 'Active' | 'Inactive' | 'Archived')}
                 >
-                  All
-                </Button>
-                <Button
-                  variant={statusFilter === 'Active' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('Active')}
-                >
-                  Active
-                </Button>
-                <Button
-                  variant={statusFilter === 'Inactive' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('Inactive')}
-                >
-                  Inactive
-                </Button>
-                <Button
-                  variant={statusFilter === 'Archived' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('Archived')}
-                >
-                  Archived
-                </Button>
+                  <option value="All">All Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Archived">Archived</option>
+                </select>
               </div>
             </div>
             <Table responsive hover className="align-middle">
               <thead className="bg-light">
                 <tr>
-                  <th>Name</th>
-                  <th>Nature of Control</th>
-                  <th>Ownership %</th>
-                  <th>Registration Date</th>
-                  <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
-                  <th className="text-end">Actions</th>
+                  <th className="text-uppercase small fw-semibold text-secondary">Name</th>
+                  <th className="text-uppercase small fw-semibold text-secondary">Nature of Control</th>
+                  <th className="text-uppercase small fw-semibold text-secondary">Ownership %</th>
+                  <th className="text-uppercase small fw-semibold text-secondary">Registration Date</th>
+                  <th className="text-uppercase small fw-semibold text-secondary">Status</th>
+                  {user?.role === 'super_admin' && <th className="text-uppercase small fw-semibold text-secondary">Company</th>}
+                  <th className="text-uppercase small fw-semibold text-secondary text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,20 +344,22 @@ const BeneficialOwners: React.FC = () => {
                       <td>{owner.company?.name || owner.company?.legalName}</td>
                     )}
                     <td className="text-end">
-                      <Button
-                        variant="link"
-                        className="p-0 me-3"
-                        onClick={() => handleEditOwner(owner)}
-                      >
-                        <FaEdit className="text-primary" />
-                      </Button>
-                      <Button
-                        variant="link"
-                        className="p-0"
-                        onClick={() => handleDeleteOwner(owner)}
-                      >
-                        <FaTrash className="text-danger" />
-                      </Button>
+                      <div className="btn-group">
+                        <button
+                          className="btn btn-link btn-sm text-body px-2"
+                          onClick={() => handleEditOwner(owner)}
+                          title="Edit"
+                        >
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                        <button
+                          className="btn btn-link btn-sm text-danger px-2"
+                          onClick={() => handleDeleteOwner(owner)}
+                          title="Delete"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -386,7 +394,7 @@ const BeneficialOwners: React.FC = () => {
           <Card.Body>
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">
-                <FaClock className="me-2" />
+                <i className="bi bi-clock-history me-2"></i>
                 Recent Activities
               </h5>
             </div>
@@ -403,13 +411,13 @@ const BeneficialOwners: React.FC = () => {
                       <div className="me-3">
                         <Badge bg="light" className="p-2">
                           {activity.type === 'added' ? (
-                            <FaPlus className="text-success" />
+                            <i className="bi bi-plus-circle text-success"></i>
                           ) : activity.type === 'updated' ? (
-                            <FaEdit className="text-primary" />
+                            <i className="bi bi-pencil text-primary"></i>
                           ) : activity.type === 'removed' ? (
-                            <FaTrash className="text-danger" />
+                            <i className="bi bi-trash text-danger"></i>
                           ) : (
-                            <FaEdit className="text-primary" />
+                            <i className="bi bi-pencil text-primary"></i>
                           )}
                         </Badge>
                       </div>
