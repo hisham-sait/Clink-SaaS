@@ -11,7 +11,6 @@ cd api
 npm install --legacy-peer-deps
 npx prisma generate
 npx prisma db push
-npx prisma db seed
 echo "Starting backend server..."
 npm run dev &
 
@@ -21,7 +20,7 @@ sleep 5
 
 # Start frontend server
 echo "Setting up frontend..."
-cd ../app-react
+cd ../app
 rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
 echo "Starting frontend server..."

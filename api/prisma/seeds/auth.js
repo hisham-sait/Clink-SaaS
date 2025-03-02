@@ -30,7 +30,17 @@ async function seedAuth(inputPlans) {
     // First, delete all existing data in correct order due to foreign key constraints
     console.log('Cleaning up existing data...');
     
-    // Delete statutory models first
+    // Delete CRM models first
+    await prisma.form.deleteMany();
+    await prisma.deal.deleteMany();
+    await prisma.stage.deleteMany();
+    await prisma.pipeline.deleteMany();
+    await prisma.automation.deleteMany();
+    await prisma.contact.deleteMany();
+    await prisma.client.deleteMany();
+    await prisma.organisation.deleteMany();
+
+    // Delete statutory models
     await prisma.actionItem.deleteMany();
     await prisma.discussion.deleteMany();
     await prisma.resolution.deleteMany();

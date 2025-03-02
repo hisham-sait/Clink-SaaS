@@ -12,6 +12,7 @@ router.post('/login', async (req, res) => {
   console.log('Login attempt:', req.body.email);
   try {
     const { email, password } = req.body;
+    console.log('Login credentials:', { email, password: '***' });
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -37,12 +38,20 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    console.log('Found user:', {
+      id: user.id,
+      email: user.email,
+      roles: user.roles.map(r => r.role.name)
+    });
+
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       console.log('Invalid password for user:', req.body.email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log('Password match successful');
 
     // Create token
     const token = jwt.sign(
@@ -51,12 +60,14 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    console.log('Generated token:', token);
+
     // Get company ID from either billing company or first company association
     const defaultCompanyId = user.userCompanies?.[0]?.companyId;
     const billingCompanyId = user.billingCompany?.id;
     const companyId = billingCompanyId || defaultCompanyId;
 
-    res.json({
+    const responseData = {
       token,
       user: {
         id: user.id,
@@ -66,7 +77,10 @@ router.post('/login', async (req, res) => {
         roles: user.roles.map(r => r.role.name),
         companyId
       }
-    });
+    };
+
+    console.log('Login response:', responseData);
+    res.json(responseData);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });

@@ -6,11 +6,15 @@ const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
+    console.log('Auth middleware - Token:', token);
+    
     if (!token) {
       throw new Error('No token provided');
     }
 
+    console.log('Auth middleware - JWT_SECRET:', process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Auth middleware - Decoded token:', decoded);
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -31,12 +35,24 @@ const auth = async (req, res, next) => {
     });
 
     if (!user) {
+      console.log('Auth middleware - User not found for ID:', decoded.userId);
       throw new Error('User not found');
     }
+
+    console.log('Auth middleware - Found user:', {
+      id: user.id,
+      email: user.email,
+      roles: user.roles.map(r => r.role.name)
+    });
 
     // Check if token is expired
     const tokenExp = new Date(decoded.exp * 1000);
     if (tokenExp < new Date()) {
+      console.error('Token expired:', {
+        expiry: tokenExp,
+        now: new Date(),
+        userId: decoded.userId
+      });
       throw new Error('Token expired');
     }
 

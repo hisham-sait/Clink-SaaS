@@ -166,7 +166,18 @@ model Company {
   billingDetails   BillingDetails?
   invoices         Invoice[]         @relation("CompanyInvoices")
   payments         Payment[]         @relation("CompanyPayments")
-  billingForUsers  User[]           @relation("UserBillingCompany") // Added: Users who selected this company for billing
+  billingForUsers  User[]           @relation("UserBillingCompany")
+  // CRM Relations
+  contacts         Contact[]
+  clients          Client[]
+  organisations    Organisation[]
+  pipelines        Pipeline[]
+  deals            Deal[]
+  automations      Automation[]
+  forms            Form[]           @relation("CompanyForms")
+  products         Product[]
+  proposals        Proposal[]
+  proposalTemplates ProposalTemplate[]
 }
 
 model UserCompany {
@@ -180,6 +191,315 @@ model UserCompany {
   @@id([userId, companyId])
   @@index([userId])
   @@index([companyId])
+}
+
+// CRM Models
+model Contact {
+  id              String   @id @default(cuid())
+  title           String
+  firstName       String
+  lastName        String
+  email           String
+  phone           String
+  mobile          String?
+  department      String?
+  position        String
+  type            String[]
+  source          String?  // Lead source
+  status          Status   @default(Active)
+  lastContact     DateTime
+  nextFollowUp    DateTime?
+  socialProfiles  Json?    // Store social media profiles
+  mailingAddress  String?
+  otherAddress    String?
+  timezone        String?  @default("UTC")
+  preferredTime   String?  // Best time to contact
+  tags            String[]
+  notes           String?
+  companyId       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id])
+  assignedTo      String?  // User ID of assigned team member
+  deals           Deal[]   // Relation to deals
+  activities      Activity[] @relation("ContactActivities")
+  forms           Form[]   @relation("ContactForms")
+  formData        Json?    // Store form submission data
+  proposals       Proposal[]
+  
+  @@index([companyId])
+  @@index([assignedTo])
+  @@index([status])
+}
+
+model Pipeline {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  stages      Stage[]
+  deals       Deal[]
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Stage {
+  id          String   @id @default(cuid())
+  name        String
+  order       Int
+  color       String?  // For UI representation
+  description String?
+  pipelineId  String
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id])
+  deals       Deal[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([pipelineId])
+}
+
+model Deal {
+  id              String   @id @default(cuid())
+  name            String
+  amount          Float
+  stageId         String
+  stage           Stage    @relation(fields: [stageId], references: [id])
+  pipelineId      String
+  pipeline        Pipeline @relation(fields: [pipelineId], references: [id])
+  probability     Int      // Success probability percentage
+  expectedCloseDate DateTime
+  actualCloseDate DateTime?
+  status          DealStatus @default(Open)
+  priority        Priority   @default(Medium)
+  contactId       String
+  contact         Contact  @relation(fields: [contactId], references: [id])
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  organisationId  String?
+  organisation    Organisation? @relation(fields: [organisationId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  notes           String?
+  activities      Activity[] @relation("DealActivities")
+  automations     Automation[]
+  proposals       Proposal[]
+
+  @@index([contactId])
+  @@index([companyId])
+  @@index([organisationId])
+  @@index([stageId])
+  @@index([pipelineId])
+  @@index([status])
+}
+
+model Automation {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trigger     String   // e.g., "stage_change", "deal_amount_change"
+  conditions  Json     // Conditions that must be met
+  actions     Json     // Actions to perform
+  isActive    Boolean  @default(true)
+  deals       Deal[]
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+enum DealStatus {
+  Open
+  Won
+  Lost
+  OnHold
+}
+
+enum Priority {
+  High
+  Medium
+  Low
+}
+
+// CRM Models
+model Organisation {
+  id              String   @id @default(cuid())
+  name            String
+  industry        String?
+  subIndustry     String?  // More specific industry classification
+  website         String?
+  email           String?
+  phone           String?
+  fax             String?
+  billingAddress  String?
+  shippingAddress String?
+  type            String[]
+  status          Status   @default(Active)
+  ownership       String?  // Public, Private, Subsidiary, etc.
+  lastContact     DateTime?
+  nextFollowUp    DateTime?
+  annualRevenue   Float?
+  employeeCount   Int?
+  rating          Int?     // 1-5 star rating
+  parentCompany   String?
+  subsidiaries    String[]
+  timezone        String?  @default("UTC")
+  socialProfiles  Json?    // Store social media profiles
+  tags            String[]
+  notes           String?
+  companyId       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id])
+  assignedTo      String?  // User ID of assigned team member
+  deals           Deal[]   // Relation to deals
+  activities      Activity[] @relation("OrganisationActivities")
+
+  @@index([companyId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([industry])
+}
+
+model Form {
+  id              String   @id @default(cuid())
+  name            String
+  fields          Json     // Store form fields configuration
+  successMessage  String
+  redirectUrl     String?
+  active          Boolean  @default(true)
+  styling         Json?    // Store form styling configuration
+  companyId       String
+  company         Company  @relation("CompanyForms", fields: [companyId], references: [id])
+  contact         Contact? @relation("ContactForms", fields: [contactId], references: [id])
+  contactId       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([contactId])
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  description String
+  type        ProductType
+  category    String
+  unit        String?
+  sku         String?
+  companyId   String
+  company     Company       @relation(fields: [companyId], references: [id])
+  tiers       ProductTier[]
+  proposals   ProposalProduct[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@index([category])
+}
+
+model ProductTier {
+  id          String    @id @default(cuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        PlanType
+  price       Float
+  features    Json[]
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([productId])
+}
+
+model Proposal {
+  id          String   @id @default(cuid())
+  name        String
+  template    String?  // Template ID or null for custom
+  content     Json     // Stored sections and content
+  variables   Json?    // Dynamic variables
+  status      Status   @default(Active)
+  validUntil  DateTime?
+  dealId      String?
+  contactId   String?
+  companyId   String
+  products    ProposalProduct[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id])
+  deal        Deal?    @relation(fields: [dealId], references: [id])
+  contact     Contact? @relation(fields: [contactId], references: [id])
+
+  @@index([companyId])
+  @@index([dealId])
+  @@index([contactId])
+}
+
+model ProposalProduct {
+  id          String   @id @default(cuid())
+  proposalId  String
+  productId   String
+  tierId      String   // Reference to the selected tier
+  quantity    Int      @default(1)
+  price       Float    // Price at time of proposal
+  features    Json[]   // Features at time of proposal
+  proposal    Proposal @relation(fields: [proposalId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([proposalId])
+  @@index([productId])
+}
+
+model ProposalTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     Json
+  isDefault   Boolean  @default(false)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+enum ProductType {
+  PHYSICAL
+  DIGITAL
+  SERVICE
+}
+
+enum PlanType {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+model Client {
+  id            String   @id @default(cuid())
+  name          String
+  industry      String
+  website       String
+  email         String
+  phone         String
+  address       String
+  type          String[]
+  status        Status   @default(Active)
+  lastContact   DateTime
+  revenue       String?
+  employeeCount Int?
+  notes         String?
+  companyId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id])
 }
 
 // Billing and Payments
@@ -503,6 +823,9 @@ model Activity {
   updatedAt   DateTime     @updatedAt
   companyId   String
   company     Company      @relation(fields: [companyId], references: [id])
+  contacts    Contact[]    @relation("ContactActivities")
+  deals       Deal[]       @relation("DealActivities")
+  organisations Organisation[] @relation("OrganisationActivities")
 
   @@index([entityType, entityId])
   @@index([companyId])

@@ -1,6 +1,6 @@
 # Bradán Accountants
 
-A modern corporate compliance and management platform built with Angular, focusing on statutory compliance, tax management, and corporate governance.
+A modern corporate compliance and management platform built with React, focusing on statutory compliance, tax management, and corporate governance.
 
 ## Roles and Demo Users
 
@@ -99,13 +99,13 @@ A modern corporate compliance and management platform built with Angular, focusi
 
 ## Technical Architecture
 
-### Frontend (Angular)
+### Frontend (React)
 - **Modern Architecture**
-  - Standalone components
-  - Lazy loading
-  - Route-based code splitting
-  - State management
-  - Responsive design
+  - Functional components with hooks
+  - Context API for state management
+  - React Router for navigation
+  - Code splitting and lazy loading
+  - TypeScript for type safety
 
 - **UI/UX Features**
   - Dynamic sidebar navigation
@@ -135,7 +135,6 @@ A modern corporate compliance and management platform built with Angular, focusi
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm (v9 or higher)
-- Angular CLI (v17 or higher)
 
 ### Installation
 
@@ -166,14 +165,20 @@ npx prisma db seed
 
 4. Start the development servers:
 ```bash
+# Use the provided script to start both servers
+./start.sh
+
+# Or start them individually:
 # Start API server (from api directory)
+cd api
 npm run dev
 
-# Start Angular development server (from app directory)
-npm run start
+# Start React development server (from app directory)
+cd ../app
+npm run dev
 ```
 
-5. Access the application at `http://localhost:4200`
+5. Access the application at `http://localhost:5173`
 
 ## Project Structure
 
@@ -186,26 +191,22 @@ bradan-accountants/
 │   ├── middleware/        # Custom middleware
 │   └── workers/           # Background workers
 │
-└── app/                   # Angular frontend
+└── app/                   # React frontend
     └── src/
-        ├── app/
-        │   ├── components/
-        │   │   ├── statutory/    # Statutory module
-        │   │   ├── compliance/   # Compliance module
-        │   │   ├── tax/         # Tax module
-        │   │   ├── settings/    # Settings module
-        │   │   └── shared/      # Shared components
-        │   ├── services/        # Angular services
-        │   ├── guards/          # Route guards
-        │   └── interceptors/    # HTTP interceptors
-        ├── assets/             # Static assets
-        └── environments/       # Environment configurations
+        ├── components/    # React components
+        │   ├── crm/       # CRM module components
+        │   ├── forms/     # Form components
+        │   └── shared/    # Shared components
+        ├── contexts/      # React contexts for state management
+        ├── services/      # API service integrations
+        ├── assets/        # Static assets
+        └── App.tsx        # Main application component
 ```
 
 ## Development Guidelines
 
 ### Code Standards
-- Follow Angular style guide
+- Follow React best practices
 - Implement proper TypeScript types
 - Write comprehensive unit tests
 - Document complex functionality
@@ -213,9 +214,9 @@ bradan-accountants/
 
 ### Component Structure
 - Feature-based organization
-- Shared component library
-- Lazy-loaded modules
-- State management patterns
+- Functional components with hooks
+- Context API for state management
+- Custom hooks for reusable logic
 - Service abstraction
 
 ### Styling

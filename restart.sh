@@ -22,7 +22,7 @@ pkill -f "vite" 2>/dev/null
 
 echo "Cleaning up node_modules..."
 rm -rf api/node_modules api/package-lock.json
-rm -rf app-react/node_modules app-react/package-lock.json
+rm -rf app/node_modules app/package-lock.json
 
 echo "Installing backend dependencies..."
 cd api
@@ -30,10 +30,9 @@ npm install express cors dotenv jsonwebtoken bcryptjs nodemon @prisma/client
 npm install --save-dev prisma
 npx prisma generate
 npx prisma db push
-npx prisma db seed
 
 echo "Installing frontend dependencies..."
-cd ../app-react
+cd ../app
 npm install
 npm install -g vite
 
@@ -43,7 +42,7 @@ npm run dev &
 sleep 5  # Wait for backend to start
 
 echo "Starting frontend server..."
-cd ../app-react
+cd ../app
 npm run dev &
 
 echo "All services started. Press Ctrl+C to stop all servers."

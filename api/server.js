@@ -74,6 +74,7 @@ app.use('/api/auth', require('./routes/auth'));
 // Protected routes
 app.use('/api/statutory', auth, require('./routes/statutory'));
 app.use('/api/settings', auth, require('./routes/settings'));
+app.use('/api/crm', auth, require('./routes/crm'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -179,6 +180,10 @@ app.listen(port, () => {
   console.log('  • Integrations');
   console.log('  • Billing');
   console.log('  • Notifications');
+  console.log('- CRM management:');
+  console.log('  • Contact management');
+  console.log('  • Company management');
+  console.log('  • Activity tracking');
   console.log('- Import/Export:');
   console.log('  • Queue processor initialized');
 });
