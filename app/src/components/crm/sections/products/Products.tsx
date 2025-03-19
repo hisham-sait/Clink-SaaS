@@ -4,7 +4,7 @@ import { FaBox, FaCheckCircle, FaPauseCircle, FaClock } from 'react-icons/fa';
 import ProductModal from './ProductModal';
 import { Product } from '../../../crm/types';
 import * as crmService from '../../../../services/crm';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 const Products: React.FC = () => {

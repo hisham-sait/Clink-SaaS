@@ -80,7 +80,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ isExpanded }) => {
   return (
     <div className="py-4">
       <div className="px-4 mb-2">
-        <span className="text-uppercase small fw-semibold text-secondary">Settings</span>
+        <span className="text-uppercase small fw-semibold" style={{ color: 'var(--bs-gray-600)' }}>Settings</span>
       </div>
       <ul className="nav flex-column">
         {navItems.map((item) => (
@@ -88,8 +88,8 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ isExpanded }) => {
             <NavLink
               to={item.path}
               className={({ isActive }) =>
-                `nav-link d-flex align-items-center py-2 px-4 text-body-secondary ${
-                  isActive ? 'active bg-primary-subtle text-primary fw-medium' : ''
+                `nav-link d-flex align-items-center py-2 px-4 ${
+                  isActive ? 'active text-primary fw-medium' : ''
                 }`
               }
               end={item.path === '/settings/dashboard'}

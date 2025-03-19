@@ -4,24 +4,17 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
 
-interface BeneficialOwner {
-  id?: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  natureOfControl: string[];
-  ownershipPercentage: number;
-  registrationDate: string;
-  status: 'Active' | 'Inactive' | 'Archived';
-  description?: string;
-}
+import { BeneficialOwner } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  isValidDateOfBirth,
+  formatStatutoryDate
+} from '@bradan/shared';
 
-interface Props {
+interface BeneficialOwnerModalProps {
   show: boolean;
   onHide: () => void;
   owner?: BeneficialOwner;
@@ -38,7 +31,7 @@ const natureOfControlOptions = [
   'Other'
 ];
 
-const BeneficialOwnerModal: React.FC<Props> = ({ show, onHide, owner, onSuccess }) => {
+const BeneficialOwnerModal: React.FC<BeneficialOwnerModalProps> = ({ show, onHide, owner, onSuccess }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,46 +47,10 @@ const BeneficialOwnerModal: React.FC<Props> = ({ show, onHide, owner, onSuccess 
     phone: '',
     natureOfControl: [],
     ownershipPercentage: 0,
-    registrationDate: new Date().toISOString().split('T')[0],
+    registrationDate: formatYYYYMMDD(new Date()),
     status: 'Active',
     description: ''
   });
-
-  useEffect(() => {
-    if (owner) {
-      setFormData({
-        title: owner.title,
-        firstName: owner.firstName,
-        lastName: owner.lastName,
-        dateOfBirth: new Date(owner.dateOfBirth).toISOString().split('T')[0],
-        nationality: owner.nationality,
-        address: owner.address,
-        email: owner.email,
-        phone: owner.phone,
-        natureOfControl: owner.natureOfControl,
-        ownershipPercentage: owner.ownershipPercentage,
-        registrationDate: new Date(owner.registrationDate).toISOString().split('T')[0],
-        status: owner.status,
-        description: owner.description || ''
-      });
-    } else {
-      setFormData({
-        title: '',
-        firstName: '',
-        lastName: '',
-        dateOfBirth: '',
-        nationality: '',
-        address: '',
-        email: '',
-        phone: '',
-        natureOfControl: [],
-        ownershipPercentage: 0,
-        registrationDate: new Date().toISOString().split('T')[0],
-        status: 'Active',
-        description: ''
-      });
-    }
-  }, [owner]);
 
   const validateForm = () => {
     if (!formData.natureOfControl.length) {
@@ -118,40 +75,30 @@ const BeneficialOwnerModal: React.FC<Props> = ({ show, onHide, owner, onSuccess 
       return false;
     }
 
-    const today = new Date();
-    const dob = new Date(formData.dateOfBirth);
-    const age = today.getFullYear() - dob.getFullYear();
-    if (age < 18) {
-      setError('Beneficial owner must be at least 18 years old');
+    // Validate dates
+    if (!isValidDateOfBirth(formData.dateOfBirth)) {
+      setError('Invalid date of birth');
+      return false;
+    }
+
+    const registrationDate = new Date(formData.registrationDate);
+    if (!isValidStatutoryDate(registrationDate, { allowFuture: false })) {
+      setError('Invalid registration date');
       return false;
     }
 
     return true;
   };
 
-  const formatDateForDisplay = (isoDate: string) => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
-  };
-
-  const formatDateForAPI = (isoDate: string) => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('en-IE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
   useEffect(() => {
     if (owner) {
+      const dateOfBirthObj = parseDate(owner.dateOfBirth);
+      const registrationDateObj = parseDate(owner.registrationDate);
+
       const formattedOwner: BeneficialOwner = {
         ...owner,
-        dateOfBirth: formatDateForDisplay(owner.dateOfBirth),
-        registrationDate: formatDateForDisplay(owner.registrationDate),
+        dateOfBirth: dateOfBirthObj ? formatYYYYMMDD(dateOfBirthObj) : '',
+        registrationDate: registrationDateObj ? formatYYYYMMDD(registrationDateObj) : '',
         description: owner.description || '' // Ensure description is never undefined
       };
       setFormData(formattedOwner);
@@ -167,7 +114,7 @@ const BeneficialOwnerModal: React.FC<Props> = ({ show, onHide, owner, onSuccess 
         phone: '',
         natureOfControl: [],
         ownershipPercentage: 0,
-        registrationDate: new Date().toISOString().split('T')[0],
+        registrationDate: formatYYYYMMDD(new Date()),
         status: 'Active',
         description: ''
       });
@@ -185,11 +132,11 @@ const BeneficialOwnerModal: React.FC<Props> = ({ show, onHide, owner, onSuccess 
     }
 
     try {
-      // Convert dates to DD/MM/YYYY format for API
+      // Convert YYYY-MM-DD dates to DD/MM/YYYY format for API
       const apiData = {
         ...formData,
-        dateOfBirth: formatDateForAPI(formData.dateOfBirth),
-        registrationDate: formatDateForAPI(formData.registrationDate),
+        dateOfBirth: formatDDMMYYYY(new Date(formData.dateOfBirth)),
+        registrationDate: formatDDMMYYYY(new Date(formData.registrationDate)),
         user: user?.email
       };
 

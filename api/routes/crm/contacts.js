@@ -51,11 +51,191 @@ router.get('/:companyId', auth, async (req, res) => {
       ...(status && status !== 'All' ? { status } : {})
     };
 
-    const contacts = await prisma.contact.findMany({ where });
+    const contacts = await prisma.contact.findMany({
+      where,
+      include: {
+        pipelineStages: {
+          include: {
+            pipeline: true,
+            stage: true
+          }
+        }
+      }
+    });
     res.json(contacts);
   } catch (error) {
     console.error('Error fetching contacts:', error);
     res.status(500).json({ error: 'Failed to fetch contacts' });
+  }
+});
+
+// Add contact to pipeline
+router.post('/:companyId/:contactId/pipeline', auth, async (req, res) => {
+  try {
+    const { companyId, contactId } = req.params;
+    const { pipelineId, stageId, notes } = req.body;
+
+    // Verify contact belongs to company
+    const contact = await prisma.contact.findFirst({
+      where: { id: contactId, companyId }
+    });
+
+    if (!contact) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    // Add to pipeline
+    const pipelineStage = await prisma.contactPipelineStage.create({
+      data: {
+        contactId,
+        pipelineId,
+        stageId,
+        notes,
+        enteredAt: new Date()
+      },
+      include: {
+        pipeline: true,
+        stage: true
+      }
+    });
+
+    // Log activity
+    await prisma.activity.create({
+      data: {
+        type: 'added',
+        entityType: 'pipeline',
+        entityId: pipelineId,
+        description: `Added contact to pipeline: ${contact.firstName} ${contact.lastName}`,
+        user: req.user.email,
+        companyId,
+        time: new Date()
+      }
+    });
+
+    res.json(pipelineStage);
+  } catch (error) {
+    console.error('Error adding contact to pipeline:', error);
+    res.status(500).json({ error: 'Failed to add contact to pipeline' });
+  }
+});
+
+// Update contact's pipeline stage
+router.put('/:companyId/:contactId/pipeline', auth, async (req, res) => {
+  try {
+    const { companyId, contactId } = req.params;
+    const { stageId, notes } = req.body;
+
+    // Verify contact belongs to company
+    const contact = await prisma.contact.findFirst({
+      where: { id: contactId, companyId }
+    });
+
+    if (!contact) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    // Get current pipeline stage
+    const currentStage = await prisma.contactPipelineStage.findFirst({
+      where: {
+        contactId,
+        exitedAt: null
+      }
+    });
+
+    if (!currentStage) {
+      return res.status(404).json({ error: 'Contact not in any pipeline' });
+    }
+
+    // Mark current stage as exited
+    await prisma.contactPipelineStage.update({
+      where: { id: currentStage.id },
+      data: { exitedAt: new Date() }
+    });
+
+    // Create new stage entry
+    const pipelineStage = await prisma.contactPipelineStage.create({
+      data: {
+        contactId,
+        pipelineId: currentStage.pipelineId,
+        stageId,
+        notes,
+        enteredAt: new Date()
+      },
+      include: {
+        pipeline: true,
+        stage: true
+      }
+    });
+
+    // Log activity
+    await prisma.activity.create({
+      data: {
+        type: 'updated',
+        entityType: 'pipeline',
+        entityId: currentStage.pipelineId,
+        description: `Updated pipeline stage for contact: ${contact.firstName} ${contact.lastName}`,
+        user: req.user.email,
+        companyId,
+        time: new Date()
+      }
+    });
+
+    res.json(pipelineStage);
+  } catch (error) {
+    console.error('Error updating pipeline stage:', error);
+    res.status(500).json({ error: 'Failed to update pipeline stage' });
+  }
+});
+
+// Remove contact from pipeline
+router.delete('/:companyId/:contactId/pipeline', auth, async (req, res) => {
+  try {
+    const { companyId, contactId } = req.params;
+
+    // Verify contact belongs to company
+    const contact = await prisma.contact.findFirst({
+      where: { id: contactId, companyId }
+    });
+
+    if (!contact) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    // Get current pipeline stage
+    const currentStage = await prisma.contactPipelineStage.findFirst({
+      where: {
+        contactId,
+        exitedAt: null
+      }
+    });
+
+    if (!currentStage) {
+      return res.status(404).json({ error: 'Contact not in any pipeline' });
+    }
+
+    // Mark current stage as exited
+    await prisma.contactPipelineStage.update({
+      where: { id: currentStage.id },
+      data: { exitedAt: new Date() }
+    });
+
+    // Log activity
+    await prisma.activity.create({
+      data: {
+        type: 'removed',
+        entityType: 'pipeline',
+        entityId: currentStage.pipelineId,
+        description: `Removed contact from pipeline: ${contact.firstName} ${contact.lastName}`,
+        user: req.user.email,
+        companyId,
+        time: new Date()
+      }
+    });
+
+    res.json({ message: 'Contact removed from pipeline' });
+  } catch (error) {
+    console.error('Error removing from pipeline:', error);
+    res.status(500).json({ error: 'Failed to remove from pipeline' });
   }
 });
 

@@ -7,36 +7,8 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaSignOutAlt, FaFileImport, FaUsers, FaUserCheck, FaUserMinus, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 
-interface Director {
-  id?: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  appointmentDate: string;
-  resignationDate?: string;
-  directorType: string;
-  occupation: string;
-  otherDirectorships: string;
-  shareholding: string;
-  status: 'Active' | 'Resigned';
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Activity {
-  id: string;
-  type: 'appointment' | 'update' | 'resignation' | 'deletion';
-  entityType: string;
-  entityId: string;
-  description: string;
-  user: string;
-  time: string;
-}
+import { Director, Activity } from '../../../../services/statutory/types';
+import { formatDDMMYYYY } from '@bradan/shared';
 
 const Directors: React.FC = () => {
   const timelineStyles = {
@@ -331,7 +303,7 @@ const Directors: React.FC = () => {
                   <th>Type</th>
                   <th>Appointment Date</th>
                   <th>Status</th>
-                  {user?.roles.includes('Super Admin') && <th>Company</th>}
+                  {user?.roles?.includes('super_admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -347,17 +319,13 @@ const Directors: React.FC = () => {
                       </div>
                     </td>
                     <td>{director.directorType}</td>
-                    <td>{new Date(director.appointmentDate).toLocaleDateString('en-IE', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    })}</td>
+                    <td>{formatDDMMYYYY(new Date(director.appointmentDate))}</td>
                     <td>
                       <Badge bg={director.status === 'Active' ? 'success' : 'secondary'}>
                         {director.status}
                       </Badge>
                     </td>
-                    {user?.roles.includes('Super Admin') && (
+                    {user?.roles?.includes('super_admin') && (
                       <td>{director.company?.name || director.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -400,7 +368,7 @@ const Directors: React.FC = () => {
                 ))}
                 {directors.length === 0 && (
                   <tr>
-                    <td colSpan={user?.roles.includes('Super Admin') ? 6 : 5} className="text-center py-5">
+                    <td colSpan={user?.roles?.includes('super_admin') ? 6 : 5} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaUsers className="text-muted" size={32} />
@@ -447,7 +415,7 @@ const Directors: React.FC = () => {
                         <Badge bg="light" className="p-2">
                           {activity.type === 'appointment' ? (
                             <FaPlus className="text-success" />
-                          ) : activity.type === 'update' ? (
+                          ) : activity.type === 'updated' ? (
                             <FaEdit className="text-primary" />
                           ) : activity.type === 'resignation' ? (
                             <FaSignOutAlt className="text-danger" />
@@ -461,13 +429,7 @@ const Directors: React.FC = () => {
                       <div>
                         <p className="mb-0">{activity.description}</p>
                         <small className="text-muted">
-                          {new Date(activity.time).toLocaleString('en-IE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {formatDDMMYYYY(new Date(activity.time))}
                         </small>
                       </div>
                     </div>

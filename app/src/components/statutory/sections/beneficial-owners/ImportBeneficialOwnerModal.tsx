@@ -4,34 +4,32 @@ import { FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
 
-interface Props {
+import { BeneficialOwner } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  isValidDateOfBirth,
+  formatStatutoryDate
+} from '@bradan/shared';
+
+interface ImportBeneficialOwnerModalProps {
   show: boolean;
   onHide: () => void;
   onSuccess: () => void;
   companyId: string;
 }
 
-interface PreviewData {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  natureOfControl: string[];
-  ownershipPercentage: number;
-  registrationDate: string;
-  status: string;
-  description?: string;
+// PreviewData extends BeneficialOwner but with string type for numeric fields since they come from CSV
+interface PreviewData extends Omit<BeneficialOwner, 'ownershipPercentage'> {
+  ownershipPercentage: string;
 }
 
 interface ColumnMapping {
   [key: string]: string;
 }
 
-const ImportBeneficialOwnerModal: React.FC<Props> = ({ show, onHide, onSuccess, companyId }) => {
+const ImportBeneficialOwnerModal: React.FC<ImportBeneficialOwnerModalProps> = ({ show, onHide, onSuccess, companyId }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +233,30 @@ const ImportBeneficialOwnerModal: React.FC<Props> = ({ show, onHide, onSuccess, 
     }
   };
 
+  const formatDate = (date: string | null) => {
+    if (!date) return '';
+    try {
+      const parsedDate = parseDate(date);
+      return parsedDate ? formatDDMMYYYY(parsedDate) : 'Invalid Date';
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'Invalid Date';
+    }
+  };
+
+  const validateDates = (data: PreviewData) => {
+    if (!isValidDateOfBirth(data.dateOfBirth)) {
+      return 'Invalid date of birth';
+    }
+
+    const registrationDate = parseDate(data.registrationDate);
+    if (!registrationDate || !isValidStatutoryDate(registrationDate, { allowFuture: false })) {
+      return 'Invalid registration date';
+    }
+
+    return null;
+  };
+
   const previewImport = async () => {
     if (!selectedFile) return;
 
@@ -249,11 +271,21 @@ const ImportBeneficialOwnerModal: React.FC<Props> = ({ show, onHide, onSuccess, 
     try {
       const response = await api.post(`/statutory/beneficial-owners/${companyId}/preview-import`, formData);
       if (response.data.data?.length > 0) {
+        // Validate dates in preview data
+        const dateErrors = response.data.data.map((item: PreviewData, index: number) => {
+          const error = validateDates(item);
+          return error ? `Row ${index + 1}: ${error}` : null;
+        }).filter(Boolean);
+
+        if (dateErrors.length > 0) {
+          throw new Error(`Date validation errors:\n${dateErrors.join('\n')}`);
+        }
+
         setPreviewData(response.data.data);
         setCurrentStep(3);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to preview data. Please check your column mapping.');
+      setError(err.response?.data?.message || err.message || 'Failed to preview data. Please check your column mapping.');
     } finally {
       setLoading(false);
       setLoadingMessage('');
@@ -372,20 +404,6 @@ const ImportBeneficialOwnerModal: React.FC<Props> = ({ show, onHide, onSuccess, 
     }
   }, [show]);
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '';
-    try {
-      const d = new Date(date);
-      if (isNaN(d.getTime())) return 'Invalid Date';
-      return d.toLocaleDateString('en-IE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch (err) {
-      return 'Invalid Date';
-    }
-  };
 
   const handleClose = () => {
     setCurrentStep(1);

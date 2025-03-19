@@ -85,13 +85,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
-      className="position-fixed h-100 bg-light border-end overflow-hidden"
+      className="position-fixed h-100 border-end overflow-hidden"
       style={{
         left: '48px',
         width: isExpanded ? '220px' : '40px',
         transition: 'width 0.3s ease, transform 0.3s ease',
         zIndex: 1020,
-        transform: !isExpanded && isMobile ? 'translateX(-50%)' : 'none'
+        transform: !isExpanded && isMobile ? 'translateX(-50%)' : 'none',
+        backgroundColor: 'var(--bs-gray-100)'
       }}
     >
       {/* Header */}
@@ -103,7 +104,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
         <button
-          className={`btn btn-link btn-sm p-0 text-body-secondary ${!isExpanded ? 'ms-auto' : ''}`}
+          className={`btn btn-link btn-sm p-0 ${!isExpanded ? 'ms-auto' : ''}`}
+          style={{ color: 'var(--bs-gray-600)' }}
           onClick={onToggleSidebar}
         >
           <i className={`bi ${isExpanded ? 'bi-chevron-left' : 'bi-chevron-right'}`}></i>

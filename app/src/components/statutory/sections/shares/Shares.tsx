@@ -6,33 +6,8 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel, FaCoins, FaCheckCircle, FaArchive, FaFileImport } from 'react-icons/fa';
 
-interface Share {
-  id?: string;
-  class: string;
-  type: 'Ordinary' | 'Preferential' | 'Deferred';
-  nominalValue: number;
-  currency: string;
-  votingRights: boolean;
-  dividendRights: boolean;
-  transferable: boolean;
-  totalIssued: number;
-  status: 'Active' | 'Inactive' | 'Archived';
-  description?: string;
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Activity {
-  id: string;
-  type: 'added' | 'updated' | 'status_changed' | 'removed';
-  entityType: string;
-  entityId: string;
-  description: string;
-  user: string;
-  time: string;
-}
+import { Share, Activity } from '../../../../services/statutory/types';
+import { formatDDMMYYYY } from '@bradan/shared';
 
 const Shares: React.FC = () => {
   const timelineStyles = {
@@ -300,7 +275,7 @@ const Shares: React.FC = () => {
                   <th>Total Issued</th>
                   <th>Rights</th>
                   <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
+                  {user?.roles?.includes('super_admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -334,7 +309,7 @@ const Shares: React.FC = () => {
                         {share.status}
                       </Badge>
                     </td>
-                    {user?.role === 'super_admin' && (
+                    {user?.roles?.includes('super_admin') && (
                       <td>{share.company?.name || share.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -357,7 +332,7 @@ const Shares: React.FC = () => {
                 ))}
                 {shares.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 8 : 7} className="text-center py-5">
+                    <td colSpan={user?.roles?.includes('super_admin') ? 8 : 7} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaCoins className="text-muted" size={32} />
@@ -418,13 +393,7 @@ const Shares: React.FC = () => {
                       <div>
                         <p className="mb-0">{activity.description}</p>
                         <small className="text-muted">
-                          {new Date(activity.time).toLocaleString('en-IE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {formatDDMMYYYY(new Date(activity.time))}
                         </small>
                       </div>
                     </div>

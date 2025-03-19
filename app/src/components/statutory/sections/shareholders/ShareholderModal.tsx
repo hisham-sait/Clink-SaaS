@@ -4,6 +4,15 @@ import { Modal, Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import api from '../../../../services/api';
 
+import { Shareholder } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidDateOfBirth,
+  isValidStatutoryDate
+} from '@bradan/shared';
+
 interface ShareholderModalProps {
   show: boolean;
   onHide: () => void;
@@ -11,35 +20,19 @@ interface ShareholderModalProps {
   onSuccess: () => void;
 }
 
-interface Shareholder {
-  id?: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  ordinaryShares: number;
-  preferentialShares: number;
-  dateAcquired: string;
-  status: 'Active' | 'Inactive';
-}
-
 const ShareholderModal: React.FC<ShareholderModalProps> = ({ show, onHide, shareholder, onSuccess }) => {
   const [formData, setFormData] = useState<Shareholder>({
     title: '',
     firstName: '',
     lastName: '',
-    dateOfBirth: '',
+    dateOfBirth: formatYYYYMMDD(new Date()),
     nationality: '',
     address: '',
     email: '',
     phone: '',
     ordinaryShares: 0,
     preferentialShares: 0,
-    dateAcquired: new Date().toISOString().split('T')[0],
+    dateAcquired: formatYYYYMMDD(new Date()),
     status: 'Active'
   });
 
@@ -47,19 +40,16 @@ const ShareholderModal: React.FC<ShareholderModalProps> = ({ show, onHide, share
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const formatDateForDisplay = (isoDate: string) => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
-  };
-
   useEffect(() => {
     if (shareholder) {
+      // Parse dates from DD/MM/YYYY to YYYY-MM-DD for form input
+      const dateOfBirth = parseDate(shareholder.dateOfBirth);
+      const dateAcquired = parseDate(shareholder.dateAcquired);
+
       setFormData({
         ...shareholder,
-        dateOfBirth: formatDateForDisplay(shareholder.dateOfBirth),
-        dateAcquired: formatDateForDisplay(shareholder.dateAcquired)
+        dateOfBirth: dateOfBirth ? formatYYYYMMDD(dateOfBirth) : '',
+        dateAcquired: dateAcquired ? formatYYYYMMDD(dateAcquired) : ''
       });
     }
   }, [shareholder]);
@@ -108,26 +98,32 @@ const ShareholderModal: React.FC<ShareholderModalProps> = ({ show, onHide, share
       return;
     }
 
+    // Validate dates
+    if (!isValidDateOfBirth(formData.dateOfBirth)) {
+      setError('Invalid date of birth');
+      setLoading(false);
+      return;
+    }
+
+    const dateAcquired = new Date(formData.dateAcquired);
+    if (!isValidStatutoryDate(dateAcquired, { allowFuture: false })) {
+      setError('Invalid date acquired');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Convert YYYY-MM-DD dates to DD/MM/YYYY format for API
+      const apiData = {
+        ...formData,
+        dateOfBirth: formatDDMMYYYY(new Date(formData.dateOfBirth)),
+        dateAcquired: formatDDMMYYYY(new Date(formData.dateAcquired))
+      };
+
       if (shareholder?.id) {
-        // Only send fields that can be updated
-        const updateData = {
-          title: formData.title,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          dateOfBirth: formData.dateOfBirth,
-          nationality: formData.nationality,
-          address: formData.address,
-          email: formData.email,
-          phone: formData.phone,
-          ordinaryShares: formData.ordinaryShares,
-          preferentialShares: formData.preferentialShares,
-          dateAcquired: formData.dateAcquired,
-          status: formData.status
-        };
-        await api.put(`/statutory/shareholders/${user.companyId}/${shareholder.id}`, updateData);
+        await api.put(`/statutory/shareholders/${user.companyId}/${shareholder.id}`, apiData);
       } else {
-        await api.post(`/statutory/shareholders/${user.companyId}`, formData);
+        await api.post(`/statutory/shareholders/${user.companyId}`, apiData);
       }
       setSuccess(true);
       onSuccess();

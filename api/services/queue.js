@@ -4,6 +4,7 @@ const { parse } = require('csv-parse');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
+const dateUtils = require('../utils/dateUtils');
 
 // Create a single Prisma instance
 let prisma;
@@ -149,8 +150,6 @@ importQueue.process(async (job) => {
     }
     
     throw error;
-  } finally {
-    // Don't disconnect as we're using a singleton
   }
 });
 
@@ -199,37 +198,19 @@ async function parseCSV(filePath, mapping) {
         for (const [key, value] of Object.entries(mapping)) {
           let cellValue = row[value]?.trim();
           
-          // Handle date fields
-          if (key === 'dateOfBirth' || key === 'appointmentDate' || key === 'resignationDate' || 
-              key === 'dateCreated' || key === 'registrationDate' || key === 'satisfactionDate' ||
-              key === 'allotmentDate' || key === 'paymentDate') {
-            if (cellValue) {
-              // Check if date is in DD/MM/YYYY format
-              const dateMatch = cellValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-              if (dateMatch) {
-                // Already in correct format, keep as is
-                mappedRow[key] = cellValue;
-              } else {
-                try {
-                  // Try to parse as ISO date and convert to DD/MM/YYYY
-                  const date = new Date(cellValue);
-                  if (!isNaN(date.getTime())) {
-                    const day = date.getDate().toString().padStart(2, '0');
-                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                    const year = date.getFullYear();
-                    mappedRow[key] = `${day}/${month}/${year}`;
-                  } else {
-                    console.warn(`Invalid date format for ${key}:`, cellValue);
-                    mappedRow[key] = '';
-                  }
-                } catch (error) {
-                  console.error(`Error parsing date for ${key}:`, error);
-                  mappedRow[key] = '';
-                }
-              }
-            } else {
-              mappedRow[key] = '';
-            }
+          // Handle date fields using dateUtils
+          const dateFields = [
+            'dateOfBirth', 'appointmentDate', 'resignationDate',
+            'dateCreated', 'registrationDate', 'satisfactionDate',
+            'allotmentDate', 'paymentDate'
+          ];
+
+          if (dateFields.includes(key)) {
+            mappedRow[key] = dateUtils.normalizeImportDate(cellValue, {
+              fieldName: key,
+              required: false, // Don't fail import for missing dates
+              format: 'DD/MM/YYYY'
+            });
           } else {
             mappedRow[key] = cellValue || '';
           }
@@ -253,7 +234,24 @@ function parseExcel(filePath, mapping) {
   return rows.map(row => {
     const mappedRow = {};
     for (const [key, value] of Object.entries(mapping)) {
-      mappedRow[key] = row[value]?.toString().trim();
+      let cellValue = row[value]?.toString().trim();
+      
+      // Handle date fields using dateUtils
+      const dateFields = [
+        'dateOfBirth', 'appointmentDate', 'resignationDate',
+        'dateCreated', 'registrationDate', 'satisfactionDate',
+        'allotmentDate', 'paymentDate'
+      ];
+
+      if (dateFields.includes(key)) {
+        mappedRow[key] = dateUtils.normalizeImportDate(cellValue, {
+          fieldName: key,
+          required: false,
+          format: 'DD/MM/YYYY'
+        });
+      } else {
+        mappedRow[key] = cellValue || '';
+      }
     }
     return mappedRow;
   });
@@ -261,17 +259,10 @@ function parseExcel(filePath, mapping) {
 
 // Process batch of records
 async function processBatch(records, companyId, job, totalRecords, processedSoFar) {
-  const { entityType = 'director' } = job.data; // Properly destructure entityType from job.data
+  const { entityType = 'director' } = job.data;
   try {
     // Validate records
     const validRecords = records.filter(record => validateRecord(record, entityType));
-  
-    // Parse dates from DD/MM/YYYY format
-    const parseDDMMYYYY = (dateStr) => {
-      if (!dateStr) return null;
-      const [day, month, year] = dateStr.split('/').map(Number);
-      return new Date(year, month - 1, day);
-    };
 
     // Insert records
     for (const record of validRecords) {
@@ -314,24 +305,29 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
         
         await job.progress(progressData);
 
+        // Parse dates using dateUtils
+        const parseDate = (dateStr) => dateUtils.parseDate(dateStr, {
+          context: `Processing ${entityType}`,
+          strict: false
+        });
+
         switch (entityType) {
           case 'director': {
-            // Process director record
             const directorData = {
               title: record.title || 'Mr',
               firstName: record.firstName,
               lastName: record.lastName,
-              dateOfBirth: parseDDMMYYYY(record.dateOfBirth),
+              dateOfBirth: parseDate(record.dateOfBirth),
               nationality: record.nationality,
               address: record.address || 'No address provided',
-              appointmentDate: parseDDMMYYYY(record.appointmentDate),
+              appointmentDate: parseDate(record.appointmentDate),
               directorType: record.directorType || 'Director',
               occupation: record.occupation,
               otherDirectorships: record.otherDirectorships || 'None',
               shareholding: record.shareholding || '0',
               status: 'Active',
               companyId,
-              resignationDate: record.resignationDate ? parseDDMMYYYY(record.resignationDate) : null
+              resignationDate: record.resignationDate ? parseDate(record.resignationDate) : null
             };
 
             const director = await prisma.director.create({
@@ -363,14 +359,14 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
               title: record.title || 'Mr',
               firstName: record.firstName,
               lastName: record.lastName,
-              dateOfBirth: parseDDMMYYYY(record.dateOfBirth),
+              dateOfBirth: parseDate(record.dateOfBirth),
               nationality: record.nationality,
               address: record.address || 'No address provided',
               email: record.email,
               phone: record.phone,
               ordinaryShares: parseInt(record.ordinaryShares) || 0,
               preferentialShares: parseInt(record.preferentialShares) || 0,
-              dateAcquired: parseDDMMYYYY(record.dateAcquired),
+              dateAcquired: parseDate(record.dateAcquired),
               status: 'Active',
               companyId
             };
@@ -404,12 +400,12 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
               title: record.title || 'Mr',
               firstName: record.firstName,
               lastName: record.lastName,
-              dateOfBirth: parseDDMMYYYY(record.dateOfBirth),
+              dateOfBirth: parseDate(record.dateOfBirth),
               nationality: record.nationality,
               address: record.address || 'No address provided',
               email: record.email,
               phone: record.phone,
-              registrationDate: parseDDMMYYYY(record.registrationDate),
+              registrationDate: parseDate(record.registrationDate),
               ownershipPercentage: parseFloat(record.ownershipPercentage) || 0,
               natureOfControl: Array.isArray(record.natureOfControl) ? record.natureOfControl : [record.natureOfControl],
               status: 'Active',
@@ -488,8 +484,8 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
               chargor: record.chargor,
               chargee: record.chargee,
               propertyCharged: record.propertyCharged,
-              dateCreated: parseDDMMYYYY(record.dateCreated),
-              registrationDate: parseDDMMYYYY(record.registrationDate),
+              dateCreated: parseDate(record.dateCreated),
+              registrationDate: parseDate(record.registrationDate),
               description: record.description,
               status: record.status || 'Active',
               companyId
@@ -526,11 +522,11 @@ async function processBatch(records, companyId, job, totalRecords, processedSoFa
               numberOfShares: parseInt(record.numberOfShares) || 0,
               pricePerShare: parseFloat(record.pricePerShare) || 0,
               currency: record.currency || 'EUR',
-              allotmentDate: parseDDMMYYYY(record.allotmentDate),
+              allotmentDate: parseDate(record.allotmentDate),
               allottee: record.allottee,
               paymentStatus: record.paymentStatus || 'Pending',
               amountPaid: record.amountPaid ? parseFloat(record.amountPaid) : null,
-              paymentDate: record.paymentDate ? parseDDMMYYYY(record.paymentDate) : null,
+              paymentDate: record.paymentDate ? parseDate(record.paymentDate) : null,
               certificateNumber: record.certificateNumber,
               status: record.status || 'Active',
               companyId
@@ -695,7 +691,7 @@ function validateRecord(record, entityType = 'director') {
         requiredFields = [];
     }
 
-    // Skip empty rows (where all fields are empty)
+    // Skip empty rows
     const isEmpty = Object.values(record).every(value => !value);
     if (isEmpty) {
       logger.warn('Empty record found:', record);
@@ -771,72 +767,60 @@ function validateRecord(record, entityType = 'director') {
       return false;
     }
 
-    // Validate dates
-    const isValidDDMMYYYY = (dateStr) => {
-      if (!dateStr) return false;
-      const [day, month, year] = dateStr.split('/').map(Number);
-      const date = new Date(year, month - 1, day);
-      const isValid = !isNaN(date.getTime()) && 
-                     date.getDate() === day && 
-                     date.getMonth() === month - 1 && 
-                     date.getFullYear() === year;
-      
-      if (!isValid) {
-        logger.warn('Invalid date format:', {
-          dateStr,
-          expected: 'DD/MM/YYYY'
-        });
-      }
-      
-      return isValid;
+    // Validate dates using dateUtils
+    const validateDate = (dateStr, fieldName) => {
+      if (!dateStr) return true; // Allow empty dates unless required
+      return dateUtils.isValidDDMMYYYY(dateStr);
     };
 
     // Validate required dates
-    if (entityType !== 'share' && entityType !== 'charge' && entityType !== 'allotment' && !isValidDDMMYYYY(record.dateOfBirth)) {
-      logger.warn('Invalid date of birth:', record.dateOfBirth);
-      return false;
+    if (entityType !== 'share' && entityType !== 'charge' && entityType !== 'allotment') {
+      if (!validateDate(record.dateOfBirth, 'dateOfBirth')) {
+        logger.warn('Invalid date of birth:', record.dateOfBirth);
+        return false;
+      }
     }
 
     // Validate entity-specific dates
     switch (entityType) {
       case 'director':
-        if (!isValidDDMMYYYY(record.appointmentDate)) {
+        if (!validateDate(record.appointmentDate, 'appointmentDate')) {
           logger.warn('Invalid appointment date:', record.appointmentDate);
           return false;
         }
-        if (record.resignationDate && !isValidDDMMYYYY(record.resignationDate)) {
+        if (record.resignationDate && !validateDate(record.resignationDate, 'resignationDate')) {
           logger.warn('Invalid resignation date:', record.resignationDate);
           return false;
         }
         break;
       case 'shareholder':
-        if (!isValidDDMMYYYY(record.dateAcquired)) {
+        if (!validateDate(record.dateAcquired, 'dateAcquired')) {
           logger.warn('Invalid date acquired:', record.dateAcquired);
           return false;
         }
         break;
       case 'beneficial-owner':
-        if (!isValidDDMMYYYY(record.registrationDate)) {
+        if (!validateDate(record.registrationDate, 'registrationDate')) {
           logger.warn('Invalid registration date:', record.registrationDate);
           return false;
         }
         break;
       case 'charge':
-        if (!isValidDDMMYYYY(record.dateCreated)) {
+        if (!validateDate(record.dateCreated, 'dateCreated')) {
           logger.warn('Invalid date created:', record.dateCreated);
           return false;
         }
-        if (!isValidDDMMYYYY(record.registrationDate)) {
+        if (!validateDate(record.registrationDate, 'registrationDate')) {
           logger.warn('Invalid registration date:', record.registrationDate);
           return false;
         }
         break;
       case 'allotment':
-        if (!isValidDDMMYYYY(record.allotmentDate)) {
+        if (!validateDate(record.allotmentDate, 'allotmentDate')) {
           logger.warn('Invalid allotment date:', record.allotmentDate);
           return false;
         }
-        if (record.paymentDate && !isValidDDMMYYYY(record.paymentDate)) {
+        if (record.paymentDate && !validateDate(record.paymentDate, 'paymentDate')) {
           logger.warn('Invalid payment date:', record.paymentDate);
           return false;
         }

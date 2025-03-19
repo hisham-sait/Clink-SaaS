@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Suspense, lazy, useState, useEffect } from 'react';
+import { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import TinySidebar from './components/shared/TinySidebar';
@@ -20,15 +20,52 @@ const Help = lazy(() => import('./components/help/Help'));
 const FormEmbedPage = lazy(() => import('./components/forms/FormEmbedPage'));
 
 type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'settings' | 'help';
+type ThemeType = 'light' | 'dark' | 'system';
 
 const AppContent = () => {
   const location = useLocation();
   const isAuthPage = location.pathname.startsWith('/auth');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [theme, setTheme] = useState<ThemeType>(() => {
+    // Get theme from localStorage or default to 'light'
+    return (localStorage.getItem('theme') as ThemeType) || 'light';
+  });
   const [notificationCount] = useState(0);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [activeSection, setActiveSection] = useState<SectionType>('statutory');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Apply theme to document
+  useEffect(() => {
+    // Save theme to localStorage
+    localStorage.setItem('theme', theme);
+    
+    // Remove all theme classes
+    document.documentElement.classList.remove('theme-light', 'theme-dark');
+    
+    if (theme === 'system') {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+    } else {
+      // Apply selected theme
+      document.documentElement.classList.add(`theme-${theme}`);
+    }
+  }, [theme]);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      const handleChange = (e: MediaQueryListEvent) => {
+        document.documentElement.classList.remove('theme-light', 'theme-dark');
+        document.documentElement.classList.add(e.matches ? 'theme-dark' : 'theme-light');
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [theme]);
 
   // Handle window resize
   useEffect(() => {
@@ -52,9 +89,21 @@ const AppContent = () => {
     }
   }, [location]);
 
-  const handleThemeToggle = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  const handleThemeToggle = useCallback((newTheme?: ThemeType) => {
+    if (newTheme) {
+      setTheme(newTheme);
+    } else {
+      // Cycle through themes if no specific theme is provided
+      setTheme(prevTheme => {
+        switch (prevTheme) {
+          case 'light': return 'dark';
+          case 'dark': return 'system';
+          case 'system': return 'light';
+          default: return 'light';
+        }
+      });
+    }
+  }, []);
 
   const handleNotificationsToggle = () => {
     // Implement notifications toggle
@@ -81,7 +130,7 @@ const AppContent = () => {
   return (
     <div className="app-container">
       <TinySidebar
-        isDarkMode={isDarkMode}
+        theme={theme}
         notificationCount={notificationCount}
         userAvatar="bi-person-circle"
         userName=""
@@ -172,12 +221,18 @@ const AppContent = () => {
 };
 
 function App() {
+  // Get theme from localStorage for ToastContainer
+  const savedTheme = localStorage.getItem('theme') as ThemeType || 'light';
+  const toastTheme = savedTheme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : savedTheme;
+
   return (
     <Router>
       <AuthProvider>
         <AppContent />
         <ToastContainer
-          position="top-right"
+          position="bottom-right"
           autoClose={3000}
           hideProgressBar
           newestOnTop
@@ -186,7 +241,7 @@ function App() {
           pauseOnFocusLoss
           draggable={false}
           pauseOnHover
-          theme="light"
+          theme={toastTheme}
         />
       </AuthProvider>
     </Router>

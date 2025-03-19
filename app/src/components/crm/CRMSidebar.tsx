@@ -18,11 +18,6 @@ const CRMSidebar: React.FC<CRMSidebarProps> = ({ isExpanded = true }) => {
       route: '/crm/contacts'
     },
     {
-      label: 'Pipeline',
-      icon: 'bi-funnel',
-      route: '/crm/pipeline'
-    },
-    {
       label: 'Clients',
       icon: 'bi-building',
       route: '/crm/clients'
@@ -33,14 +28,9 @@ const CRMSidebar: React.FC<CRMSidebarProps> = ({ isExpanded = true }) => {
       route: '/crm/organisations'
     },
     {
-      label: 'Forms',
-      icon: 'bi-file-earmark-text',
-      route: '/crm/forms'
-    },
-    {
-      label: 'Products',
-      icon: 'bi-box',
-      route: '/crm/products'
+      label: 'Services',
+      icon: 'bi-gear-fill',
+      route: '/crm/services'
     },
     {
       label: 'Proposals',
@@ -54,7 +44,7 @@ const CRMSidebar: React.FC<CRMSidebarProps> = ({ isExpanded = true }) => {
       <div className="py-4">
         {isExpanded && (
           <div className="px-4 mb-2">
-            <span className="text-uppercase small fw-semibold text-secondary">CRM</span>
+            <span className="text-uppercase small fw-semibold" style={{ color: 'var(--bs-gray-600)' }}>CRM</span>
           </div>
         )}
         <ul className="nav flex-column">
@@ -65,7 +55,9 @@ const CRMSidebar: React.FC<CRMSidebarProps> = ({ isExpanded = true }) => {
                 className={({ isActive }) => `
                   nav-link d-flex align-items-center py-2
                   ${isExpanded ? 'px-4' : 'px-2'}
-                  ${isActive ? 'active bg-primary-subtle text-primary fw-medium' : ''}
+                  ${isActive ? 'active fw-medium' : ''}
+                  ${isActive ? 'text-primary' : ''}
+                  ${isActive ? '' : ''}
                   hover-primary
                 `}
                 end={item.route === '/crm/dashboard'}

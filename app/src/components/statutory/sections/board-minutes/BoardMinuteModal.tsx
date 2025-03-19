@@ -3,57 +3,21 @@ import { Modal, Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../../../../contexts/AuthContext';
 import api from '../../../../services/api';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
+
+import { BoardMinute, Discussion, Resolution, ActionItem } from '../../../../services/statutory/types';
 
 interface BoardMinuteModalProps {
   show: boolean;
   onHide: () => void;
   minute?: BoardMinute;
   onSuccess: () => void;
-}
-
-interface BoardMinute {
-  id?: string;
-  meetingType: 'AGM' | 'EGM' | 'Board Meeting' | 'Committee Meeting';
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
-  attendees: string[];
-  content: string;
-  discussions: Discussion[];
-  resolutions: Resolution[];
-  status: 'Draft' | 'Final' | 'Signed';
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Discussion {
-  id?: string;
-  topic: string;
-  details: string;
-  decisions: string;
-  actionItems: ActionItem[];
-}
-
-interface ActionItem {
-  id?: string;
-  task: string;
-  assignee: string;
-  dueDate: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
-}
-
-interface Resolution {
-  id?: string;
-  title: string;
-  type: 'Ordinary' | 'Special';
-  description: string;
-  outcome: 'Pending' | 'Passed' | 'Failed' | 'Withdrawn';
-  proposedBy: string;
-  secondedBy: string;
 }
 
 const BoardMinuteModal: React.FC<BoardMinuteModalProps> = ({ show, onHide, minute, onSuccess }) => {
@@ -80,8 +44,9 @@ const BoardMinuteModal: React.FC<BoardMinuteModalProps> = ({ show, onHide, minut
   );
 
   const [formData, setFormData] = useState<BoardMinute>({
+    minuteId: `BM${new Date().getTime()}`,
     meetingType: 'Board Meeting',
-    meetingDate: '',
+    meetingDate: formatYYYYMMDD(new Date()),
     startTime: '',
     endTime: '',
     venue: '',
@@ -95,23 +60,32 @@ const BoardMinuteModal: React.FC<BoardMinuteModalProps> = ({ show, onHide, minut
 
   useEffect(() => {
     if (minute) {
+      // Parse dates from DD/MM/YYYY format to YYYY-MM-DD for form inputs
+      const meetingDateObj = parseDate(minute.meetingDate);
+      
+      // Parse times from the API format
+      const startTimeObj = new Date(minute.startTime);
+      const endTimeObj = new Date(minute.endTime);
+
       setFormData({
         ...minute,
-        meetingDate: new Date(minute.meetingDate).toISOString().split('T')[0],
-        startTime: new Date(minute.startTime).toISOString().slice(11, 16),
-        endTime: new Date(minute.endTime).toISOString().slice(11, 16),
+        meetingDate: meetingDateObj ? formatYYYYMMDD(meetingDateObj) : '',
+        startTime: startTimeObj.toTimeString().slice(0, 5), // HH:mm format
+        endTime: endTimeObj.toTimeString().slice(0, 5), // HH:mm format
         discussions: minute.discussions.map(d => ({
           ...d,
           actionItems: d.actionItems.map(a => ({
             ...a,
-            dueDate: new Date(a.dueDate).toISOString().split('T')[0]
+            dueDate: parseDate(a.dueDate) ? 
+              formatYYYYMMDD(parseDate(a.dueDate)!) : ''
           }))
         }))
       });
     } else {
       setFormData({
+        minuteId: `BM${new Date().getTime()}`,
         meetingType: 'Board Meeting',
-        meetingDate: '',
+        meetingDate: formatYYYYMMDD(new Date()),
         startTime: '',
         endTime: '',
         venue: '',
@@ -146,11 +120,56 @@ const BoardMinuteModal: React.FC<BoardMinuteModalProps> = ({ show, onHide, minut
       return;
     }
 
+    // Validate meeting date
+    const meetingDate = new Date(formData.meetingDate);
+    if (!isValidStatutoryDate(meetingDate, { allowFuture: false })) {
+      setError('Invalid meeting date');
+      setLoading(false);
+      return;
+    }
+
+    // Validate start and end times
+    const startDateTime = new Date(`${formData.meetingDate}T${formData.startTime}`);
+    const endDateTime = new Date(`${formData.meetingDate}T${formData.endTime}`);
+    if (endDateTime <= startDateTime) {
+      setError('End time must be after start time');
+      setLoading(false);
+      return;
+    }
+
+    // Validate action item due dates
+    for (const discussion of formData.discussions) {
+      for (const actionItem of discussion.actionItems) {
+        const dueDate = new Date(actionItem.dueDate);
+        if (!isValidStatutoryDate(dueDate, { allowFuture: true })) {
+          setError(`Invalid due date for action item: ${actionItem.task}`);
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
     try {
+      // Convert YYYY-MM-DD dates to DD/MM/YYYY format for API
+      const apiData = {
+        ...formData,
+        meetingDate: formatDDMMYYYY(new Date(formData.meetingDate)),
+        // Combine date and time for API
+        startTime: `${formData.meetingDate}T${formData.startTime}:00`,
+        endTime: `${formData.meetingDate}T${formData.endTime}:00`,
+        discussions: formData.discussions.map(d => ({
+          ...d,
+          actionItems: d.actionItems.map(a => ({
+            ...a,
+            dueDate: formatDDMMYYYY(new Date(a.dueDate))
+          }))
+        }))
+      };
+
       if (minute?.id) {
-        await api.put(`/statutory/board-minutes/${user.companyId}/${minute.id}`, formData);
+        await api.put(`/statutory/board-minutes/${user.companyId}/${minute.id}`, apiData);
       } else {
-        await api.post(`/statutory/board-minutes/${user.companyId}`, formData);
+        await api.post(`/statutory/board-minutes/${user.companyId}`, apiData);
       }
       setSuccess(true);
       onSuccess();

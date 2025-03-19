@@ -4,82 +4,52 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const auth = require('../../middleware/auth');
 
-// Apply auth middleware to all routes
-router.use(auth);
-
-// Get all pipelines for a company
-router.get('/:companyId', async (req, res) => {
-  try {
-    const { companyId } = req.params;
-    const pipelines = await prisma.pipeline.findMany({
-      where: { companyId },
-      include: {
-        stages: {
-          include: {
-            deals: {
-              include: {
-                contact: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json(pipelines);
-  } catch (error) {
-    console.error('Error fetching pipelines:', error);
-    res.status(500).json({ error: 'Failed to fetch pipelines' });
-  }
-});
-
-// Get pipeline stages
-router.get('/:companyId/:pipelineId/stages', async (req, res) => {
-  try {
-    const { companyId, pipelineId } = req.params;
-    const stages = await prisma.pipelineStage.findMany({
-      where: { 
-        pipelineId,
-        pipeline: { companyId }
-      },
-      orderBy: { order: 'asc' },
-    });
-    res.json(stages);
-  } catch (error) {
-    console.error('Error fetching pipeline stages:', error);
-    res.status(500).json({ error: 'Failed to fetch pipeline stages' });
-  }
-});
-
 // Create a new pipeline
-router.post('/:companyId', async (req, res) => {
+router.post('/:companyId', auth, async (req, res) => {
   try {
     const { companyId } = req.params;
     const { name, description, stages } = req.body;
 
-    const pipeline = await prisma.pipeline.create({
-      data: {
-        name,
-        description,
-        companyId,
-        stages: {
-          create: stages.map((stage, index) => ({
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    // Create the pipeline with stages in a transaction
+    const pipeline = await prisma.$transaction(async (tx) => {
+      // Create the pipeline
+      const newPipeline = await tx.pipeline.create({
+        data: {
+          name,
+          description,
+          companyId
+        }
+      });
+
+      // Create the stages
+      const stagePromises = stages.map(stage => 
+        tx.stage.create({
+          data: {
             name: stage.name,
             color: stage.color,
-            order: index,
-          })),
-        },
-      },
-      include: {
-        stages: true,
-      },
+            order: stage.order,
+            pipelineId: newPipeline.id
+          }
+        })
+      );
+
+      await Promise.all(stagePromises);
+
+      // Return the created pipeline with stages
+      return tx.pipeline.findUnique({
+        where: { id: newPipeline.id },
+        include: {
+          stages: {
+            orderBy: { order: 'asc' }
+          }
+        }
+      });
     });
+
     res.status(201).json(pipeline);
   } catch (error) {
     console.error('Error creating pipeline:', error);
@@ -87,86 +57,378 @@ router.post('/:companyId', async (req, res) => {
   }
 });
 
-// Update a pipeline
-router.put('/:companyId/:id', async (req, res) => {
+// Get all pipelines for a company
+router.get('/', auth, async (req, res) => {
   try {
-    const { companyId, id } = req.params;
-    const { name, description, stages } = req.body;
-
-    const pipeline = await prisma.pipeline.findFirst({
-      where: { id, companyId },
-    });
-    if (!pipeline) {
-      return res.status(404).json({ error: 'Pipeline not found' });
+    const { companyId } = req.query;
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
     }
 
-    // Delete existing stages
-    await prisma.pipelineStage.deleteMany({
-      where: { pipelineId: id },
+    const pipelines = await prisma.pipeline.findMany({
+      where: { companyId },
+      include: {
+        stages: {
+          orderBy: { order: 'asc' },
+          include: {
+            deals: {
+              where: { status: 'Open' },
+              include: {
+                contact: {
+                  select: {
+                    firstName: true,
+                    lastName: true
+                  }
+                }
+              }
+            },
+            contacts: {
+              where: { exitedAt: null },
+              include: {
+                contact: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    estimatedValue: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
-    // Update pipeline and create new stages
-    const updatedPipeline = await prisma.pipeline.update({
-      where: { id },
-      data: {
-        name,
-        description,
-        stages: {
-          create: stages.map((stage, index) => ({
-            name: stage.name,
-            color: stage.color,
-            order: index,
-          })),
+    // Transform the data to include contacts in the deals array
+    const pipelinesWithContacts = pipelines.map(pipeline => ({
+      ...pipeline,
+      stages: pipeline.stages.map(stage => {
+        // Remove the contacts from the stage object
+        const { contacts, ...stageWithoutContacts } = stage;
+        
+        return {
+          ...stageWithoutContacts,
+          deals: [
+            ...stage.deals.map(deal => ({
+              ...deal,
+              type: 'deal'
+            })),
+            ...stage.contacts.map(cps => ({
+              id: cps.contactId,
+              name: `${cps.contact.firstName} ${cps.contact.lastName}`,
+              amount: cps.contact.estimatedValue || 0,
+              probability: 50,
+              status: 'Open',
+              contact: cps.contact,
+              stage: {
+                id: stage.id,
+                name: stage.name
+              },
+              type: 'contact'
+            }))
+          ]
+        };
+      })
+    }));
+
+    res.json(pipelinesWithContacts);
+  } catch (error) {
+    console.error('Error fetching pipelines:', error);
+    res.status(500).json({ error: 'Failed to fetch pipelines' });
+  }
+});
+
+// Add contact to pipeline
+router.post('/contacts/:contactId/pipeline', auth, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const { pipelineId, stageId, estimatedValue, notes, companyId } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    // Get contact to check if it's already in a pipeline
+    const existingStage = await prisma.contactPipelineStage.findFirst({
+      where: {
+        contactId,
+        exitedAt: null
+      }
+    });
+
+    if (existingStage) {
+      return res.status(400).json({ error: 'Contact is already in a pipeline' });
+    }
+
+    // Start a transaction to update both contact and create pipeline stage
+    const pipelineStage = await prisma.$transaction(async (tx) => {
+      // Update contact's estimated value if provided
+      if (estimatedValue !== undefined) {
+        await tx.contact.update({
+          where: { id: contactId },
+          data: { estimatedValue }
+        });
+      }
+
+      // Create pipeline stage entry
+      return await tx.contactPipelineStage.create({
+        data: {
+          contactId,
+          pipelineId,
+          stageId,
+          notes,
+          enteredAt: new Date()
         },
+        include: {
+          pipeline: true,
+          stage: true,
+          contact: {
+            select: {
+              firstName: true,
+              lastName: true,
+              estimatedValue: true
+            }
+          }
+        }
+      });
+    });
+
+    res.json(pipelineStage);
+  } catch (error) {
+    console.error('Error adding contact to pipeline:', error);
+    res.status(500).json({ error: 'Failed to add contact to pipeline' });
+  }
+});
+
+// Update contact's pipeline stage
+router.put('/contacts/:contactId/pipeline', auth, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const { stageId, notes, companyId } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    // Get current pipeline stage
+    const currentStage = await prisma.contactPipelineStage.findFirst({
+      where: { contactId },
+      orderBy: { enteredAt: 'desc' }
+    });
+
+    if (!currentStage) {
+      return res.status(404).json({ error: 'Contact not in any pipeline' });
+    }
+
+    // Mark current stage as exited
+    await prisma.contactPipelineStage.update({
+      where: { id: currentStage.id },
+      data: { exitedAt: new Date() }
+    });
+
+    // Create new stage entry
+    const newStage = await prisma.contactPipelineStage.create({
+      data: {
+        contactId,
+        pipelineId: currentStage.pipelineId,
+        stageId,
+        notes,
+        enteredAt: new Date()
       },
       include: {
-        stages: true,
-      },
+        pipeline: true,
+        stage: true
+      }
     });
-    res.json(updatedPipeline);
+
+    res.json(newStage);
   } catch (error) {
-    console.error('Error updating pipeline:', error);
-    res.status(500).json({ error: 'Failed to update pipeline' });
+    console.error('Error updating pipeline stage:', error);
+    res.status(500).json({ error: 'Failed to update pipeline stage' });
   }
 });
 
-// Delete a pipeline
-router.delete('/:companyId/:id', async (req, res) => {
+// Remove contact from pipeline
+router.delete('/contacts/:contactId/pipeline', auth, async (req, res) => {
   try {
-    const { companyId, id } = req.params;
-    const pipeline = await prisma.pipeline.findFirst({
-      where: { id, companyId },
-    });
-    if (!pipeline) {
-      return res.status(404).json({ error: 'Pipeline not found' });
+    const { contactId } = req.params;
+    const { companyId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
     }
 
-    // Pipeline stages and deals will be deleted automatically due to cascade
-    await prisma.pipeline.delete({
-      where: { id },
+    // Mark all stages as exited
+    await prisma.contactPipelineStage.updateMany({
+      where: { 
+        contactId,
+        exitedAt: null
+      },
+      data: { exitedAt: new Date() }
     });
+
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting pipeline:', error);
-    res.status(500).json({ error: 'Failed to delete pipeline' });
+    console.error('Error removing contact from pipeline:', error);
+    res.status(500).json({ error: 'Failed to remove contact from pipeline' });
   }
 });
 
-// Get pipeline automations
-router.get('/:companyId/:pipelineId/automations', async (req, res) => {
+// Get pipeline stages
+router.get('/:pipelineId/stages', auth, async (req, res) => {
   try {
-    const { companyId, pipelineId } = req.params;
-    const automations = await prisma.automation.findMany({
+    const { pipelineId } = req.params;
+    const { companyId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    const stages = await prisma.stage.findMany({
       where: { 
         pipelineId,
         pipeline: { companyId }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { order: 'asc' }
     });
-    res.json(automations);
+
+    res.json(stages);
   } catch (error) {
-    console.error('Error fetching automations:', error);
-    res.status(500).json({ error: 'Failed to fetch automations' });
+    console.error('Error fetching pipeline stages:', error);
+    res.status(500).json({ error: 'Failed to fetch pipeline stages' });
+  }
+});
+
+// Create deal
+router.post('/deals', auth, async (req, res) => {
+  try {
+    const {
+      name,
+      amount,
+      probability,
+      expectedCloseDate,
+      notes,
+      contactId,
+      organisationId,
+      stageId,
+      pipelineId,
+      status,
+      priority,
+      companyId
+    } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    const deal = await prisma.deal.create({
+      data: {
+        name,
+        amount,
+        probability,
+        expectedCloseDate: new Date(expectedCloseDate),
+        notes,
+        contactId,
+        organisationId,
+        stageId,
+        pipelineId,
+        status,
+        priority,
+        companyId
+      },
+      include: {
+        contact: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    res.json(deal);
+  } catch (error) {
+    console.error('Error creating deal:', error);
+    res.status(500).json({ error: 'Failed to create deal' });
+  }
+});
+
+// Move deal
+router.put('/deals/:dealId/move', auth, async (req, res) => {
+  try {
+    const { dealId } = req.params;
+    const { sourceStageId, destinationStageId, newIndex, companyId } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    // Update deal's stage
+    await prisma.deal.update({
+      where: { id: dealId },
+      data: { stageId: destinationStageId }
+    });
+
+    res.status(200).send();
+  } catch (error) {
+    console.error('Error moving deal:', error);
+    res.status(500).json({ error: 'Failed to move deal' });
+  }
+});
+
+// Move contact
+router.put('/contacts/:contactId/move', auth, async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const { sourceStageId, destinationStageId, newIndex, companyId } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' });
+    }
+
+    // Get current pipeline stage
+    const currentStage = await prisma.contactPipelineStage.findFirst({
+      where: {
+        contactId,
+        exitedAt: null
+      }
+    });
+
+    if (!currentStage) {
+      return res.status(404).json({ error: 'Contact not in any pipeline' });
+    }
+
+    // Mark current stage as exited
+    await prisma.contactPipelineStage.update({
+      where: { id: currentStage.id },
+      data: { exitedAt: new Date() }
+    });
+
+    // Create new stage entry
+    const newStage = await prisma.contactPipelineStage.create({
+      data: {
+        contactId,
+        pipelineId: currentStage.pipelineId,
+        stageId: destinationStageId,
+        enteredAt: new Date()
+      },
+      include: {
+        pipeline: true,
+        stage: true,
+        contact: {
+          select: {
+            firstName: true,
+            lastName: true,
+            estimatedValue: true
+          }
+        }
+      }
+    });
+
+    res.json(newStage);
+  } catch (error) {
+    console.error('Error moving contact:', error);
+    res.status(500).json({ error: 'Failed to move contact' });
   }
 });
 

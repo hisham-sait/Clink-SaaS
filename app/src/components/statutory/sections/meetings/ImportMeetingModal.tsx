@@ -4,6 +4,14 @@ import { FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
 
+import { Meeting } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
+
 interface ImportMeetingModalProps {
   show: boolean;
   onHide: () => void;
@@ -11,18 +19,12 @@ interface ImportMeetingModalProps {
   companyId: string;
 }
 
-interface PreviewData {
-  meetingType: string;
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
+// PreviewData extends Meeting but with numeric fields as strings since they come from CSV
+type PreviewData = Omit<Meeting, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'company' | 'quorumRequired' | 'quorumPresent' | 'quorumAchieved' | 'resolutions'> & {
   quorumRequired: string;
   quorumPresent: string;
   attendees: string;
-  agenda: string;
-}
+};
 
 interface ColumnMapping {
   [key: string]: string;
@@ -275,6 +277,33 @@ const ImportMeetingModal: React.FC<ImportMeetingModalProps> = ({ show, onHide, o
     }
   };
 
+  const formatDate = (date: string | null) => {
+    if (!date) return '';
+    try {
+      const parsedDate = parseDate(date);
+      return parsedDate ? formatDDMMYYYY(parsedDate) : 'Invalid Date';
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'Invalid Date';
+    }
+  };
+
+  const validateDates = (data: PreviewData) => {
+    const meetingDate = parseDate(data.meetingDate);
+    if (!meetingDate || !isValidStatutoryDate(meetingDate, { allowFuture: true })) {
+      return 'Invalid meeting date';
+    }
+
+    // Validate start and end times
+    const startDateTime = new Date(`${data.meetingDate}T${data.startTime}`);
+    const endDateTime = new Date(`${data.meetingDate}T${data.endTime}`);
+    if (endDateTime <= startDateTime) {
+      return 'End time must be after start time';
+    }
+
+    return null;
+  };
+
   const previewImport = async () => {
     if (!selectedFile) return;
 
@@ -285,20 +314,9 @@ const ImportMeetingModal: React.FC<ImportMeetingModalProps> = ({ show, onHide, o
     const formData = new FormData();
     formData.append('file', selectedFile);
     
-    // Log mapping before stringifying
-    console.log('Column mapping to send:', columnMapping);
-    
     try {
       const mappingString = JSON.stringify(columnMapping);
-      console.log('Stringified mapping:', mappingString);
       formData.append('mapping', mappingString);
-
-      console.log('Preview request details:', {
-        fileSize: selectedFile.size,
-        fileName: selectedFile.name,
-        fileType: selectedFile.type,
-        mappingSize: mappingString.length
-      });
 
       const response = await api.post(`/statutory/meetings/${companyId}/preview-import`, formData, {
         headers: {
@@ -308,9 +326,17 @@ const ImportMeetingModal: React.FC<ImportMeetingModalProps> = ({ show, onHide, o
         maxBodyLength: Infinity
       });
 
-      console.log('Preview response:', response.data);
-
       if (response.data.data?.length > 0) {
+        // Validate dates in preview data
+        const dateErrors = response.data.data.map((item: PreviewData, index: number) => {
+          const error = validateDates(item);
+          return error ? `Row ${index + 1}: ${error}` : null;
+        }).filter(Boolean);
+
+        if (dateErrors.length > 0) {
+          throw new Error(`Date validation errors:\n${dateErrors.join('\n')}`);
+        }
+
         setPreviewData(response.data.data);
         setCurrentStep(3);
       } else {
@@ -490,38 +516,6 @@ const ImportMeetingModal: React.FC<ImportMeetingModalProps> = ({ show, onHide, o
     }
   }, [show]);
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '';
-    try {
-      // First check if the date is already in DD/MM/YYYY format
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
-        return date;
-      }
-
-      // Try parsing as ISO date
-      const d = new Date(date);
-      if (isNaN(d.getTime())) {
-        // Try parsing DD/MM/YYYY format
-        const [day, month, year] = date.split('/').map(Number);
-        if (day && month && year) {
-          const parsedDate = new Date(year, month - 1, day);
-          if (!isNaN(parsedDate.getTime())) {
-            return date; // Return original if it was valid DD/MM/YYYY
-          }
-        }
-        return 'Invalid Date';
-      }
-
-      // Format as DD/MM/YYYY
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
-    } catch (err) {
-      console.error('Error formatting date:', err);
-      return 'Invalid Date';
-    }
-  };
 
   const handleClose = () => {
     // Reset all states

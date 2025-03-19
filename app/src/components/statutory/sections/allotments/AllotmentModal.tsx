@@ -4,33 +4,21 @@ import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../../../../contexts/AuthContext';
 import api from '../../../../services/api';
 
+import { Allotment } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
+
 interface AllotmentModalProps {
   show: boolean;
   onHide: () => void;
   allotment?: Allotment;
   onSuccess: () => void;
 }
-
-interface Allotment {
-  id?: string;
-  allotmentId: string;
-  shareClass: string;
-  numberOfShares: number;
-  pricePerShare: number;
-  allotmentDate: string;
-  allottee: string;
-  paymentStatus: PaymentStatus;
-  amountPaid?: number;
-  paymentDate?: string;
-  certificateNumber?: string;
-  status: 'Active' | 'Cancelled';
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-type PaymentStatus = 'Pending' | 'Paid' | 'Partially Paid';
 
 const AllotmentModal: React.FC<AllotmentModalProps> = ({ show, onHide, allotment, onSuccess }) => {
   const { user } = useAuth();
@@ -60,7 +48,7 @@ const AllotmentModal: React.FC<AllotmentModalProps> = ({ show, onHide, allotment
     shareClass: '',
     numberOfShares: 0,
     pricePerShare: 0,
-    allotmentDate: '',
+    allotmentDate: formatYYYYMMDD(new Date()),
     allottee: '',
     paymentStatus: 'Pending',
     status: 'Active'
@@ -68,10 +56,14 @@ const AllotmentModal: React.FC<AllotmentModalProps> = ({ show, onHide, allotment
 
   useEffect(() => {
     if (allotment) {
+      // Parse dates from DD/MM/YYYY format to YYYY-MM-DD for form inputs
+      const allotmentDateObj = parseDate(allotment.allotmentDate);
+      const paymentDateObj = allotment.paymentDate ? parseDate(allotment.paymentDate) : undefined;
+
       setFormData({
         ...allotment,
-        allotmentDate: new Date(allotment.allotmentDate).toISOString().split('T')[0],
-        paymentDate: allotment.paymentDate ? new Date(allotment.paymentDate).toISOString().split('T')[0] : undefined
+        allotmentDate: allotmentDateObj ? formatYYYYMMDD(allotmentDateObj) : '',
+        paymentDate: paymentDateObj ? formatYYYYMMDD(paymentDateObj) : undefined
       });
     } else {
       setFormData({
@@ -79,7 +71,7 @@ const AllotmentModal: React.FC<AllotmentModalProps> = ({ show, onHide, allotment
         shareClass: '',
         numberOfShares: 0,
         pricePerShare: 0,
-        allotmentDate: '',
+        allotmentDate: formatYYYYMMDD(new Date()),
         allottee: '',
         paymentStatus: 'Pending',
         status: 'Active'
@@ -107,11 +99,41 @@ const AllotmentModal: React.FC<AllotmentModalProps> = ({ show, onHide, allotment
       return;
     }
 
+    // Validate dates
+    const allotmentDate = new Date(formData.allotmentDate);
+    if (!isValidStatutoryDate(allotmentDate, { allowFuture: false })) {
+      setError('Invalid allotment date');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.paymentDate) {
+      const paymentDate = new Date(formData.paymentDate);
+      if (!isValidStatutoryDate(paymentDate, { allowFuture: false })) {
+        setError('Invalid payment date');
+        setLoading(false);
+        return;
+      }
+      // Ensure payment date is not before allotment date
+      if (paymentDate < allotmentDate) {
+        setError('Payment date cannot be before allotment date');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
+      // Convert YYYY-MM-DD dates to DD/MM/YYYY format for API
+      const apiData = {
+        ...formData,
+        allotmentDate: formatDDMMYYYY(new Date(formData.allotmentDate)),
+        paymentDate: formData.paymentDate ? formatDDMMYYYY(new Date(formData.paymentDate)) : undefined
+      };
+
       if (allotment?.id) {
-        await api.put(`/statutory/allotments/${user.companyId}/${allotment.id}`, formData);
+        await api.put(`/statutory/allotments/${user.companyId}/${allotment.id}`, apiData);
       } else {
-        await api.post(`/statutory/allotments/${user.companyId}`, formData);
+        await api.post(`/statutory/allotments/${user.companyId}`, apiData);
       }
       setSuccess(true);
       onSuccess();
@@ -303,7 +325,7 @@ const AllotmentModal: React.FC<AllotmentModalProps> = ({ show, onHide, allotment
                   required
                 >
                   <option value="Pending">Pending</option>
-                  <option value="Partially_Paid">Partially Paid</option>
+                  <option value="Partially Paid">Partially Paid</option>
                   <option value="Paid">Paid</option>
                 </Form.Select>
               </Form.Group>

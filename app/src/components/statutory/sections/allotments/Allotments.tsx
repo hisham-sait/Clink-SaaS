@@ -6,34 +6,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaFileImport, FaShareAlt, FaCheckCircle, FaTimesCircle, FaTrash, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 
-interface Allotment {
-  id?: string;
-  allotmentId: string;
-  shareClass: string;
-  numberOfShares: number;
-  pricePerShare: number;
-  allotmentDate: string;
-  allottee: string;
-  paymentStatus: 'Pending' | 'Paid' | 'Partially Paid';
-  amountPaid?: number;
-  paymentDate?: string;
-  certificateNumber?: string;
-  status: 'Active' | 'Cancelled';
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Activity {
-  id: string;
-  type: 'added' | 'update' | 'status_changed' | 'deletion';
-  entityType: string;
-  entityId: string;
-  description: string;
-  user: string;
-  time: string;
-}
+import { Allotment, Activity } from '../../../../services/statutory/types';
 
 const Allotments: React.FC = () => {
   const timelineStyles = {
@@ -296,7 +269,7 @@ const Allotments: React.FC = () => {
                     <th>Allottee</th>
                   <th>Payment Status</th>
                   <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
+                  {user?.roles?.includes('Super Admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -334,7 +307,7 @@ const Allotments: React.FC = () => {
                         {allotment.status}
                       </Badge>
                     </td>
-                    {user?.role === 'super_admin' && (
+                    {user?.roles?.includes('Super Admin') && (
                       <td>{allotment.company?.name || allotment.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -357,7 +330,7 @@ const Allotments: React.FC = () => {
                 ))}
                 {allotments.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 8 : 7} className="text-center py-5">
+                    <td colSpan={user?.roles?.includes('Super Admin') ? 8 : 7} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaShareAlt className="text-muted" size={32} />
@@ -401,7 +374,7 @@ const Allotments: React.FC = () => {
                         <Badge bg="light" className="p-2">
                           {activity.type === 'added' ? (
                             <FaPlus className="text-success" />
-                          ) : activity.type === 'update' ? (
+                          ) : activity.type === 'updated' ? (
                             <FaEdit className="text-primary" />
                           ) : activity.type === 'status_changed' ? (
                             <FaCheckCircle className="text-warning" />

@@ -59,7 +59,7 @@ const StatutorySidebar: React.FC<StatutorySidebarProps> = ({ isExpanded = true }
       <div className="py-4">
         {isExpanded && (
           <div className="px-4 mb-2">
-            <span className="text-uppercase small fw-semibold text-secondary">STATUTORY REGISTERS</span>
+            <span className="text-uppercase small fw-semibold" style={{ color: 'var(--bs-gray-600)' }}>STATUTORY REGISTERS</span>
           </div>
         )}
         <ul className="nav flex-column">
@@ -70,7 +70,9 @@ const StatutorySidebar: React.FC<StatutorySidebarProps> = ({ isExpanded = true }
                 className={({ isActive }) => `
                   nav-link d-flex align-items-center py-2
                   ${isExpanded ? 'px-4' : 'px-2'}
-                  ${isActive ? 'active bg-primary-subtle text-primary fw-medium' : ''}
+                  ${isActive ? 'active fw-medium' : ''}
+                  ${isActive ? 'text-primary' : ''}
+                  ${isActive ? '' : ''}
                   hover-primary
                 `}
                 end={item.route === '/statutory/dashboard'}

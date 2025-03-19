@@ -9,11 +9,10 @@ const contactsRouter = require('./contacts');
 const clientsRouter = require('./clients');
 const activitiesRouter = require('./activities');
 const organisationsRouter = require('./organisations');
-const pipelinesRouter = require('./pipelines');
 const dealsRouter = require('./deals');
 const automationsRouter = require('./automations');
-const formsRouter = require('./forms');
 const productsRouter = require('./products');
+const servicesRouter = require('./services');
 const proposalsRouter = require('./proposals');
 
 // Apply auth middleware to all CRM routes
@@ -54,11 +53,10 @@ router.use('/contacts', contactsRouter);
 router.use('/clients', clientsRouter);
 router.use('/activities', activitiesRouter);
 router.use('/organisations', organisationsRouter);
-router.use('/pipelines', pipelinesRouter);
 router.use('/deals', dealsRouter);
 router.use('/automations', automationsRouter);
-router.use('/forms', formsRouter);
 router.use('/products', productsRouter);
+router.use('/services', servicesRouter);
 router.use('/proposals', proposalsRouter);
 
 // Error handling middleware

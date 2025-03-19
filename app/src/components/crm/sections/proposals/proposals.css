@@ -1,0 +1,370 @@
+/* Merged CSS for Proposal Components */
+
+/* ProposalBuilder Styles */
+.proposal-builder {
+  min-height: calc(100vh - 60px);
+  background-color: #f8f9fa;
+}
+
+.proposal-content-area {
+  padding-bottom: 2rem;
+}
+
+.proposal-document {
+  background-color: #fff;
+  min-height: 800px;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.proposal-sidebar {
+  padding-bottom: 2rem;
+}
+
+/* Slim Proposal Information Styles */
+.proposal-info-slim {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.proposal-info-slim .fw-medium {
+  font-weight: 500;
+}
+
+.proposal-info-slim .text-muted {
+  font-size: 0.75rem;
+}
+
+.proposal-info-slim .btn-link {
+  color: #6c757d;
+  transition: color 0.15s ease-in-out;
+}
+
+.proposal-info-slim .btn-link:hover {
+  color: #495057;
+}
+
+.proposal-builder-sidebar {
+  position: sticky;
+  top: 1rem;
+}
+
+.section-templates {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.template-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid #dee2e6;
+}
+
+.template-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #adb5bd;
+}
+
+.template-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #f1f3f5;
+  border-radius: 50%;
+  color: #495057;
+}
+
+.proposal-section .section-content {
+  padding: 0.5rem;
+}
+
+.proposal-section .section-content h2 {
+  margin-top: 0;
+  color: #343a40;
+  font-size: 1.5rem;
+}
+
+.proposal-section .section-content p {
+  color: #495057;
+  line-height: 1.6;
+}
+
+.proposal-section .section-content ul,
+.proposal-section .section-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.proposal-section .section-content table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+
+.proposal-section .section-content table th,
+.proposal-section .section-content table td {
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+}
+
+.proposal-section .section-content table th {
+  background-color: #f8f9fa;
+}
+
+.proposal-section .section-content blockquote {
+  padding: 0.5rem 1rem;
+  border-left: 4px solid #6c757d;
+  background-color: #f8f9fa;
+  margin: 1rem 0;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-date {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.timeline-content {
+  padding-left: 1rem;
+}
+
+.timeline-content h5 {
+  margin-top: 0;
+  color: #343a40;
+}
+
+.testimonial {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+}
+
+.testimonial blockquote {
+  font-style: italic;
+  margin-bottom: 0.5rem;
+  border-left: none;
+  padding: 0;
+  background-color: transparent;
+}
+
+.testimonial-author {
+  text-align: right;
+  font-weight: bold;
+  color: #6c757d;
+}
+
+/* Cover Page Styles */
+.cover-page {
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.cover-page .company-logo {
+  margin-bottom: 2rem;
+}
+
+.cover-page .display-4 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 1.5rem;
+}
+
+.cover-page h3 {
+  font-size: 1.5rem;
+  color: #495057;
+  margin-bottom: 1.5rem;
+}
+
+.cover-page .lead {
+  font-size: 1.25rem;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.cover-page .text-muted {
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+/* Page Break Styles */
+.page-break-section {
+  position: relative;
+}
+
+.page-break-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #e9ecef;
+  border-radius: 50%;
+  color: #495057;
+}
+
+.page-break-indicator {
+  position: relative;
+  height: 20px;
+  margin: 0.5rem 0;
+}
+
+.page-break-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background-color: #dee2e6;
+  border-top: 1px dashed #adb5bd;
+}
+
+.page-break-line::before {
+  content: 'PAGE BREAK';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #fff;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-weight: bold;
+}
+
+/* Header and Footer Styles */
+.proposal-header,
+.proposal-footer {
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border: 1px dashed #dee2e6;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+}
+
+.proposal-header {
+  min-height: 60px;
+}
+
+.proposal-footer {
+  min-height: 40px;
+}
+
+.header-footer-placeholder {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+/* Editor Styles */
+.editor-container {
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.ck-editor__editable {
+  min-height: 250px;
+  max-height: 500px;
+}
+
+.ck-content h1, .ck-content h2, .ck-content h3, 
+.ck-content h4, .ck-content h5, .ck-content h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ck-content p {
+  margin-bottom: 1rem;
+}
+
+.ck-content table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+
+.ck-content table th,
+.ck-content table td {
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+}
+
+.ck-content table th {
+  background-color: #f8f9fa;
+}
+
+.ck-content .pricing-table th,
+.ck-content .pricing-table td {
+  text-align: center;
+}
+
+.ck-content .pricing-table th:first-child,
+.ck-content .pricing-table td:first-child {
+  text-align: left;
+}
+
+/* Dropdown and Utility Styles */
+.z-index-dropdown {
+  z-index: 1050;
+}
+
+.hover-bg-light:hover {
+  background-color: #f8f9fa;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.pricing-table-container {
+  overflow-x: auto;
+}
+
+.pricing-table th, 
+.pricing-table td {
+  vertical-align: middle;
+}
+
+.pricing-notes {
+  min-height: 80px;
+}

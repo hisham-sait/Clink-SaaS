@@ -61,6 +61,7 @@ export interface Activity {
   time: string;
   companyId: string;
 }
+
 export type ProductType = 'PHYSICAL' | 'DIGITAL' | 'SERVICE';
 export type PlanType = 'BASIC' | 'STANDARD' | 'PREMIUM';
 
@@ -103,7 +104,11 @@ export interface Contact {
   status: Status;
   lastContact: string;
   nextFollowUp?: string;
-  socialProfiles?: any;
+  socialProfiles?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+  };
   mailingAddress?: string;
   otherAddress?: string;
   timezone?: string;
@@ -112,14 +117,30 @@ export interface Contact {
   notes?: string;
   companyId: string;
   assignedTo?: string;
+  estimatedValue?: number;
+  currency: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface Deal {
+export interface ColumnPreference {
+  id: string;
+  visible: boolean;
+  order: number;
+  width?: number;
+}
+
+export interface UserColumnPreferences {
+  [key: string]: ColumnPreference[]; // pageId -> column preferences
+}
+
+export interface Deal {
   id: string;
   name: string;
   amount: number;
+  probability: number;
+  expectedCloseDate: Date;
+  status: string;
 }
 
 export interface Proposal {
@@ -130,8 +151,9 @@ export interface Proposal {
   variables?: any;
   status: Status;
   validUntil?: Date;
-  dealId?: string;
   contactId?: string;
+  dealId?: string;
+  companyId?: string;
   products: ProposalProduct[];
   contact?: Contact;
   deal?: Deal;
@@ -144,10 +166,12 @@ export interface ProposalProduct {
   proposalId: string;
   productId: string;
   planType: PlanType;
+  tierId: string; // Reference to the selected tier (required)
   quantity: number;
   price: number;
   features: any[];
-  product: Product;
+  product?: Product; // Make product optional for API requests
+  showIndividualPricing?: boolean; // Flag to control individual pricing display
 }
 
 export interface ProposalTemplate {
@@ -156,6 +180,19 @@ export interface ProposalTemplate {
   description?: string;
   content: any;
   isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SectionTemplate {
+  id: string;
+  name: string;
+  description: string;
+  content: string;
+  type: string;
+  icon?: string;
+  isDefault?: boolean;
+  companyId: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -6,35 +6,8 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaFileImport, FaUsers, FaUserCheck, FaUserMinus, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 
-interface Shareholder {
-  id?: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  ordinaryShares: number;
-  preferentialShares: number;
-  dateAcquired: string;
-  status: 'Active' | 'Inactive';
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Activity {
-  id: string;
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  entityType: string;
-  entityId: string;
-  description: string;
-  user: string;
-  time: string;
-}
+import { Shareholder, Activity } from '../../../../services/statutory/types';
+import { formatDDMMYYYY } from '@bradan/shared';
 
 const Shareholders: React.FC = () => {
   const timelineStyles = {
@@ -108,19 +81,13 @@ const Shareholders: React.FC = () => {
         responseType: 'blob'
       });
       
-      // Create blob link to download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `shareholders.${type === 'pdf' ? 'pdf' : 'xlsx'}`);
       
-      // Append to html link element page
       document.body.appendChild(link);
-      
-      // Start download
       link.click();
-      
-      // Clean up and remove the link
       link.parentNode?.removeChild(link);
     } catch (error) {
       console.error('Error exporting shareholders:', error);
@@ -330,7 +297,7 @@ const Shareholders: React.FC = () => {
                   <th>Total Shares</th>
                   <th>Date Acquired</th>
                   <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
+                  {user?.roles?.includes('super_admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -348,17 +315,13 @@ const Shareholders: React.FC = () => {
                     <td>{shareholder.ordinaryShares}</td>
                     <td>{shareholder.preferentialShares}</td>
                     <td>{shareholder.ordinaryShares + shareholder.preferentialShares}</td>
-                    <td>{new Date(shareholder.dateAcquired).toLocaleDateString('en-IE', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    })}</td>
+                    <td>{formatDDMMYYYY(new Date(shareholder.dateAcquired))}</td>
                     <td>
                       <Badge bg={shareholder.status === 'Active' ? 'success' : 'secondary'}>
                         {shareholder.status}
                       </Badge>
                     </td>
-                    {user?.role === 'super_admin' && (
+                    {user?.roles?.includes('super_admin') && (
                       <td>{shareholder.company?.name || shareholder.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -381,7 +344,7 @@ const Shareholders: React.FC = () => {
                 ))}
                 {shareholders.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 8 : 7} className="text-center py-5">
+                    <td colSpan={user?.roles?.includes('super_admin') ? 8 : 7} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaUsers className="text-muted" size={32} />
@@ -440,13 +403,7 @@ const Shareholders: React.FC = () => {
                       <div>
                         <p className="mb-0">{activity.description}</p>
                         <small className="text-muted">
-                          {new Date(activity.time).toLocaleString('en-IE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {formatDDMMYYYY(new Date(activity.time))}
                         </small>
                       </div>
                     </div>

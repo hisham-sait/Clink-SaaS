@@ -3,6 +3,13 @@ import { Modal, Button, Alert, Form, Row, Col } from 'react-bootstrap';
 import { FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
+import { BoardMinute } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
 
 interface ImportBoardMinuteModalProps {
   show: boolean;
@@ -11,17 +18,11 @@ interface ImportBoardMinuteModalProps {
   companyId: string;
 }
 
-interface PreviewData {
-  minuteId: string;
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
+// PreviewData extends BoardMinute but with string type for numeric fields since they come from CSV
+interface PreviewData extends Omit<BoardMinute, 'attendees' | 'discussions' | 'resolutions'> {
   attendees: string;
   agenda: string;
   minutes: string;
-  status: string;
   attachments: string;
   notes?: string;
 }
@@ -283,6 +284,22 @@ const ImportBoardMinuteModal: React.FC<ImportBoardMinuteModalProps> = ({ show, o
     }
   };
 
+  const validateDates = (data: PreviewData) => {
+    const meetingDate = parseDate(data.meetingDate);
+    if (!meetingDate || !isValidStatutoryDate(meetingDate, { allowFuture: false })) {
+      return 'Invalid meeting date';
+    }
+
+    // Validate start and end times
+    const startDateTime = new Date(`${data.meetingDate}T${data.startTime}`);
+    const endDateTime = new Date(`${data.meetingDate}T${data.endTime}`);
+    if (endDateTime <= startDateTime) {
+      return 'End time must be after start time';
+    }
+
+    return null;
+  };
+
   const previewImport = async () => {
     if (!selectedFile) return;
 
@@ -319,6 +336,16 @@ const ImportBoardMinuteModal: React.FC<ImportBoardMinuteModalProps> = ({ show, o
       console.log('Preview response:', response.data);
 
       if (response.data.data?.length > 0) {
+        // Validate dates in preview data
+        const dateErrors = response.data.data.map((item: PreviewData, index: number) => {
+          const error = validateDates(item);
+          return error ? `Row ${index + 1}: ${error}` : null;
+        }).filter(Boolean);
+
+        if (dateErrors.length > 0) {
+          throw new Error(`Date validation errors:\n${dateErrors.join('\n')}`);
+        }
+
         setPreviewData(response.data.data);
         setCurrentStep(3);
       } else {
@@ -501,30 +528,8 @@ const ImportBoardMinuteModal: React.FC<ImportBoardMinuteModalProps> = ({ show, o
   const formatDate = (date: string | null) => {
     if (!date) return '';
     try {
-      // First check if the date is already in DD/MM/YYYY format
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
-        return date;
-      }
-
-      // Try parsing as ISO date
-      const d = new Date(date);
-      if (isNaN(d.getTime())) {
-        // Try parsing DD/MM/YYYY format
-        const [day, month, year] = date.split('/').map(Number);
-        if (day && month && year) {
-          const parsedDate = new Date(year, month - 1, day);
-          if (!isNaN(parsedDate.getTime())) {
-            return date; // Return original if it was valid DD/MM/YYYY
-          }
-        }
-        return 'Invalid Date';
-      }
-
-      // Format as DD/MM/YYYY
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      const parsedDate = parseDate(date);
+      return parsedDate ? formatDDMMYYYY(parsedDate) : 'Invalid Date';
     } catch (err) {
       console.error('Error formatting date:', err);
       return 'Invalid Date';

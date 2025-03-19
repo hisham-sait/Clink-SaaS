@@ -1,8 +1,9 @@
-import React from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'settings' | 'help';
+type ThemeType = 'light' | 'dark' | 'system';
 
 interface Section {
   id: SectionType;
@@ -12,19 +13,19 @@ interface Section {
 }
 
 interface TinySidebarProps {
-  isDarkMode: boolean;
+  theme: ThemeType;
   notificationCount: number;
   userAvatar: string;
   userName: string;
   activeSection: SectionType;
   onSectionChange: (section: SectionType) => void;
-  onThemeToggle: () => void;
+  onThemeToggle: (theme?: ThemeType) => void;
   onNotificationsToggle: () => void;
   onUserMenuToggle: () => void;
 }
 
 const TinySidebar: React.FC<TinySidebarProps> = ({
-  isDarkMode,
+  theme,
   notificationCount,
   userAvatar,
   userName,
@@ -34,6 +35,8 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
   onNotificationsToggle,
   onUserMenuToggle
 }) => {
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLLIElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -49,6 +52,29 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
     { id: 'settings', title: 'Settings', icon: 'bi bi-gear', route: '/settings' },
     { id: 'help', title: 'Help', icon: 'bi bi-question-circle', route: '/help' }
   ];
+
+  // Close theme menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light': return 'bi-sun-fill';
+      case 'dark': return 'bi-moon-fill';
+      case 'system': return 'bi-display';
+      default: return 'bi-sun-fill';
+    }
+  };
 
   const navigateToUserDashboard = () => {
     if (user?.roles?.[0]) {
@@ -80,7 +106,8 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
   };
 
   return (
-    <aside className="position-fixed start-0 top-0 bottom-0 bg-light border-end" style={{ width: '48px', zIndex: 1030 }}>
+    <aside className="position-fixed start-0 top-0 bottom-0 border-end" 
+           style={{ width: '48px', zIndex: 1030, backgroundColor: 'var(--bs-gray-100)' }}>
       <div className="d-flex flex-column h-100">
         <div className="p-2">
           <ul className="nav flex-column align-items-center m-0 p-0">
@@ -113,15 +140,45 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
 
         <div className="mt-auto p-2">
           <ul className="nav flex-column align-items-center m-0 p-0">
-            <li className="nav-item mb-1">
+            <li className="nav-item mb-1 position-relative" ref={themeMenuRef}>
               <button
                 className="nav-link d-flex justify-content-center align-items-center rounded p-2"
                 style={{ width: '40px', height: '40px', border: 'none', background: 'none' }}
-                onClick={onThemeToggle}
-                title="Toggle Theme"
+                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                title="Theme Settings"
               >
-                <i className={`bi fs-5 ${isDarkMode ? 'bi-sun-fill' : 'bi-moon-fill'}`}></i>
+                <i className={`bi fs-5 ${getThemeIcon()}`}></i>
               </button>
+              
+              {themeMenuOpen && (
+                <div className="position-absolute start-100 shadow rounded py-2 ms-2" 
+                     style={{ width: '150px', zIndex: 1040, backgroundColor: 'var(--bs-body-bg)', color: 'var(--bs-body-color)' }}>
+                  <button 
+                    className={`d-flex align-items-center w-100 border-0 bg-transparent px-3 py-2 ${theme === 'light' ? 'text-primary' : ''}`}
+                    onClick={() => { onThemeToggle('light'); setThemeMenuOpen(false); }}
+                  >
+                    <i className="bi bi-sun-fill me-2"></i>
+                    <span className="small">Light</span>
+                    {theme === 'light' && <i className="bi bi-check-lg ms-auto"></i>}
+                  </button>
+                  <button 
+                    className={`d-flex align-items-center w-100 border-0 bg-transparent px-3 py-2 ${theme === 'dark' ? 'text-primary' : ''}`}
+                    onClick={() => { onThemeToggle('dark'); setThemeMenuOpen(false); }}
+                  >
+                    <i className="bi bi-moon-fill me-2"></i>
+                    <span className="small">Dark</span>
+                    {theme === 'dark' && <i className="bi bi-check-lg ms-auto"></i>}
+                  </button>
+                  <button 
+                    className={`d-flex align-items-center w-100 border-0 bg-transparent px-3 py-2 ${theme === 'system' ? 'text-primary' : ''}`}
+                    onClick={() => { onThemeToggle('system'); setThemeMenuOpen(false); }}
+                  >
+                    <i className="bi bi-display me-2"></i>
+                    <span className="small">System</span>
+                    {theme === 'system' && <i className="bi bi-check-lg ms-auto"></i>}
+                  </button>
+                </div>
+              )}
             </li>
             <li className="nav-item mb-1 position-relative">
               <button

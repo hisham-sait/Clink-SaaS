@@ -4,28 +4,21 @@ import { Modal, Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import api from '../../../../services/api';
 
+import { Director } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  isValidDateOfBirth,
+  formatStatutoryDate
+} from '@bradan/shared';
+
 interface DirectorModalProps {
   show: boolean;
   onHide: () => void;
   director?: Director;
   onSuccess: () => void;
-}
-
-interface Director {
-  id?: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  appointmentDate: string;
-  resignationDate?: string;
-  directorType: string;
-  occupation: string;
-  otherDirectorships: string;
-  shareholding: string;
-  status: 'Active' | 'Resigned';
 }
 
 const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, onSuccess }) => {
@@ -36,7 +29,7 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
     dateOfBirth: '',
     nationality: '',
     address: '',
-    appointmentDate: new Date().toISOString().split('T')[0],
+    appointmentDate: formatYYYYMMDD(new Date()),
     directorType: '',
     occupation: '',
     otherDirectorships: '',
@@ -48,28 +41,25 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const formatDateForDisplay = (isoDate: string) => {
-    if (!isoDate) return '';
-    const date = new Date(isoDate);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
-  };
-
   useEffect(() => {
     if (director) {
+      // Parse the dates from DD/MM/YYYY to YYYY-MM-DD for form input
+      const dateOfBirth = parseDate(director.dateOfBirth)
+      const appointmentDate = parseDate(director.appointmentDate);
+      const resignationDate = director.resignationDate ? parseDate(director.resignationDate) : undefined;
+
       setFormData({
         ...director,
-        dateOfBirth: formatDateForDisplay(director.dateOfBirth),
-        appointmentDate: formatDateForDisplay(director.appointmentDate),
-        resignationDate: director.resignationDate 
-          ? formatDateForDisplay(director.resignationDate)
-          : undefined
+        dateOfBirth: dateOfBirth ? formatYYYYMMDD(dateOfBirth) : '',
+        appointmentDate: appointmentDate ? formatYYYYMMDD(appointmentDate) : '',
+        resignationDate: resignationDate ? formatYYYYMMDD(resignationDate) : undefined
       });
     }
   }, [director]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    // For HTML date inputs, value is already in YYYY-MM-DD format
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -112,22 +102,41 @@ const DirectorModal: React.FC<DirectorModalProps> = ({ show, onHide, director, o
       return;
     }
 
-    // Convert ISO dates to DD/MM/YYYY format
-    const formatDateForAPI = (isoDate: string) => {
-      if (!isoDate) return '';
-      const date = new Date(isoDate);
-      return date.toLocaleDateString('en-IE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    };
+    // Validate dates
+    if (!isValidDateOfBirth(formData.dateOfBirth)) {
+      setError('Invalid date of birth');
+      setLoading(false);
+      return;
+    }
 
+    const appointmentDate = new Date(formData.appointmentDate);
+    if (!isValidStatutoryDate(appointmentDate, { allowFuture: false })) {
+      setError('Invalid appointment date');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.resignationDate) {
+      const resignationDate = new Date(formData.resignationDate);
+      if (!isValidStatutoryDate(resignationDate, { allowFuture: false })) {
+        setError('Invalid resignation date');
+        setLoading(false);
+        return;
+      }
+      // Ensure resignation date is not before appointment date
+      if (resignationDate < appointmentDate) {
+        setError('Resignation date cannot be before appointment date');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Convert YYYY-MM-DD dates to DD/MM/YYYY format for API
     const apiData = {
       ...formData,
-      dateOfBirth: formatDateForAPI(formData.dateOfBirth),
-      appointmentDate: formatDateForAPI(formData.appointmentDate),
-      resignationDate: formData.resignationDate ? formatDateForAPI(formData.resignationDate) : undefined,
+      dateOfBirth: formatDDMMYYYY(new Date(formData.dateOfBirth)),
+      appointmentDate: formatDDMMYYYY(new Date(formData.appointmentDate)),
+      resignationDate: formData.resignationDate ? formatDDMMYYYY(new Date(formData.resignationDate)) : undefined,
       status: 'Active'  // Ensure status is set for new directors
     };
 

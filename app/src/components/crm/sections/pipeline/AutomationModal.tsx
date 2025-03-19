@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, ListGroup } from 'react-bootstrap';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import * as crmService from '../../../../services/crm';
 
 interface Stage {

@@ -51,16 +51,17 @@ model SecuritySettings {
 }
 
 model UserPreference {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  theme           String   @default("Light")
-  language        String   @default("English")
-  dateFormat      String   @default("DD/MM/YYYY")
-  timeFormat      String   @default("24h")
-  timezone        String   @default("UTC")
-  emailDigest     Boolean  @default(true)
-  pushNotifications Boolean @default(true)
-  user            User     @relation(fields: [userId], references: [id])
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  theme             String   @default("Light")
+  language          String   @default("English")
+  dateFormat        String   @default("DD/MM/YYYY")
+  timeFormat        String   @default("24h")
+  timezone          String   @default("UTC")
+  emailDigest       Boolean  @default(true)
+  pushNotifications Boolean  @default(true)
+  columnPreferences Json?    // Added: For storing column visibility/order
+  user              User     @relation(fields: [userId], references: [id])
 }
 
 // Role and Permission Management
@@ -125,7 +126,45 @@ model UserRole {
   @@index([roleId])
 }
 
-// Company and Organization
+model Contact {
+  id              String   @id @default(cuid())
+  title           String
+  firstName       String
+  lastName        String
+  email           String
+  phone           String
+  mobile          String?
+  department      String?
+  position        String
+  type            String[]
+  source          String?  // Lead source
+  status          Status   @default(Active)
+  lastContact     DateTime
+  nextFollowUp    DateTime?
+  socialProfiles  Json?    // Store social media profiles
+  mailingAddress  String?
+  otherAddress    String?
+  timezone        String?  @default("UTC")
+  preferredTime   String?  // Best time to contact
+  tags            String[]
+  notes           String?
+  companyId       String
+  estimatedValue  Float?   // Added: Estimated value of the contact
+  currency        String   @default("EUR")  // Added: Currency for value
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id])
+  assignedTo      String?  // User ID of assigned team member
+  activities      Activity[] @relation("ContactActivities")
+  proposals       Proposal[]
+  pipelineStages  ContactPipelineStage[] // Added: Relation to pipeline stages
+  deals           Deal[]   // Added: Relation to deals
+  
+  @@index([companyId])
+  @@index([assignedTo])
+  @@index([status])
+}
+
 model Company {
   id               String            @id @default(cuid())
   name             String
@@ -172,12 +211,12 @@ model Company {
   clients          Client[]
   organisations    Organisation[]
   pipelines        Pipeline[]
-  deals            Deal[]
   automations      Automation[]
-  forms            Form[]           @relation("CompanyForms")
   products         Product[]
   proposals        Proposal[]
   proposalTemplates ProposalTemplate[]
+  sectionTemplates SectionTemplate[]
+  deals            Deal[]           // Added: Relation to deals
 }
 
 model UserCompany {
@@ -193,43 +232,22 @@ model UserCompany {
   @@index([companyId])
 }
 
-// CRM Models
-model Contact {
-  id              String   @id @default(cuid())
-  title           String
-  firstName       String
-  lastName        String
-  email           String
-  phone           String
-  mobile          String?
-  department      String?
-  position        String
-  type            String[]
-  source          String?  // Lead source
-  status          Status   @default(Active)
-  lastContact     DateTime
-  nextFollowUp    DateTime?
-  socialProfiles  Json?    // Store social media profiles
-  mailingAddress  String?
-  otherAddress    String?
-  timezone        String?  @default("UTC")
-  preferredTime   String?  // Best time to contact
-  tags            String[]
-  notes           String?
-  companyId       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  company         Company  @relation(fields: [companyId], references: [id])
-  assignedTo      String?  // User ID of assigned team member
-  deals           Deal[]   // Relation to deals
-  activities      Activity[] @relation("ContactActivities")
-  forms           Form[]   @relation("ContactForms")
-  formData        Json?    // Store form submission data
-  proposals       Proposal[]
-  
-  @@index([companyId])
-  @@index([assignedTo])
-  @@index([status])
+
+model ContactPipelineStage {
+  id          String   @id @default(cuid())
+  contactId   String
+  pipelineId  String
+  stageId     String
+  enteredAt   DateTime @default(now())
+  exitedAt    DateTime?
+  notes       String?
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stage       Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([pipelineId])
+  @@index([stageId])
 }
 
 model Pipeline {
@@ -237,9 +255,10 @@ model Pipeline {
   name        String
   description String?
   stages      Stage[]
-  deals       Deal[]
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id])
+  contacts    ContactPipelineStage[]
+  deals       Deal[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -254,6 +273,7 @@ model Stage {
   description String?
   pipelineId  String
   pipeline    Pipeline @relation(fields: [pipelineId], references: [id])
+  contacts    ContactPipelineStage[]
   deals       Deal[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -365,25 +385,6 @@ model Organisation {
   @@index([industry])
 }
 
-model Form {
-  id              String   @id @default(cuid())
-  name            String
-  fields          Json     // Store form fields configuration
-  successMessage  String
-  redirectUrl     String?
-  active          Boolean  @default(true)
-  styling         Json?    // Store form styling configuration
-  companyId       String
-  company         Company  @relation("CompanyForms", fields: [companyId], references: [id])
-  contact         Contact? @relation("ContactForms", fields: [contactId], references: [id])
-  contactId       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([companyId])
-  @@index([contactId])
-}
-
 model Product {
   id          String        @id @default(cuid())
   name        String
@@ -392,6 +393,7 @@ model Product {
   category    String
   unit        String?
   sku         String?
+  status      Status        @default(Active)
   companyId   String
   company     Company       @relation(fields: [companyId], references: [id])
   tiers       ProductTier[]
@@ -445,6 +447,7 @@ model ProposalProduct {
   id          String   @id @default(cuid())
   proposalId  String
   productId   String
+  planType    PlanType
   tierId      String   // Reference to the selected tier
   quantity    Int      @default(1)
   price       Float    // Price at time of proposal
@@ -461,6 +464,22 @@ model ProposalTemplate {
   name        String
   description String?
   content     Json
+  isDefault   Boolean  @default(false)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model SectionTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  content     String   @db.Text
+  type        String
+  icon        String?
   isDefault   Boolean  @default(false)
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id])

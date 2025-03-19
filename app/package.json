@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^41.2.0",
+    "@ckeditor/ckeditor5-react": "^6.2.0",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.6.2",

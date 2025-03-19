@@ -3,28 +3,21 @@ import { Modal, Form, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../../../../contexts/AuthContext';
 import api from '../../../../services/api';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
+
+import { Charge } from '../../../../services/statutory/types';
 
 interface ChargeModalProps {
   show: boolean;
   onHide: () => void;
   charge?: Charge;
   onSuccess: () => void;
-}
-
-interface Charge {
-  id?: string;
-  chargeId: string;
-  chargeType: string;
-  amount: number;
-  dateCreated: string;
-  registrationDate: string;
-  description: string;
-  status: 'Active' | 'Satisfied' | 'Released';
-  satisfactionDate?: string;
-  company?: {
-    name: string;
-    legalName: string;
-  };
 }
 
 const ChargeModal: React.FC<ChargeModalProps> = ({ show, onHide, charge, onSuccess }) => {
@@ -37,8 +30,8 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ show, onHide, charge, onSucce
     chargeId: '',
     chargeType: '',
     amount: 0,
-    dateCreated: '',
-    registrationDate: '',
+    dateCreated: formatYYYYMMDD(new Date()),
+    registrationDate: formatYYYYMMDD(new Date()),
     description: '',
     status: 'Active'
   });
@@ -62,19 +55,24 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ show, onHide, charge, onSucce
 
   useEffect(() => {
     if (charge) {
+      // Parse dates from DD/MM/YYYY format to YYYY-MM-DD for form inputs
+      const dateCreatedObj = parseDate(charge.dateCreated);
+      const registrationDateObj = parseDate(charge.registrationDate);
+      const satisfactionDateObj = charge.satisfactionDate ? parseDate(charge.satisfactionDate) : undefined;
+
       setFormData({
         ...charge,
-        dateCreated: new Date(charge.dateCreated).toISOString().split('T')[0],
-        registrationDate: new Date(charge.registrationDate).toISOString().split('T')[0],
-        satisfactionDate: charge.satisfactionDate ? new Date(charge.satisfactionDate).toISOString().split('T')[0] : undefined
+        dateCreated: dateCreatedObj ? formatYYYYMMDD(dateCreatedObj) : '',
+        registrationDate: registrationDateObj ? formatYYYYMMDD(registrationDateObj) : '',
+        satisfactionDate: satisfactionDateObj ? formatYYYYMMDD(satisfactionDateObj) : undefined
       });
     } else {
       setFormData({
         chargeId: '',
         chargeType: '',
         amount: 0,
-        dateCreated: '',
-        registrationDate: '',
+        dateCreated: formatYYYYMMDD(new Date()),
+        registrationDate: formatYYYYMMDD(new Date()),
         description: '',
         status: 'Active'
       });
@@ -101,11 +99,54 @@ const ChargeModal: React.FC<ChargeModalProps> = ({ show, onHide, charge, onSucce
       return;
     }
 
+    // Validate dates
+    const dateCreated = new Date(formData.dateCreated);
+    if (!isValidStatutoryDate(dateCreated, { allowFuture: false })) {
+      setError('Invalid date created');
+      setLoading(false);
+      return;
+    }
+
+    const registrationDate = new Date(formData.registrationDate);
+    if (!isValidStatutoryDate(registrationDate, { allowFuture: false })) {
+      setError('Invalid registration date');
+      setLoading(false);
+      return;
+    }
+
+    if (registrationDate < dateCreated) {
+      setError('Registration date cannot be before date created');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.satisfactionDate) {
+      const satisfactionDate = new Date(formData.satisfactionDate);
+      if (!isValidStatutoryDate(satisfactionDate, { allowFuture: false })) {
+        setError('Invalid satisfaction date');
+        setLoading(false);
+        return;
+      }
+      if (satisfactionDate < dateCreated) {
+        setError('Satisfaction date cannot be before date created');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
+      // Convert YYYY-MM-DD dates to DD/MM/YYYY format for API
+      const apiData = {
+        ...formData,
+        dateCreated: formatDDMMYYYY(new Date(formData.dateCreated)),
+        registrationDate: formatDDMMYYYY(new Date(formData.registrationDate)),
+        satisfactionDate: formData.satisfactionDate ? formatDDMMYYYY(new Date(formData.satisfactionDate)) : undefined
+      };
+
       if (charge?.id) {
-        await api.put(`/statutory/charges/${user.companyId}/${charge.id}`, formData);
+        await api.put(`/statutory/charges/${user.companyId}/${charge.id}`, apiData);
       } else {
-        await api.post(`/statutory/charges/${user.companyId}`, formData);
+        await api.post(`/statutory/charges/${user.companyId}`, apiData);
       }
       setSuccess(true);
       onSuccess();

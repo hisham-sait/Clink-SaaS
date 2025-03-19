@@ -3,19 +3,7 @@ import { Modal, Form, Button } from 'react-bootstrap';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../contexts/AuthContext';
 
-interface Share {
-  id?: string;
-  class: string;
-  type: 'Ordinary' | 'Preferential' | 'Deferred';
-  nominalValue: number;
-  currency: string;
-  votingRights: boolean;
-  dividendRights: boolean;
-  transferable: boolean;
-  totalIssued: number;
-  status: 'Active' | 'Inactive' | 'Archived';
-  description?: string;
-}
+import { Share } from '../../../../services/statutory/types';
 
 interface ShareModalProps {
   show: boolean;

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './Dashboard.module.css';
-import * as statutoryService from '../../services/statutory';
-import { Activity } from '../../services/statutory';
+import statutoryService from '../../services/statutory';
+import { Activity, ActivityStats } from '../../services/statutory/types';
 
 interface RegistryCardData {
   count: number;
@@ -264,14 +264,14 @@ const Dashboard: React.FC = () => {
         meetings,
         boardMinutes
       ] = await Promise.all([
-        statutoryService.getDirectors('Active'),
-        statutoryService.getShareholders('Active'),
-        statutoryService.getShares('Active'),
-        statutoryService.getBeneficialOwners('Active'),
-        statutoryService.getCharges('Active'),
-        statutoryService.getAllotments('Active'),
-        statutoryService.getMeetings('Final'),
-        statutoryService.getBoardMinutes('Final')
+        statutoryService.getDirectors({ status: 'Active' }),
+        statutoryService.getShareholders({ status: 'Active' }),
+        statutoryService.getShares({ status: 'Active' }),
+        statutoryService.getBeneficialOwners({ status: 'Active' }),
+        statutoryService.getCharges({ status: 'Active' }),
+        statutoryService.getAllotments({ status: 'Active' }),
+        statutoryService.getMeetings({ status: 'Final' }),
+        statutoryService.getBoardMinutes({ status: 'Final' })
       ]);
 
       type RegistryData = {
@@ -365,7 +365,7 @@ const Dashboard: React.FC = () => {
         completenessScore
       });
 
-      setRecentActivity(activities.activities || []);
+      setRecentActivity(activities || []);
       
     } catch (err: any) {
       console.error('Error loading dashboard:', err);
@@ -414,11 +414,11 @@ const Dashboard: React.FC = () => {
 
   const handleDownloadSummary = async () => {
     try {
-      const blob = await statutoryService.downloadSummary();
+      const blob = await statutoryService.exportData('summary', 'pdf');
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'statutory_summary.txt';
+      a.download = 'statutory_summary.pdf';
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -681,7 +681,7 @@ const Dashboard: React.FC = () => {
                         <div>
                           <p className="mb-1">{activity.description}</p>
                           <div className="d-flex align-items-center gap-2 small">
-                            <span className="text-muted">{activity.entity}</span>
+                            <span className="text-muted">{activity.entityType}</span>
                             <span className="text-muted">•</span>
                             <span className="text-muted">{formatActivityTime(activity.time)}</span>
                           </div>

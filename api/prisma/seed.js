@@ -4,6 +4,7 @@ const createStatutoryData = require('./seeds/statutory');
 const seedAuth = require('./seeds/auth');
 const seedPlans = require('./seeds/plans');
 const { seedBilling } = require('./seeds/billing');
+const seedServices = require('./seeds/services');
 
 const prisma = new PrismaClient();
 
@@ -31,6 +32,11 @@ async function main() {
     console.log('Creating billing data...');
     await seedBilling();
     console.log('✓ Billing data created');
+    
+    // Create services data
+    console.log('Creating services data...');
+    await seedServices();
+    console.log('✓ Services data created');
     
     // Create statutory data
     console.log('Creating statutory data...');

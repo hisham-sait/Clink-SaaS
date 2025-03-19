@@ -1,5 +1,5 @@
 import api from './api';
-import { Product, Proposal, ProductType, PlanType, Status, Contact, Activity, Organisation, Client } from '../components/crm/types';
+import { Product, Proposal, ProductType, PlanType, Status, Contact, Activity, Organisation, Client, SectionTemplate } from '../components/crm/types';
 
 // Organisation API calls
 export const getOrganisations = async (companyId: string, status?: string): Promise<Organisation[]> => {
@@ -115,7 +115,31 @@ export const updateProposal = async (companyId: string, id: string, proposal: Pa
 };
 
 export const deleteProposal = async (companyId: string, id: string): Promise<void> => {
-  await api.delete(`/crm/proposals/${companyId}/${id}`);
+  console.log(`Deleting proposal with ID: ${id} for company: ${companyId}`);
+  
+  // Validate parameters
+  if (!companyId) {
+    console.error('Missing companyId in deleteProposal');
+    throw new Error('Company ID is required');
+  }
+  
+  if (!id) {
+    console.error('Missing id in deleteProposal');
+    throw new Error('Proposal ID is required');
+  }
+  
+  try {
+    // Make sure the URL is correctly formatted with both parameters
+    const url = `/crm/proposals/${companyId}/${id}`;
+    console.log(`Making DELETE request to: ${url}`);
+    
+    const response = await api.delete(url);
+    console.log('Delete proposal response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Error in deleteProposal service:', error);
+    throw error;
+  }
 };
 
 // Helper functions for proposal creation
@@ -240,4 +264,37 @@ export const updateAutomation = async (companyId: string, id: string, automation
 
 export const deleteAutomation = async (companyId: string, id: string): Promise<void> => {
   await api.delete(`/crm/automations/${companyId}/${id}`);
+};
+
+// Section Template API calls
+export const getSectionTemplates = async (companyId: string): Promise<SectionTemplate[]> => {
+  const response = await api.get(`/crm/proposals/${companyId}/section-templates`);
+  return response.data;
+};
+
+export const getSectionTemplate = async (companyId: string, id: string): Promise<SectionTemplate> => {
+  const response = await api.get(`/crm/proposals/${companyId}/section-templates/${id}`);
+  return response.data;
+};
+
+export const createSectionTemplate = async (companyId: string, template: Omit<SectionTemplate, 'id' | 'companyId' | 'createdAt' | 'updatedAt'>): Promise<SectionTemplate> => {
+  const response = await api.post(`/crm/proposals/${companyId}/section-templates`, template);
+  return response.data;
+};
+
+export const updateSectionTemplate = async (companyId: string, id: string, template: Partial<SectionTemplate>): Promise<SectionTemplate> => {
+  const response = await api.put(`/crm/proposals/${companyId}/section-templates/${id}`, template);
+  return response.data;
+};
+
+export const deleteSectionTemplate = async (companyId: string, id: string): Promise<void> => {
+  await api.delete(`/crm/proposals/${companyId}/section-templates/${id}`);
+};
+
+// Export proposal as PDF
+export const exportProposalToPdf = async (companyId: string, id: string): Promise<Blob> => {
+  const response = await api.get(`/crm/proposals/${companyId}/${id}/export-pdf`, {
+    responseType: 'blob'
+  });
+  return response.data;
 };

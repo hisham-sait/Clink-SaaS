@@ -268,12 +268,32 @@ router.put('/:companyId/:id', auth, async (req, res) => {
   try {
     const { company, id, ...directorData } = req.body;
     
-    // Parse dates from DD/MM/YYYY format
+    // Parse dates from DD/MM/YYYY or ISO format
     const parseDDMMYYYY = (dateStr) => {
       if (!dateStr) return null;
+      
+      console.log('Parsing date:', dateStr);
+      
+      // Check if it's already in ISO format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const date = new Date(dateStr);
+        console.log('Parsed ISO date:', date);
+        return date;
+      }
+      
+      // Otherwise parse as DD/MM/YYYY
       const [day, month, year] = dateStr.split('/').map(Number);
-      return new Date(year, month - 1, day);
+      const date = new Date(year, month - 1, day);
+      console.log('Parsed DD/MM/YYYY date:', date);
+      return date;
     };
+
+    // Parse and validate the resignation date
+    const resignationDate = parseDDMMYYYY(req.body.resignationDate);
+    if (!resignationDate || isNaN(resignationDate.getTime())) {
+      console.error('Invalid resignation date:', req.body.resignationDate);
+      return res.status(400).json({ error: 'Invalid resignation date format. Expected YYYY-MM-DD or DD/MM/YYYY' });
+    }
 
     const director = await getPrismaClient().director.update({
       where: { 
@@ -487,12 +507,32 @@ router.delete('/:companyId/:id', auth, async (req, res) => {
 // Resign a director
 router.post('/:companyId/:id/resign', auth, async (req, res) => {
   try {
-    // Parse dates from DD/MM/YYYY format
+    // Parse dates from DD/MM/YYYY or ISO format
     const parseDDMMYYYY = (dateStr) => {
       if (!dateStr) return null;
+      
+      console.log('Parsing resignation date:', dateStr);
+      
+      // Check if it's already in ISO format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const date = new Date(dateStr);
+        console.log('Parsed ISO date:', date);
+        return date;
+      }
+      
+      // Otherwise parse as DD/MM/YYYY
       const [day, month, year] = dateStr.split('/').map(Number);
-      return new Date(year, month - 1, day);
+      const date = new Date(year, month - 1, day);
+      console.log('Parsed DD/MM/YYYY date:', date);
+      return date;
     };
+
+    // Parse and validate the resignation date
+    const resignationDate = parseDDMMYYYY(req.body.resignationDate);
+    if (!resignationDate || isNaN(resignationDate.getTime())) {
+      console.error('Invalid resignation date:', req.body.resignationDate);
+      return res.status(400).json({ error: 'Invalid resignation date format. Expected YYYY-MM-DD or DD/MM/YYYY' });
+    }
 
     const director = await getPrismaClient().director.update({
       where: { 
@@ -501,7 +541,7 @@ router.post('/:companyId/:id/resign', auth, async (req, res) => {
       },
       data: {
         status: 'Resigned',
-        resignationDate: parseDDMMYYYY(req.body.resignationDate) || new Date()
+        resignationDate: resignationDate
       }
     });
 
@@ -511,7 +551,7 @@ router.post('/:companyId/:id/resign', auth, async (req, res) => {
         type: 'resignation',
         entityType: 'director',
         entityId: director.id,
-        description: `${director.firstName} ${director.lastName} resigned from position of ${director.directorType}. Resignation date: ${new Date(parseDDMMYYYY(req.body.resignationDate) || new Date()).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`,
+        description: `${director.firstName} ${director.lastName} resigned from position of ${director.directorType}. Resignation date: ${resignationDate.toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`,
         user: req.user?.firstName || 'System',
         time: new Date(),
         companyId: req.params.companyId

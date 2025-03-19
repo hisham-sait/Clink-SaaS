@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { FaCheck } from 'react-icons/fa';
+
+import { Director } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
 
 interface ResignDirectorModalProps {
   show: boolean;
   onHide: () => void;
-  director: {
-    title: string;
-    firstName: string;
-    lastName: string;
-    directorType: string;
-  };
+  director: Director;
   onConfirm: (date: string) => void;
 }
 
@@ -23,53 +27,49 @@ const ResignDirectorModal: React.FC<ResignDirectorModalProps> = ({
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [resignationDate, setResignationDate] = useState(
-    new Date().toLocaleDateString('en-IE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
+    formatYYYYMMDD(new Date())
   );
-
-  const validateDate = (dateStr: string): boolean => {
-    if (!dateStr) return false;
-    const [day, month, year] = dateStr.split('/').map(Number);
-    const date = new Date(year, month - 1, day);
-    return !isNaN(date.getTime()) && 
-           date.getDate() === day && 
-           date.getMonth() === month - 1 && 
-           date.getFullYear() === year;
-  };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    // Allow empty value or validate format
-    if (!value || /^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-      setResignationDate(value);
+    setResignationDate(value);
+    setError(null);
+  };
+
+  const validateDate = () => {
+    const date = new Date(resignationDate);
+    const appointmentDate = parseDate(director.appointmentDate);
+
+    if (!isValidStatutoryDate(date, { allowFuture: false })) {
+      setError('Invalid resignation date');
+      return false;
     }
+
+    if (appointmentDate && date < appointmentDate) {
+      setError('Resignation date cannot be before appointment date');
+      return false;
+    }
+
+    return true;
   };
 
   const handleNext = () => {
-    if (!validateDate(resignationDate)) {
-      return; // Don't proceed if date is invalid
-    }
+    if (!validateDate()) return;
     setStep(2);
   };
 
   const handleBack = () => {
     setStep(1);
+    setError(null);
   };
 
   const handleConfirm = () => {
-    if (!validateDate(resignationDate)) {
-      return; // Don't confirm if date is invalid
-    }
-    // Convert to ISO format for API
-    const [day, month, year] = resignationDate.split('/').map(Number);
-    const isoDate = new Date(year, month - 1, day).toISOString().split('T')[0];
+    if (!validateDate()) return;
     
     setLoading(true);
-    onConfirm(isoDate);
+    onConfirm(resignationDate);
     setSuccess(true);
     
     // Wait for 1.5 seconds to show success message before closing
@@ -82,17 +82,8 @@ const ResignDirectorModal: React.FC<ResignDirectorModalProps> = ({
     setStep(1);
     setSuccess(false);
     setLoading(false);
+    setError(null);
     onHide();
-  };
-
-  const formatDateForDisplay = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const [day, month, year] = dateStr.split('/').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString('en-IE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
   };
 
   return (
@@ -103,6 +94,12 @@ const ResignDirectorModal: React.FC<ResignDirectorModalProps> = ({
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {error && (
+          <Alert variant="danger" className="mb-3">
+            {error}
+          </Alert>
+        )}
+        
         {success ? (
           <div className="alert alert-success">
             <div className="d-flex align-items-center">
@@ -128,19 +125,21 @@ const ResignDirectorModal: React.FC<ResignDirectorModalProps> = ({
               <p className="mb-2">
                 <strong>Position:</strong> {director.directorType}
               </p>
+              <p className="mb-2">
+                <strong>Appointment Date:</strong> {formatDDMMYYYY(parseDate(director.appointmentDate)!)}
+              </p>
             </div>
             <Form.Group className="mb-3">
               <Form.Label>Resignation Date</Form.Label>
               <Form.Control
-                type="text"
+                type="date"
                 value={resignationDate}
                 onChange={handleDateChange}
-                placeholder="DD/MM/YYYY"
-                pattern="\d{2}/\d{2}/\d{4}"
+                max={new Date().toISOString().split('T')[0]}
                 required
               />
               <Form.Text className="text-muted">
-                Format: DD/MM/YYYY
+                Select the date when the director resigned
               </Form.Text>
             </Form.Group>
           </>
@@ -151,7 +150,7 @@ const ResignDirectorModal: React.FC<ResignDirectorModalProps> = ({
             <p className="mt-2 mb-0">
               This action will mark{' '}
               {`${director.title} ${director.firstName} ${director.lastName}`} as
-              resigned from {resignationDate}. This action cannot be undone.
+              resigned from {formatDDMMYYYY(new Date(resignationDate))}. This action cannot be undone.
             </p>
           </div>
         )}
@@ -167,7 +166,7 @@ const ResignDirectorModal: React.FC<ResignDirectorModalProps> = ({
                 <Button 
                   variant="primary" 
                   onClick={handleNext}
-                  disabled={!validateDate(resignationDate)}
+                  disabled={!resignationDate}
                 >
                   Next
                 </Button>

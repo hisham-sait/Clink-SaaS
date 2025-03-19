@@ -4,6 +4,8 @@ import { FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
 
+import { Share } from '../../../../services/statutory/types';
+
 interface ImportShareModalProps {
   show: boolean;
   onHide: () => void;
@@ -11,18 +13,8 @@ interface ImportShareModalProps {
   companyId: string;
 }
 
-interface PreviewData {
-  class: string;
-  type: 'Ordinary' | 'Preferential' | 'Deferred';
-  nominalValue: number;
-  currency: string;
-  votingRights: boolean;
-  dividendRights: boolean;
-  transferable: boolean;
-  totalIssued: number;
-  status: string;
-  description?: string;
-}
+// PreviewData extends Share but with all fields as strings since they come from CSV
+type PreviewData = Omit<Share, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'company'>;
 
 interface ColumnMapping {
   [key: string]: string;

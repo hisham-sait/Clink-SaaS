@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import { toast } from 'react-hot-toast';
-import * as crmService from '../../../../services/crm';
-import { Contact, Organisation } from '../../../crm/types';
-
-interface Stage {
-  id: string;
-  name: string;
-}
+import { toast } from 'react-toastify';
+import { getContacts, getOrganisations } from '../../../../services/crm';
+import { getPipelineStages, createDeal } from '../../../../services/crm/pipeline';
+import type { Contact, Organisation, Stage, DealStatus, Priority } from '../../types';
 
 interface DealModalProps {
   show: boolean;
@@ -26,6 +22,8 @@ const DealModal: React.FC<DealModalProps> = ({ show, onHide, onSave, pipelineId,
   const [contactId, setContactId] = useState('');
   const [organisationId, setOrganisationId] = useState('');
   const [stageId, setStageId] = useState('');
+  const [status, setStatus] = useState<DealStatus>('Open');
+  const [priority, setPriority] = useState<Priority>('Medium');
   
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
@@ -50,9 +48,9 @@ const DealModal: React.FC<DealModalProps> = ({ show, onHide, onSave, pipelineId,
       }
 
       const [contactsData, orgsData, stagesData] = await Promise.all([
-        crmService.getContacts(companyId),
-        crmService.getOrganisations(companyId),
-        crmService.getPipelineStages(companyId, pipelineId)
+        getContacts(companyId),
+        getOrganisations(companyId),
+        getPipelineStages(companyId, pipelineId)
       ]);
 
       setContacts(contactsData);
@@ -62,6 +60,7 @@ const DealModal: React.FC<DealModalProps> = ({ show, onHide, onSave, pipelineId,
       if (stagesData.length > 0) {
         setStageId(stagesData[0].id);
       }
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -78,16 +77,18 @@ const DealModal: React.FC<DealModalProps> = ({ show, onHide, onSave, pipelineId,
     }
 
     try {
-      await crmService.createDeal(companyId, {
+      await createDeal(companyId, {
         name,
         amount: parseFloat(amount),
         probability: parseInt(probability),
-        expectedCloseDate,
+        expectedCloseDate: new Date(expectedCloseDate),
         notes,
         contactId,
-        organisationId: organisationId || null,
+        organisationId: organisationId || undefined,
         stageId,
         pipelineId,
+        status,
+        priority
       });
 
       toast.success('Deal created successfully');
@@ -109,6 +110,8 @@ const DealModal: React.FC<DealModalProps> = ({ show, onHide, onSave, pipelineId,
     setContactId('');
     setOrganisationId('');
     setStageId(stages[0]?.id || '');
+    setStatus('Open');
+    setPriority('Medium');
   };
 
   if (loading) {
@@ -214,6 +217,38 @@ const DealModal: React.FC<DealModalProps> = ({ show, onHide, onSave, pipelineId,
                   onChange={(e) => setProbability(e.target.value)}
                   required
                 />
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Status</Form.Label>
+                <Form.Select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as DealStatus)}
+                  required
+                >
+                  <option value="Open">Open</option>
+                  <option value="Won">Won</option>
+                  <option value="Lost">Lost</option>
+                  <option value="OnHold">On Hold</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Priority</Form.Label>
+                <Form.Select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Priority)}
+                  required
+                >
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </Form.Select>
               </Form.Group>
             </Col>
           </Row>

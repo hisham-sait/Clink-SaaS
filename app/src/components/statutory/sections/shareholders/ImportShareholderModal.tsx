@@ -1,8 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Modal, Button, Alert, Form, Row, Col } from 'react-bootstrap';
-import { FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
+import { Modal, Button, Alert, Form, Row, Col, Badge } from 'react-bootstrap';
+import { FaDownload, FaUpload, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
+
+import { Shareholder } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatDDMMYYYY,
+  isValidDateOfBirth,
+  isValidStatutoryDate
+} from '@bradan/shared';
 
 interface ImportShareholderModalProps {
   show: boolean;
@@ -11,20 +19,10 @@ interface ImportShareholderModalProps {
   companyId: string;
 }
 
-interface PreviewData {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  ordinaryShares: number;
-  preferentialShares: number;
-  dateAcquired: string;
-  status: string;
-}
+// PreviewData extends Shareholder but with numeric fields as strings since they come from CSV
+type PreviewData = Omit<Shareholder, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'company'> & {
+  validationErrors?: string[];
+};
 
 interface ColumnMapping {
   [key: string]: string;
@@ -62,6 +60,49 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
     { key: 'dateAcquired', label: 'Date Acquired' },
     { key: 'status', label: 'Status' }
   ];
+
+  const validateShareholder = (data: PreviewData): string[] => {
+    const errors: string[] = [];
+
+    // Date of Birth validation
+    const dobDate = parseDate(data.dateOfBirth);
+    if (!dobDate || !isValidDateOfBirth(data.dateOfBirth)) {
+      errors.push('Invalid date of birth');
+    }
+
+    // Date Acquired validation
+    const dateAcquired = parseDate(data.dateAcquired);
+    if (!dateAcquired || !isValidStatutoryDate(dateAcquired, { allowFuture: false })) {
+      errors.push('Invalid date acquired');
+    }
+
+    // Required fields validation
+    if (!data.title?.trim()) errors.push('Title is required');
+    if (!data.firstName?.trim()) errors.push('First name is required');
+    if (!data.lastName?.trim()) errors.push('Last name is required');
+    if (!data.nationality?.trim()) errors.push('Nationality is required');
+    if (!data.address?.trim()) errors.push('Address is required');
+    if (!data.email?.trim()) errors.push('Email is required');
+    if (!data.phone?.trim()) errors.push('Phone is required');
+
+    // Status validation
+    if (!['Active', 'Inactive'].includes(data.status)) {
+      errors.push('Invalid status (must be Active or Inactive)');
+    }
+
+    // Share validation
+    const ordinaryShares = parseInt(data.ordinaryShares.toString());
+    const preferentialShares = parseInt(data.preferentialShares.toString());
+
+    if (isNaN(ordinaryShares) || ordinaryShares < 0) {
+      errors.push('Invalid ordinary shares');
+    }
+    if (isNaN(preferentialShares) || preferentialShares < 0) {
+      errors.push('Invalid preferential shares');
+    }
+
+    return errors;
+  };
 
   // Function to calculate string similarity (0-1)
   const calculateSimilarity = (str1: string, str2: string): number => {
@@ -248,7 +289,13 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
     try {
       const response = await api.post(`/statutory/shareholders/${companyId}/preview-import`, formData);
       if (response.data.data?.length > 0) {
-        setPreviewData(response.data.data);
+        // Validate each shareholder and add validation errors
+        const validatedData = response.data.data.map((shareholder: PreviewData) => ({
+          ...shareholder,
+          validationErrors: validateShareholder(shareholder)
+        }));
+
+        setPreviewData(validatedData);
         setCurrentStep(3);
       }
     } catch (err: any) {
@@ -371,19 +418,16 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
     }
   }, [show]);
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '';
-    try {
-      const d = new Date(date);
-      if (isNaN(d.getTime())) return 'Invalid Date';
-      return d.toLocaleDateString('en-IE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch (err) {
-      return 'Invalid Date';
+  const renderValidationStatus = (item: PreviewData) => {
+    if (!item.validationErrors?.length) {
+      return <Badge bg="success">Valid</Badge>;
     }
+    return (
+      <div className="text-danger">
+        <FaExclamationTriangle className="me-1" />
+        {item.validationErrors.length} error(s)
+      </div>
+    );
   };
 
   const handleClose = () => {
@@ -417,7 +461,7 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
   );
 
   return (
-    <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false}>
+    <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false} size="xl">
       <Modal.Header closeButton={!loading || importSuccess}>
         <Modal.Title>Import Shareholders</Modal.Title>
       </Modal.Header>
@@ -520,12 +564,18 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
 
             <div className="mb-4">
               <h6>Total Records: {previewData.length}</h6>
+              <div className="text-muted">
+                Valid: {previewData.filter(d => !d.validationErrors?.length).length}
+                {' | '}
+                Invalid: {previewData.filter(d => d.validationErrors?.length).length}
+              </div>
             </div>
 
             <div className="table-responsive mb-4">
               <table className="table table-sm table-bordered">
                 <thead className="table-light">
                   <tr>
+                    <th>Status</th>
                     <th>Title</th>
                     <th>First Name</th>
                     <th>Last Name</th>
@@ -539,7 +589,8 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
                 </thead>
                 <tbody>
                   {previewData.slice(0, 5).map((item, index) => (
-                    <tr key={index}>
+                    <tr key={index} className={item.validationErrors?.length ? 'table-danger' : ''}>
+                      <td>{renderValidationStatus(item)}</td>
                       <td>{item.title}</td>
                       <td>{item.firstName}</td>
                       <td>{item.lastName}</td>
@@ -547,7 +598,7 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
                       <td>{item.phone}</td>
                       <td>{item.ordinaryShares}</td>
                       <td>{item.preferentialShares}</td>
-                      <td>{formatDate(item.dateAcquired)}</td>
+                      <td>{formatDDMMYYYY(new Date(item.dateAcquired))}</td>
                       <td>{item.status}</td>
                     </tr>
                   ))}
@@ -560,6 +611,14 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
                 Showing 5 of {previewData.length} records
               </div>
             )}
+
+            {/* Show validation errors summary if any */}
+            {previewData.some(d => d.validationErrors?.length) && (
+              <Alert variant="warning">
+                <FaExclamationTriangle className="me-2" />
+                Some records have validation errors. Please fix the data in your CSV file and try again.
+              </Alert>
+            )}
           </>
         )}
 
@@ -569,7 +628,12 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
             <div className="text-center py-4">
               <h4 className="mb-4">Ready to Import</h4>
               <p className="mb-4" style={{ fontSize: '1.1rem' }}>
-                You are about to import {previewData.length} shareholders. This action cannot be undone.
+                You are about to import {previewData.filter(d => !d.validationErrors?.length).length} valid shareholders.
+                {previewData.some(d => d.validationErrors?.length) && (
+                  <span className="text-danger">
+                    {' '}Invalid records will be skipped.
+                  </span>
+                )}
               </p>
             </div>
           </>
@@ -656,7 +720,7 @@ const ImportShareholderModal: React.FC<ImportShareholderModalProps> = ({ show, o
           <Button
             variant="primary"
             onClick={() => setCurrentStep(4)}
-            disabled={loading}
+            disabled={loading || previewData.every(d => d.validationErrors?.length)}
           >
             Continue
           </Button>

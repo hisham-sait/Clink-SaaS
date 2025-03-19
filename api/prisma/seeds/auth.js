@@ -31,7 +31,6 @@ async function seedAuth(inputPlans) {
     console.log('Cleaning up existing data...');
     
     // Delete CRM models first
-    await prisma.form.deleteMany();
     await prisma.deal.deleteMany();
     await prisma.stage.deleteMany();
     await prisma.pipeline.deleteMany();
@@ -63,6 +62,14 @@ async function seedAuth(inputPlans) {
     // Delete company related models
     await prisma.primaryContact.deleteMany();
     await prisma.userCompany.deleteMany();
+    
+    // Delete proposal related models
+    await prisma.proposal.deleteMany();
+    
+    // Delete product related models
+    await prisma.productTier.deleteMany();
+    await prisma.product.deleteMany();
+    
     await prisma.company.deleteMany();
 
     // Delete user related models

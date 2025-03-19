@@ -5,61 +5,8 @@ import api from '../../../../services/api';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaFileImport, FaBook, FaCheckCircle, FaTimesCircle, FaTrash, FaFileExport, FaFilePdf, FaFileExcel, FaCalendarAlt } from 'react-icons/fa';
-
-interface BoardMinute {
-  id?: string;
-  meetingType: 'AGM' | 'EGM' | 'Board Meeting' | 'Committee Meeting';
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
-  attendees: string[];
-  content: string;
-  discussions: Discussion[];
-  resolutions: Resolution[];
-  status: 'Draft' | 'Final' | 'Signed';
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Discussion {
-  id?: string;
-  topic: string;
-  details: string;
-  decisions: string;
-  actionItems: ActionItem[];
-}
-
-interface ActionItem {
-  id?: string;
-  task: string;
-  assignee: string;
-  dueDate: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
-}
-
-interface Resolution {
-  id?: string;
-  title: string;
-  type: 'Ordinary' | 'Special';
-  description: string;
-  outcome: 'Pending' | 'Passed' | 'Failed' | 'Withdrawn';
-  proposedBy: string;
-  secondedBy: string;
-}
-
-interface Activity {
-  id: string;
-  type: 'added' | 'update' | 'status_changed' | 'deletion';
-  entityType: string;
-  entityId: string;
-  description: string;
-  user: string;
-  time: string;
-}
+import { BoardMinute, Discussion, Resolution, ActionItem, Activity } from '../../../../services/statutory/types';
+import { formatDDMMYYYY } from '@bradan/shared';
 
 const BoardMinutes: React.FC = () => {
   const timelineStyles = {
@@ -352,7 +299,7 @@ const BoardMinutes: React.FC = () => {
                   <th>Chairperson</th>
                   <th>Discussions</th>
                   <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
+                  {user?.roles?.includes('super_admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -402,7 +349,7 @@ const BoardMinutes: React.FC = () => {
                         {minute.status}
                       </Badge>
                     </td>
-                    {user?.role === 'super_admin' && (
+                    {user?.roles?.includes('super_admin') && (
                       <td>{minute.company?.name || minute.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -425,7 +372,7 @@ const BoardMinutes: React.FC = () => {
                 ))}
                 {minutes.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 8 : 7} className="text-center py-5">
+                    <td colSpan={user?.roles?.includes('super_admin') ? 8 : 7} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaBook className="text-muted" size={32} />
@@ -469,7 +416,7 @@ const BoardMinutes: React.FC = () => {
                         <Badge bg="light" className="p-2">
                           {activity.type === 'added' ? (
                             <FaPlus className="text-success" />
-                          ) : activity.type === 'update' ? (
+                          ) : activity.type === 'updated' ? (
                             <FaEdit className="text-primary" />
                           ) : activity.type === 'status_changed' ? (
                             <FaCheckCircle className="text-warning" />

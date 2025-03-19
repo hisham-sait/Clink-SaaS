@@ -4,42 +4,34 @@ import { Button, Card, Row, Col, Dropdown } from 'react-bootstrap';
 import PipelineModal from './PipelineModal';
 import DealModal from './DealModal';
 import AutomationModal from './AutomationModal';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { useAuth } from '../../../../contexts/AuthContext';
-import * as crmService from '../../../../services/crm';
+import { getPipelines, moveDeal, moveContact } from '../../../../services/crm/pipeline';
+import type { Pipeline as PipelineType, Stage, Deal, Contact } from '../../types';
 
-interface Deal {
+interface PipelineItem {
   id: string;
   name: string;
   amount: number;
-  probability: number;
-  status: string;
   contact: {
     firstName: string;
     lastName: string;
   };
-  stage: {
-    id: string;
-    name: string;
-  };
+  probability?: number;
+  type: 'deal' | 'contact';
 }
 
-interface Stage {
-  id: string;
-  name: string;
-  color: string;
-  deals: Deal[];
+interface StageWithItems extends Stage {
+  items: PipelineItem[];
 }
 
-interface Pipeline {
-  id: string;
-  name: string;
-  stages: Stage[];
+interface PipelineWithItems extends Omit<PipelineType, 'stages'> {
+  stages: StageWithItems[];
 }
 
 const Pipeline: React.FC = () => {
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-  const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
+  const [pipelines, setPipelines] = useState<PipelineWithItems[]>([]);
+  const [selectedPipeline, setSelectedPipeline] = useState<PipelineWithItems | null>(null);
   const [showPipelineModal, setShowPipelineModal] = useState(false);
   const [showDealModal, setShowDealModal] = useState(false);
   const [showAutomationModal, setShowAutomationModal] = useState(false);
@@ -48,8 +40,6 @@ const Pipeline: React.FC = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    console.log('Pipeline - User:', user);
-    console.log('Pipeline - Company ID:', user?.companyId);
     if (user?.companyId) {
       fetchPipelines();
     }
@@ -62,12 +52,37 @@ const Pipeline: React.FC = () => {
         setLoading(false);
         return;
       }
-      console.log('Pipeline - Fetching pipelines for company:', user.companyId);
-      const data = await crmService.getPipelines(user.companyId);
-      console.log('Pipeline - Fetched data:', data);
-      setPipelines(data);
-      if (data.length > 0) {
-        setSelectedPipeline(data[0]);
+
+      const data = await getPipelines(user.companyId);
+      
+      // Transform the data to combine deals and contacts
+      const transformedData = data.map(pipeline => ({
+        ...pipeline,
+        stages: pipeline.stages.map(stage => ({
+          ...stage,
+          items: [
+            ...(stage.deals || []).map(deal => ({
+              ...deal,
+              type: 'deal' as const
+            })),
+            ...(stage.contacts || []).map((contactStage) => ({
+              id: contactStage.contactId,
+              name: `${contactStage.contact.firstName} ${contactStage.contact.lastName}`,
+              amount: contactStage.contact.estimatedValue || 0,
+              contact: {
+                firstName: contactStage.contact.firstName,
+                lastName: contactStage.contact.lastName
+              },
+              type: 'contact' as const,
+              contactId: contactStage.contactId // Add this for move operation
+            }))
+          ]
+        }))
+      }));
+
+      setPipelines(transformedData);
+      if (transformedData.length > 0) {
+        setSelectedPipeline(transformedData[0]);
       }
       setLoading(false);
     } catch (error) {
@@ -84,11 +99,21 @@ const Pipeline: React.FC = () => {
 
     try {
       if (!user?.companyId) return;
-      await crmService.moveDeal(user.companyId, draggableId, {
+
+      // Extract the actual ID from the draggableId (remove the prefix)
+      const [itemType, itemId] = draggableId.split('-');
+      
+      const moveParams = {
         sourceStageId: source.droppableId,
         destinationStageId: destination.droppableId,
         newIndex: destination.index,
-      });
+      };
+
+      if (itemType === 'deal') {
+        await moveDeal(user.companyId, itemId, moveParams);
+      } else if (itemType === 'contact') {
+        await moveContact(user.companyId, itemId, moveParams);
+      }
 
       // Update local state
       const newPipelines = [...pipelines];
@@ -103,14 +128,14 @@ const Pipeline: React.FC = () => {
         s => s.id === destination.droppableId
       );
 
-      const [removed] = newPipelines[pipelineIndex].stages[sourceStageIndex].deals.splice(source.index, 1);
-      newPipelines[pipelineIndex].stages[destStageIndex].deals.splice(destination.index, 0, removed);
+      const [removed] = newPipelines[pipelineIndex].stages[sourceStageIndex].items.splice(source.index, 1);
+      newPipelines[pipelineIndex].stages[destStageIndex].items.splice(destination.index, 0, removed);
 
       setPipelines(newPipelines);
       setSelectedPipeline(newPipelines[pipelineIndex]);
     } catch (error) {
-      console.error('Error moving deal:', error);
-      toast.error('Failed to move deal');
+      console.error('Error moving item:', error);
+      toast.error('Failed to move item');
     }
   };
 
@@ -194,7 +219,7 @@ const Pipeline: React.FC = () => {
                   >
                     <h6 className="mb-0">{stage.name}</h6>
                     <span className="badge bg-light text-dark">
-                      {stage.deals.length}
+                      {stage.items.length}
                     </span>
                   </Card.Header>
                   <Droppable droppableId={stage.id}>
@@ -205,10 +230,10 @@ const Pipeline: React.FC = () => {
                         className="p-2"
                         style={{ minHeight: '100px' }}
                       >
-                        {stage.deals.map((deal, index) => (
+                        {stage.items.map((item, index) => (
                           <Draggable
-                            key={deal.id}
-                            draggableId={deal.id}
+                            key={`${item.type}-${item.id}`}
+                            draggableId={`${item.type}-${item.id}`}
                             index={index}
                           >
                             {(provided) => (
@@ -219,17 +244,24 @@ const Pipeline: React.FC = () => {
                                 className="mb-2"
                               >
                                 <Card.Body>
-                                  <h6>{deal.name}</h6>
+                                  <div className="d-flex align-items-center mb-2">
+                                    <h6 className="mb-0">{item.name}</h6>
+                                    <span className={`badge ms-2 ${item.type === 'deal' ? 'bg-primary' : 'bg-secondary'}`}>
+                                      {item.type === 'deal' ? 'Deal' : 'Contact'}
+                                    </span>
+                                  </div>
                                   <div className="small text-muted">
-                                    {deal.contact.firstName} {deal.contact.lastName}
+                                    {item.contact.firstName} {item.contact.lastName}
                                   </div>
                                   <div className="d-flex justify-content-between align-items-center mt-2">
                                     <span className="badge bg-success">
-                                      ${deal.amount.toLocaleString()}
+                                      ${item.amount.toLocaleString()}
                                     </span>
-                                    <span className="badge bg-info">
-                                      {deal.probability}%
-                                    </span>
+                                    {item.type === 'deal' && (
+                                      <span className="badge bg-info">
+                                        {item.probability}%
+                                      </span>
+                                    )}
                                   </div>
                                 </Card.Body>
                               </Card>

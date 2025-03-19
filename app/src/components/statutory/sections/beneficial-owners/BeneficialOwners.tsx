@@ -6,36 +6,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaFileImport, FaUsers, FaUserCheck, FaUserMinus, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 
-interface BeneficialOwner {
-  id?: string;
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  email: string;
-  phone: string;
-  natureOfControl: string[];
-  ownershipPercentage: number;
-  registrationDate: string;
-  status: 'Active' | 'Inactive' | 'Archived';
-  description?: string;
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Activity {
-  id: string;
-  type: 'added' | 'updated' | 'removed' | 'status_changed';
-  entityType: string;
-  entityId: string;
-  description: string;
-  user: string;
-  time: string;
-}
+import { BeneficialOwner, Activity } from '../../../../services/statutory/types';
 
 const BeneficialOwners: React.FC = () => {
   const timelineStyles = {
@@ -303,7 +274,7 @@ const BeneficialOwners: React.FC = () => {
                   <th>Ownership %</th>
                   <th>Registration Date</th>
                   <th>Status</th>
-                  {user?.role === 'super_admin' && <th>Company</th>}
+                  {user?.roles?.includes('Super Admin') && <th>Company</th>}
                   <th className="text-end">Actions</th>
                 </tr>
               </thead>
@@ -334,7 +305,7 @@ const BeneficialOwners: React.FC = () => {
                         {owner.status}
                       </Badge>
                     </td>
-                    {user?.role === 'super_admin' && (
+                    {user?.roles?.includes('Super Admin') && (
                       <td>{owner.company?.name || owner.company?.legalName}</td>
                     )}
                     <td className="text-end">
@@ -357,7 +328,7 @@ const BeneficialOwners: React.FC = () => {
                 ))}
                 {owners.length === 0 && (
                   <tr>
-                    <td colSpan={user?.role === 'super_admin' ? 7 : 6} className="text-center py-5">
+                    <td colSpan={user?.roles?.includes('Super Admin') ? 7 : 6} className="text-center py-5">
                       <div className="d-flex flex-column align-items-center">
                         <div className="bg-light p-4 rounded-circle mb-3">
                           <FaUsers className="text-muted" size={32} />

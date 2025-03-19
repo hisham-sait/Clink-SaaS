@@ -11,20 +11,21 @@ interface ImportAllotmentModalProps {
   companyId: string;
 }
 
-interface PreviewData {
-  allotmentId: string;
-  shareClass: string;
-  numberOfShares: number;
-  pricePerShare: number;
+import { Allotment } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
+
+// PreviewData extends Allotment but with all fields as strings since they come from CSV
+interface PreviewData extends Omit<Allotment, 'numberOfShares' | 'pricePerShare' | 'amountPaid'> {
+  numberOfShares: string;
+  pricePerShare: string;
+  amountPaid?: string;
   currency: string;
-  allotmentDate: string;
-  allottee: string;
-  paymentStatus: string;
-  amountPaid?: number;
-  paymentDate?: string;
-  certificateNumber?: string;
   notes?: string;
-  status: string;
 }
 
 interface ColumnMapping {
@@ -323,6 +324,16 @@ const ImportAllotmentModal: React.FC<ImportAllotmentModalProps> = ({ show, onHid
       console.log('Preview response:', response.data);
 
       if (response.data.data?.length > 0) {
+        // Validate dates in preview data
+        const dateErrors = response.data.data.map((item: PreviewData, index: number) => {
+          const error = validateDates(item);
+          return error ? `Row ${index + 1}: ${error}` : null;
+        }).filter(Boolean);
+
+        if (dateErrors.length > 0) {
+          throw new Error(`Date validation errors:\n${dateErrors.join('\n')}`);
+        }
+
         setPreviewData(response.data.data);
         setCurrentStep(3);
       } else {
@@ -505,34 +516,32 @@ const ImportAllotmentModal: React.FC<ImportAllotmentModalProps> = ({ show, onHid
   const formatDate = (date: string | null) => {
     if (!date) return '';
     try {
-      // First check if the date is already in DD/MM/YYYY format
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
-        return date;
-      }
-
-      // Try parsing as ISO date
-      const d = new Date(date);
-      if (isNaN(d.getTime())) {
-        // Try parsing DD/MM/YYYY format
-        const [day, month, year] = date.split('/').map(Number);
-        if (day && month && year) {
-          const parsedDate = new Date(year, month - 1, day);
-          if (!isNaN(parsedDate.getTime())) {
-            return date; // Return original if it was valid DD/MM/YYYY
-          }
-        }
-        return 'Invalid Date';
-      }
-
-      // Format as DD/MM/YYYY
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      const parsedDate = parseDate(date);
+      return parsedDate ? formatDDMMYYYY(parsedDate) : 'Invalid Date';
     } catch (err) {
       console.error('Error formatting date:', err);
       return 'Invalid Date';
     }
+  };
+
+  const validateDates = (data: PreviewData) => {
+    const allotmentDate = parseDate(data.allotmentDate);
+    if (!allotmentDate || !isValidStatutoryDate(allotmentDate, { allowFuture: false })) {
+      return 'Invalid allotment date';
+    }
+
+    if (data.paymentDate) {
+      const paymentDate = parseDate(data.paymentDate);
+      if (!paymentDate || !isValidStatutoryDate(paymentDate, { allowFuture: false })) {
+        return 'Invalid payment date';
+      }
+      // Ensure payment date is not before allotment date
+      if (paymentDate < allotmentDate) {
+        return 'Payment date cannot be before allotment date';
+      }
+    }
+
+    return null;
   };
 
   const handleClose = () => {

@@ -5,7 +5,6 @@
 }
 
 .main-content {
-  padding: 20px;
   transition: margin-left 0.3s ease;
   min-height: 100vh;
   background-color: var(--bs-gray-100);

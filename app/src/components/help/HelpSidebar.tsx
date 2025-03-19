@@ -39,7 +39,7 @@ const HelpSidebar: React.FC<HelpSidebarProps> = ({ isExpanded = true }) => {
       <div className="py-4">
         {isExpanded && (
           <div className="px-4 mb-2">
-            <span className="text-uppercase small fw-semibold text-secondary">HELP CENTER</span>
+            <span className="text-uppercase small fw-semibold" style={{ color: 'var(--bs-gray-600)' }}>HELP CENTER</span>
           </div>
         )}
         <ul className="nav flex-column">
@@ -50,7 +50,9 @@ const HelpSidebar: React.FC<HelpSidebarProps> = ({ isExpanded = true }) => {
                 className={({ isActive }) => `
                   nav-link d-flex align-items-center py-2
                   ${isExpanded ? 'px-4' : 'px-2'}
-                  ${isActive ? 'active bg-primary-subtle text-primary fw-medium' : ''}
+                  ${isActive ? 'active fw-medium' : ''}
+                  ${isActive ? 'text-primary' : ''}
+                  ${isActive ? '' : ''}
                   hover-primary
                 `}
                 end={item.route === '/help'}

@@ -1,8 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Modal, Button, Alert, Form, Row, Col, ProgressBar } from 'react-bootstrap';
-import { FaDownload, FaUpload, FaCheck } from 'react-icons/fa';
+import { Modal, Button, Alert, Form, Row, Col, Badge } from 'react-bootstrap';
+import { FaDownload, FaUpload, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../../../services/api';
+
+import { Director } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatDDMMYYYY, 
+  isValidDateOfBirth, 
+  isValidAppointmentDate,
+  isValidStatutoryDate
+} from '@bradan/shared';
 
 interface ImportDirectorModalProps {
   show: boolean;
@@ -11,20 +20,10 @@ interface ImportDirectorModalProps {
   companyId: string;
 }
 
-interface PreviewData {
-  title: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: string;
-  appointmentDate: string;
-  directorType: string;
-  occupation: string;
-  otherDirectorships: string;
-  shareholding: string;
-  status: string;
-}
+// PreviewData extends Director but with all fields as strings since they come from CSV
+type PreviewData = Omit<Director, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'company'> & {
+  validationErrors?: string[];
+};
 
 interface ColumnMapping {
   [key: string]: string;
@@ -63,7 +62,43 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     { key: 'status', label: 'Status' }
   ];
 
-  // Function to calculate string similarity (0-1)
+  const validateDirector = (data: PreviewData): string[] => {
+    const errors: string[] = [];
+
+    // Date of Birth validation
+    const dobDate = parseDate(data.dateOfBirth);
+    if (!dobDate || !isValidDateOfBirth(data.dateOfBirth)) {
+      errors.push('Invalid date of birth');
+    }
+
+    // Appointment Date validation
+    const appointmentDate = parseDate(data.appointmentDate);
+    if (!appointmentDate || !isValidStatutoryDate(appointmentDate, { allowFuture: false })) {
+      errors.push('Invalid appointment date');
+    }
+
+    // Validate appointment date is after date of birth
+    if (dobDate && appointmentDate && !isValidAppointmentDate(data.appointmentDate, data.dateOfBirth)) {
+      errors.push('Appointment date must be after date of birth');
+    }
+
+    // Required fields validation
+    if (!data.title?.trim()) errors.push('Title is required');
+    if (!data.firstName?.trim()) errors.push('First name is required');
+    if (!data.lastName?.trim()) errors.push('Last name is required');
+    if (!data.nationality?.trim()) errors.push('Nationality is required');
+    if (!data.address?.trim()) errors.push('Address is required');
+    if (!data.directorType?.trim()) errors.push('Director type is required');
+    if (!data.occupation?.trim()) errors.push('Occupation is required');
+
+    // Status validation
+    if (!['Active', 'Resigned'].includes(data.status)) {
+      errors.push('Invalid status (must be Active or Resigned)');
+    }
+
+    return errors;
+  };
+
   const calculateSimilarity = (str1: string, str2: string): number => {
     const s1 = str1.toLowerCase().replace(/[^a-z0-9]/g, '');
     const s2 = str2.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -87,7 +122,6 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     return intersection.size / union.size;
   };
 
-  // Auto-map columns based on similarity
   const autoMapColumns = (headers: string[]) => {
     const newMapping: ColumnMapping = {};
     const newConfidence: {[key: string]: number} = {};
@@ -98,7 +132,7 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
       
       headers.forEach(header => {
         const score = calculateSimilarity(header, label);
-        if (score > bestScore && score > 0.5) { // Only map if confidence > 50%
+        if (score > bestScore && score > 0.5) {
           bestScore = score;
           bestMatch = header;
         }
@@ -189,13 +223,11 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
       lastModified: new Date(file.lastModified).toISOString()
     });
 
-    // Ensure file is CSV
     if (!file.name.toLowerCase().endsWith('.csv')) {
       setError('Please upload a CSV file using the provided template.');
       return;
     }
 
-    // Force file type to CSV
     const modifiedFile = new File([file], file.name, {
       type: 'text/csv'
     });
@@ -209,13 +241,6 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     formData.append('file', modifiedFile);
 
     try {
-      console.log('Sending request to:', `/statutory/directors/${companyId}/read-headers`);
-      console.log('File details:', {
-        name: modifiedFile.name,
-        type: modifiedFile.type,
-        size: modifiedFile.size
-      });
-
       const response = await api.post(`/statutory/directors/${companyId}/read-headers`, formData, {
         headers: {
           'Accept': 'application/json',
@@ -225,23 +250,14 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
         maxBodyLength: Infinity
       });
 
-      console.log('Server response:', response.data);
-
       if (response.data.headers && Array.isArray(response.data.headers)) {
-        console.log('Headers found:', response.data.headers);
         setFileHeaders(response.data.headers);
         autoMapColumns(response.data.headers);
         setCurrentStep(2);
       } else {
-        console.error('Invalid headers format:', response.data);
         setError('Invalid file format. Please check the template and try again.');
       }
     } catch (err: any) {
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
       setError(
         err.response?.data?.error || 
         'Failed to read file headers. Please ensure you are using the correct template.'
@@ -254,25 +270,18 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
 
   const handleColumnMappingChange = (requiredColumn: string, selectedHeader: string) => {
     try {
-      console.log('Mapping column:', {
-        requiredColumn,
-        selectedHeader
-      });
-
       setColumnMapping(prev => {
         const newMapping = {
           ...prev,
           [requiredColumn]: selectedHeader
         };
-        console.log('New column mapping:', newMapping);
         return newMapping;
       });
       
-      // Update confidence score for manual mapping
       if (selectedHeader) {
         setColumnConfidence(prev => ({
           ...prev,
-          [requiredColumn]: 1 // Full confidence for manual mapping
+          [requiredColumn]: 1
         }));
       } else {
         setColumnConfidence(prev => {
@@ -296,20 +305,9 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     const formData = new FormData();
     formData.append('file', selectedFile);
     
-    // Log mapping before stringifying
-    console.log('Column mapping to send:', columnMapping);
-    
     try {
       const mappingString = JSON.stringify(columnMapping);
-      console.log('Stringified mapping:', mappingString);
       formData.append('mapping', mappingString);
-
-      console.log('Preview request details:', {
-        fileSize: selectedFile.size,
-        fileName: selectedFile.name,
-        fileType: selectedFile.type,
-        mappingSize: mappingString.length
-      });
 
       const response = await api.post(`/statutory/directors/${companyId}/preview-import`, formData, {
         headers: {
@@ -319,37 +317,35 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
         maxBodyLength: Infinity
       });
 
-      console.log('Preview response:', response.data);
-
       if (response.data.data?.length > 0) {
-        setPreviewData(response.data.data);
+        // Validate each director and add validation errors
+        const validatedData = response.data.data.map((director: PreviewData) => ({
+          ...director,
+          validationErrors: validateDirector(director)
+        }));
+
+        setPreviewData(validatedData);
         setCurrentStep(3);
       } else {
         throw new Error('No preview data returned');
       }
     } catch (err: any) {
-      console.error('Preview error:', err);
       setError(err.response?.data?.message || err.message || 'Failed to preview data. Please check your column mapping.');
     } finally {
       setLoading(false);
       setLoadingMessage('');
     }
   };
-  
-  const handleImportSuccess = useCallback((count: number) => {
-    console.log('Handling import success:', { count });
 
-    // Update states
+  const handleImportSuccess = useCallback((count: number) => {
     setImportSuccess(true);
     setImportedCount(count);
     setLoading(false);
     setLoadingMessage('');
-    setCurrentStep(5); // Move to success step
-    setJobId(null); // Clear job ID to stop polling
+    setCurrentStep(5);
+    setJobId(null);
 
     toast.success(`Successfully imported ${count} directors`);
-    
-    // Refresh parent data and close modal
     onSuccess();
     onHide();
   }, [onSuccess, onHide]);
@@ -372,9 +368,6 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
       
       if (response.data.success && response.data.jobId) {
         const newJobId = response.data.jobId;
-        console.log('Starting import with job:', newJobId);
-        
-        // Set job ID and start time
         setJobId(newJobId);
         setStartTime(Date.now());
       } else {
@@ -382,7 +375,7 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to start import. Please try again.');
-      setCurrentStep(4); // Go back to confirmation step on error
+      setCurrentStep(4);
       setLoading(false);
       setLoadingMessage('');
     }
@@ -393,56 +386,32 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     if (!currentJobId) return;
 
     try {
-      console.log('Checking import status for job:', currentJobId);
       const response = await api.get(`/statutory/directors/${companyId}/import-status/${currentJobId}`);
-      console.log('Import status response:', response.data);
 
-      // Calculate simulated progress based on time elapsed
       const timeElapsed = startTime ? Date.now() - startTime : 0;
       const simulatedProgress = Math.min(Math.floor((timeElapsed / 25000) * 100), 99);
       
       if (response.data.state === 'completed') {
-        console.log('Import completed successfully:', {
-          jobId: currentJobId,
-          result: response.data.result,
-          count: response.data.result?.count || previewData.length
-        });
-        
         handleImportSuccess(response.data.result?.count || previewData.length);
         return;
       } 
       
       if (response.data.state === 'failed') {
-        console.error('Import failed:', {
-          jobId: currentJobId,
-          error: response.data.error
-        });
-        
         setError(response.data.error || 'Import failed. Please try again.');
         setCurrentStep(4);
         setLoading(false);
         setLoadingMessage('');
-        setJobId(null); // Clear job ID to stop polling
+        setJobId(null);
       } else {
-        // Still processing
         const progress = response.data.progress || simulatedProgress;
         const director = response.data.currentDirector;
-        
-        console.log('Import in progress:', {
-          jobId: currentJobId,
-          progress: progress + '%',
-          currentDirector: director
-        });
         
         setProgress(progress);
         setCurrentDirector(director || '');
         setLoadingMessage(`Importing directors... ${progress}%`);
       }
     } catch (err: any) {
-      console.error('Error checking import status:', err);
       if (err.response?.status === 404) {
-        // Job not found, might be completed and cleaned up
-        console.log('Job not found (404), checking one last time');
         try {
           const finalCheck = await api.get(`/statutory/directors/${companyId}/import-status/${currentJobId}`);
           if (finalCheck.data.state === 'completed') {
@@ -454,7 +423,6 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
           handleImportSuccess(previewData.length);
         }
       } else {
-        // Continue showing progress even if status check fails
         const timeElapsed = startTime ? Date.now() - startTime : 0;
         const simulatedProgress = Math.min(Math.floor((timeElapsed / 25000) * 100), 99);
         setProgress(simulatedProgress);
@@ -463,28 +431,22 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     }
   }, [jobId, companyId, startTime, previewData.length, handleImportSuccess]);
 
-  // Setup polling when jobId changes
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     
     if (jobId) {
-      console.log('Setting up new polling interval for job:', jobId);
       interval = setInterval(checkImportStatus, 1000);
     }
 
-    // Cleanup function
     return () => {
       if (interval) {
-        console.log('Cleaning up polling interval');
         clearInterval(interval);
       }
     };
   }, [jobId, checkImportStatus]);
 
-  // Handle modal show/hide
   useEffect(() => {
     if (!show) {
-      // Reset all states when modal is hidden
       setCurrentStep(1);
       setError(null);
       setPreviewData([]);
@@ -504,38 +466,26 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
   const formatDate = (date: string | null) => {
     if (!date) return '';
     try {
-      // First check if the date is already in DD/MM/YYYY format
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
-        return date;
-      }
-
-      // Try parsing as ISO date
-      const d = new Date(date);
-      if (isNaN(d.getTime())) {
-        // Try parsing DD/MM/YYYY format
-        const [day, month, year] = date.split('/').map(Number);
-        if (day && month && year) {
-          const parsedDate = new Date(year, month - 1, day);
-          if (!isNaN(parsedDate.getTime())) {
-            return date; // Return original if it was valid DD/MM/YYYY
-          }
-        }
-        return 'Invalid Date';
-      }
-
-      // Format as DD/MM/YYYY
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      const parsedDate = parseDate(date);
+      return parsedDate ? formatDDMMYYYY(parsedDate) : 'Invalid Date';
     } catch (err) {
-      console.error('Error formatting date:', err);
       return 'Invalid Date';
     }
   };
 
+  const renderValidationStatus = (item: PreviewData) => {
+    if (!item.validationErrors?.length) {
+      return <Badge bg="success">Valid</Badge>;
+    }
+    return (
+      <div className="text-danger">
+        <FaExclamationTriangle className="me-1" />
+        {item.validationErrors.length} error(s)
+      </div>
+    );
+  };
+
   const handleClose = () => {
-    // Reset all states
     setCurrentStep(1);
     setError(null);
     setPreviewData([]);
@@ -549,8 +499,6 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
     setLoading(false);
     setLoadingMessage('');
     setJobId(null);
-    
-    // Close modal
     onHide();
   };
 
@@ -568,7 +516,7 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
   );
 
   return (
-    <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false}>
+    <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false} size="xl">
       <Modal.Header closeButton={!loading || importSuccess}>
         <Modal.Title>Import Directors</Modal.Title>
       </Modal.Header>
@@ -671,12 +619,18 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
 
             <div className="mb-4">
               <h6>Total Records: {previewData.length}</h6>
+              <div className="text-muted">
+                Valid: {previewData.filter(d => !d.validationErrors?.length).length}
+                {' | '}
+                Invalid: {previewData.filter(d => d.validationErrors?.length).length}
+              </div>
             </div>
 
             <div className="table-responsive mb-4">
               <table className="table table-sm table-bordered">
                 <thead className="table-light">
                   <tr>
+                    <th>Status</th>
                     <th>Title</th>
                     <th>First Name</th>
                     <th>Last Name</th>
@@ -693,7 +647,8 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
                 </thead>
                 <tbody>
                   {previewData.slice(0, 5).map((item, index) => (
-                    <tr key={index}>
+                    <tr key={index} className={item.validationErrors?.length ? 'table-danger' : ''}>
+                      <td>{renderValidationStatus(item)}</td>
                       <td>{item.title}</td>
                       <td>{item.firstName}</td>
                       <td>{item.lastName}</td>
@@ -717,6 +672,13 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
                 Showing 5 of {previewData.length} records
               </div>
             )}
+
+            {previewData.some(d => d.validationErrors?.length) && (
+              <Alert variant="warning">
+                <FaExclamationTriangle className="me-2" />
+                Some records have validation errors. Please fix the data in your CSV file and try again.
+              </Alert>
+            )}
           </>
         )}
 
@@ -726,7 +688,12 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
             <div className="text-center py-4">
               <h4 className="mb-4">Ready to Import</h4>
               <p className="mb-4" style={{ fontSize: '1.1rem' }}>
-                You are about to import {previewData.length} directors. This action cannot be undone.
+                You are about to import {previewData.filter(d => !d.validationErrors?.length).length} valid directors.
+                {previewData.some(d => d.validationErrors?.length) && (
+                  <span className="text-danger">
+                    {' '}Invalid records will be skipped.
+                  </span>
+                )}
               </p>
             </div>
           </>
@@ -813,7 +780,7 @@ const ImportDirectorModal: React.FC<ImportDirectorModalProps> = ({ show, onHide,
           <Button
             variant="primary"
             onClick={() => setCurrentStep(4)}
-            disabled={loading}
+            disabled={loading || previewData.every(d => d.validationErrors?.length)}
           >
             Continue
           </Button>

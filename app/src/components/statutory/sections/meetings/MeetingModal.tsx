@@ -4,42 +4,20 @@ import { FaCheck, FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../../../../contexts/AuthContext';
 import api from '../../../../services/api';
 
+import { Meeting, Resolution } from '../../../../services/statutory/types';
+import { 
+  parseDate, 
+  formatYYYYMMDD, 
+  formatDDMMYYYY,
+  isValidStatutoryDate,
+  formatStatutoryDate
+} from '@bradan/shared';
+
 interface MeetingModalProps {
   show: boolean;
   onHide: () => void;
   meeting?: Meeting;
   onSuccess: () => void;
-}
-
-interface Meeting {
-  id?: string;
-  meetingType: 'AGM' | 'EGM' | 'Board Meeting' | 'Committee Meeting';
-  meetingDate: string;
-  startTime: string;
-  endTime: string;
-  venue: string;
-  chairperson: string;
-  quorumRequired: number;
-  quorumPresent: number;
-  quorumAchieved: boolean;
-  attendees: string[];
-  agenda: string;
-  status: 'Draft' | 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
-  resolutions: Resolution[];
-  company?: {
-    name: string;
-    legalName: string;
-  };
-}
-
-interface Resolution {
-  id?: string;
-  title: string;
-  type: 'Ordinary' | 'Special';
-  description: string;
-  outcome: 'Pending' | 'Passed' | 'Failed' | 'Withdrawn';
-  proposedBy: string;
-  secondedBy: string;
 }
 
 const MeetingModal: React.FC<MeetingModalProps> = ({ show, onHide, meeting, onSuccess }) => {
@@ -67,7 +45,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({ show, onHide, meeting, onSu
 
   const [formData, setFormData] = useState<Meeting>({
     meetingType: 'Board Meeting',
-    meetingDate: '',
+    meetingDate: formatYYYYMMDD(new Date()),
     startTime: '',
     endTime: '',
     venue: '',
@@ -83,16 +61,23 @@ const MeetingModal: React.FC<MeetingModalProps> = ({ show, onHide, meeting, onSu
 
   useEffect(() => {
     if (meeting) {
+      // Parse date from DD/MM/YYYY format to YYYY-MM-DD for form input
+      const meetingDateObj = parseDate(meeting.meetingDate);
+      
+      // Parse times from the API format
+      const startTimeObj = new Date(meeting.startTime);
+      const endTimeObj = new Date(meeting.endTime);
+
       setFormData({
         ...meeting,
-        meetingDate: new Date(meeting.meetingDate).toISOString().split('T')[0],
-        startTime: new Date(meeting.startTime).toISOString().slice(11, 16),
-        endTime: new Date(meeting.endTime).toISOString().slice(11, 16)
+        meetingDate: meetingDateObj ? formatYYYYMMDD(meetingDateObj) : '',
+        startTime: startTimeObj.toTimeString().slice(0, 5), // HH:mm format
+        endTime: endTimeObj.toTimeString().slice(0, 5) // HH:mm format
       });
     } else {
       setFormData({
         meetingType: 'Board Meeting',
-        meetingDate: '',
+        meetingDate: formatYYYYMMDD(new Date()),
         startTime: '',
         endTime: '',
         venue: '',
@@ -129,16 +114,38 @@ const MeetingModal: React.FC<MeetingModalProps> = ({ show, onHide, meeting, onSu
       return;
     }
 
+    // Validate meeting date
+    const meetingDate = new Date(formData.meetingDate);
+    if (!isValidStatutoryDate(meetingDate, { allowFuture: true })) {
+      setError('Invalid meeting date');
+      setLoading(false);
+      return;
+    }
+
+    // Validate start and end times
+    const startDateTime = new Date(`${formData.meetingDate}T${formData.startTime}`);
+    const endDateTime = new Date(`${formData.meetingDate}T${formData.endTime}`);
+    if (endDateTime <= startDateTime) {
+      setError('End time must be after start time');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const submitData = {
+      // Convert YYYY-MM-DD date to DD/MM/YYYY format for API
+      const apiData = {
         ...formData,
+        meetingDate: formatDDMMYYYY(new Date(formData.meetingDate)),
+        // Combine date and time for API
+        startTime: `${formData.meetingDate}T${formData.startTime}:00`,
+        endTime: `${formData.meetingDate}T${formData.endTime}:00`,
         quorumAchieved: formData.quorumPresent >= formData.quorumRequired
       };
 
       if (meeting?.id) {
-        await api.put(`/statutory/meetings/${user.companyId}/${meeting.id}`, submitData);
+        await api.put(`/statutory/meetings/${user.companyId}/${meeting.id}`, apiData);
       } else {
-        await api.post(`/statutory/meetings/${user.companyId}`, submitData);
+        await api.post(`/statutory/meetings/${user.companyId}`, apiData);
       }
       setSuccess(true);
       onSuccess();
