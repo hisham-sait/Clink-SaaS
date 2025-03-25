@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Simple start script for Bradán Accountants application
+# Simple restart script for Bradán Accountants application
 
 # Color codes for better readability
 GREEN='\033[0;32m'
@@ -17,12 +17,14 @@ print_success() {
     echo -e "${GREEN}✓ $1${NC}"
 }
 
+print_section "Stopping Application"
 # Kill any existing processes on ports 3000 and 5173
-print_section "Starting Application"
 echo "Cleaning up existing processes..."
 lsof -ti:3000 | xargs kill -9 2>/dev/null
 lsof -ti:5173 | xargs kill -9 2>/dev/null
+print_success "Existing processes stopped"
 
+print_section "Restarting Application"
 # Start backend server
 echo "Starting backend server..."
 cd api
@@ -39,6 +41,6 @@ npm run dev &
 print_success "Frontend server started"
 
 # Keep script running
-print_section "Application Started"
-echo "All services started successfully. Press Ctrl+C to stop all servers."
+print_section "Application Restarted"
+echo "All services restarted successfully. Press Ctrl+C to stop all servers."
 wait
