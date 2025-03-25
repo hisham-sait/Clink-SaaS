@@ -4,12 +4,10 @@
   "description": "Modern accounting and CRM platform built with Angular",
   "scripts": {
     "start": "bash start.sh",
-    "start:windows": "start.bat",
     "install:all": "npm run install:api && npm run install:app",
     "install:api": "cd api && npm install",
     "install:app": "cd app && npm install",
     "dev": "bash start.sh",
-    "dev:windows": "start.bat",
     "build": "cd app && ng build --configuration production",
     "test": "cd app && ng test",
     "lint": "cd app && ng lint",

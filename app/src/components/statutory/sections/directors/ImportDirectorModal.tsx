@@ -11,7 +11,7 @@ import {
   isValidDateOfBirth, 
   isValidAppointmentDate,
   isValidStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface ImportDirectorModalProps {
   show: boolean;

@@ -12,7 +12,7 @@ import {
   isValidStatutoryDate,
   isValidDateOfBirth,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface DirectorModalProps {
   show: boolean;

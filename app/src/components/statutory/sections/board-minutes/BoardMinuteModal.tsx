@@ -9,7 +9,7 @@ import {
   formatDDMMYYYY,
   isValidStatutoryDate,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 import { BoardMinute, Discussion, Resolution, ActionItem } from '../../../../services/statutory/types';
 

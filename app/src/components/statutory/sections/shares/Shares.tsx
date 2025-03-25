@@ -1,60 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ShareModal from './ShareModal';
 import ImportShareModal from './ImportShareModal';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaClock, FaTrash, FaFileExport, FaFilePdf, FaFileExcel, FaCoins, FaCheckCircle, FaArchive, FaFileImport } from 'react-icons/fa';
-
-import { Share, Activity } from '../../../../services/statutory/types';
-import { formatDDMMYYYY } from '@bradan/shared';
+import { Table, Button, Badge, ButtonGroup } from 'react-bootstrap';
+import { FaPlus, FaEdit, FaFileImport, FaBookOpen, FaCheckCircle, FaTimesCircle, FaArchive, FaTrash, FaEye } from 'react-icons/fa';
+import MainView from '../../../shared/MainView';
+import { Share } from '../../../../services/statutory/types';
 
 const Shares: React.FC = () => {
-  const timelineStyles = {
-    timeline: {
-      position: 'relative' as const,
-      padding: 0,
-      margin: 0,
-      listStyle: 'none'
-    },
-    timelineItem: {
-      position: 'relative' as const,
-      borderLeft: '2px solid #e9ecef',
-      marginLeft: '1rem',
-      paddingLeft: '1.5rem'
-    }
-  };
-
+  const navigate = useNavigate();
   const [shares, setShares] = useState<Share[]>([]);
-  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Inactive' | 'Archived'>('All');
   const { user } = useAuth();
 
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedShare, setSelectedShare] = useState<Share | undefined>(undefined);
 
   useEffect(() => {
     fetchShares();
-    fetchRecentActivities();
   }, [statusFilter]);
-
-  const fetchRecentActivities = async () => {
-    try {
-      setActivitiesLoading(true);
-      const response = await api.get(`/statutory/activities/${user?.companyId}?entityType=share&limit=5`);
-      if (response.data?.activities) {
-        setRecentActivities(response.data.activities);
-      }
-    } catch (err) {
-      console.error('Error fetching recent activities:', err);
-    } finally {
-      setActivitiesLoading(false);
-    }
-  };
 
   const fetchShares = async () => {
     try {
@@ -68,7 +37,7 @@ const Shares: React.FC = () => {
       }
       setError('');
     } catch (err) {
-      setError('Failed to load share classes');
+      setError('Failed to load shares');
       console.error('Error fetching shares:', err);
     } finally {
       setLoading(false);
@@ -81,12 +50,19 @@ const Shares: React.FC = () => {
         responseType: 'blob'
       });
       
+      // Create blob link to download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `shares.${type === 'pdf' ? 'pdf' : 'xlsx'}`);
+      
+      // Append to html link element page
       document.body.appendChild(link);
+      
+      // Start download
       link.click();
+      
+      // Clean up and remove the link
       link.parentNode?.removeChild(link);
     } catch (error) {
       console.error('Error exporting shares:', error);
@@ -96,49 +72,222 @@ const Shares: React.FC = () => {
 
   const handleAddShare = () => {
     setSelectedShare(undefined);
-    setShowModal(true);
+    setShowAddModal(true);
   };
 
   const handleEditShare = (share: Share) => {
     setSelectedShare(share);
-    setShowModal(true);
+    setShowAddModal(true);
   };
 
   const handleDeleteShare = async (share: Share) => {
-    if (window.confirm(`Are you sure you want to delete the ${share.class} share class? This action cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to delete ${share.class} shares? This action cannot be undone.`)) {
       try {
         await api.delete(`/statutory/shares/${user?.companyId}/${share.id}`);
         fetchShares();
-        fetchRecentActivities();
       } catch (error) {
         console.error('Error deleting share:', error);
-        alert('Failed to delete share class. Please try again.');
+        alert('Failed to delete share. Please try again.');
       }
     }
   };
 
   const handleModalSuccess = () => {
     fetchShares();
-    fetchRecentActivities();
   };
 
-  if (loading) {
-    return (
-      <div className="container-fluid py-4">
-        <div className="d-flex justify-content-center">
+  // Define summary cards
+  const summaryCards = [
+    {
+      title: 'Total Share Classes',
+      value: shares.length,
+      icon: <FaBookOpen className="text-primary" size={24} />,
+      color: 'primary'
+    },
+    {
+      title: 'Active Share Classes',
+      value: shares.filter(s => s.status === 'Active').length,
+      icon: <FaCheckCircle className="text-success" size={24} />,
+      color: 'success'
+    },
+    {
+      title: 'Inactive Share Classes',
+      value: shares.filter(s => s.status === 'Inactive' || s.status === 'Archived').length,
+      icon: <FaTimesCircle className="text-secondary" size={24} />,
+      color: 'secondary'
+    }
+  ];
+
+  // Define action buttons
+  const renderActions = () => (
+    <>
+      <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
+        <FaFileImport className="me-2" /> Import
+      </Button>
+      <Button variant="primary" onClick={handleAddShare}>
+        <FaPlus className="me-2" /> Add Share Class
+      </Button>
+    </>
+  );
+
+  // Define filters
+  const renderFilters = () => (
+    <ButtonGroup>
+      <Button
+        variant={statusFilter === 'All' ? 'primary' : 'outline-primary'}
+        onClick={() => setStatusFilter('All')}
+      >
+        All
+      </Button>
+      <Button
+        variant={statusFilter === 'Active' ? 'primary' : 'outline-primary'}
+        onClick={() => setStatusFilter('Active')}
+      >
+        Active
+      </Button>
+      <Button
+        variant={statusFilter === 'Inactive' ? 'primary' : 'outline-primary'}
+        onClick={() => setStatusFilter('Inactive')}
+      >
+        Inactive
+      </Button>
+      <Button
+        variant={statusFilter === 'Archived' ? 'primary' : 'outline-primary'}
+        onClick={() => setStatusFilter('Archived')}
+      >
+        Archived
+      </Button>
+    </ButtonGroup>
+  );
+
+  // Define table rendering
+  const renderTable = () => (
+    <>
+      {error && (
+        <div className="alert alert-danger mb-4" role="alert">
+          {error}
+        </div>
+      )}
+      
+      {loading ? (
+        <div className="text-center py-4">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
-      </div>
-    );
-  }
+      ) : (
+        <Table responsive hover className="align-middle">
+          <thead className="bg-light">
+            <tr>
+              <th>Share Class</th>
+              <th>Type</th>
+              <th>Nominal Value</th>
+              <th>Total Issued</th>
+              <th>Rights</th>
+              <th>Status</th>
+              {user?.roles?.includes('super_admin') && <th>Company</th>}
+              <th className="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shares.map((share) => (
+              <tr key={share.id}>
+                <td>
+                  <div className="fw-bold">{share.class}</div>
+                  <div className="text-muted small">{share.description}</div>
+                </td>
+                <td>{share.type}</td>
+                <td>{share.currency} {share.nominalValue.toFixed(2)}</td>
+                <td>{share.totalIssued}</td>
+                <td>
+                  <div>
+                    <Badge bg={share.votingRights ? 'info' : 'light'} className="me-1">
+                      {share.votingRights ? 'Voting' : 'Non-voting'}
+                    </Badge>
+                    <Badge bg={share.dividendRights ? 'info' : 'light'} className="me-1">
+                      {share.dividendRights ? 'Dividend' : 'No dividend'}
+                    </Badge>
+                    <Badge bg={share.transferable ? 'info' : 'light'}>
+                      {share.transferable ? 'Transferable' : 'Non-transferable'}
+                    </Badge>
+                  </div>
+                </td>
+                <td>
+                  <Badge 
+                    bg={
+                      share.status === 'Active' 
+                        ? 'success' 
+                        : share.status === 'Archived' 
+                          ? 'warning' 
+                          : 'secondary'
+                    }
+                  >
+                    {share.status}
+                  </Badge>
+                </td>
+                {user?.roles?.includes('super_admin') && (
+                  <td>{share.company?.name || share.company?.legalName}</td>
+                )}
+                <td className="text-end">
+                  <Button
+                    variant="link"
+                    className="p-0 me-3"
+                    onClick={() => navigate(`/statutory/shares/${share.id}`)}
+                    title="View details"
+                  >
+                    <FaEye className="text-info" />
+                  </Button>
+                  <Button
+                    variant="link"
+                    className="p-0 me-3"
+                    onClick={() => handleEditShare(share)}
+                    title="Edit"
+                  >
+                    <FaEdit className="text-primary" />
+                  </Button>
+                  <Button
+                    variant="link"
+                    className="p-0"
+                    onClick={() => handleDeleteShare(share)}
+                    title="Delete"
+                  >
+                    <FaTrash className="text-danger" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {shares.length === 0 && (
+              <tr>
+                <td colSpan={user?.roles?.includes('super_admin') ? 8 : 7} className="text-center py-5">
+                  <div className="d-flex flex-column align-items-center">
+                    <div className="bg-light p-4 rounded-circle mb-3">
+                      <FaBookOpen className="text-muted" size={32} />
+                    </div>
+                    <h5 className="text-muted mb-2">No Share Classes Found</h5>
+                    <p className="text-muted mb-4">Get started by adding your first share class or importing data</p>
+                    <div>
+                      <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
+                        <FaFileImport className="me-2" /> Import Share Classes
+                      </Button>
+                      <Button variant="primary" onClick={handleAddShare}>
+                        <FaPlus className="me-2" /> Add Share Class
+                      </Button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+      )}
+    </>
+  );
 
   return (
     <>
       <ShareModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
+        show={showAddModal}
+        onHide={() => setShowAddModal(false)}
         share={selectedShare}
         onSuccess={handleModalSuccess}
       />
@@ -150,262 +299,17 @@ const Shares: React.FC = () => {
           companyId={user.companyId}
         />
       )}
-      <div className="container-fluid py-4">
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h1 className="h3 mb-0">Shares Register</h1>
-            <p className="text-muted mb-0">Record and manage company share classes and their details</p>
-          </div>
-          <div className="d-flex">
-            <Dropdown className="me-2">
-              <Dropdown.Toggle variant="outline-primary" id="export-dropdown">
-                <FaFileExport className="me-2" /> Export
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                <Dropdown.Item onClick={() => handleExport('pdf')}>
-                  <FaFilePdf className="me-2" /> Export as PDF
-                </Dropdown.Item>
-                <Dropdown.Item onClick={() => handleExport('excel')}>
-                  <FaFileExcel className="me-2" /> Export as Excel
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-            <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
-              <FaFileImport className="me-2" /> Import
-            </Button>
-            <Button variant="primary" onClick={handleAddShare}>
-              <FaPlus className="me-2" /> Add Share Class
-            </Button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="alert alert-danger mb-4" role="alert">
-            {error}
-          </div>
-        )}
-
-        {/* Summary Cards */}
-        <Row className="mb-4">
-          <Col md={4}>
-            <Card className="h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="text-muted mb-1">Total Share Classes</div>
-                    <h3 className="mb-0">{shares.length}</h3>
-                  </div>
-                  <div className="bg-primary bg-opacity-10 p-3 rounded">
-                    <FaCoins className="text-primary" size={24} />
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={4}>
-            <Card className="h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="text-muted mb-1">Active Share Classes</div>
-                    <h3 className="mb-0">{shares.filter(s => s.status === 'Active').length}</h3>
-                  </div>
-                  <div className="bg-success bg-opacity-10 p-3 rounded">
-                    <FaCheckCircle className="text-success" size={24} />
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={4}>
-            <Card className="h-100">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="text-muted mb-1">Archived Share Classes</div>
-                    <h3 className="mb-0">{shares.filter(s => s.status === 'Archived').length}</h3>
-                  </div>
-                  <div className="bg-secondary bg-opacity-10 p-3 rounded">
-                    <FaArchive className="text-secondary" size={24} />
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Shares Table */}
-        <div className="card mb-4">
-          <div className="card-body">
-            <div className="d-flex justify-content-end mb-3">
-              <div className="btn-group">
-                <Button
-                  variant={statusFilter === 'All' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('All')}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={statusFilter === 'Active' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('Active')}
-                >
-                  Active
-                </Button>
-                <Button
-                  variant={statusFilter === 'Inactive' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('Inactive')}
-                >
-                  Inactive
-                </Button>
-                <Button
-                  variant={statusFilter === 'Archived' ? 'primary' : 'outline-primary'}
-                  onClick={() => setStatusFilter('Archived')}
-                >
-                  Archived
-                </Button>
-              </div>
-            </div>
-            <Table responsive hover className="align-middle">
-              <thead className="bg-light">
-                <tr>
-                  <th>Share Class</th>
-                  <th>Type</th>
-                  <th>Nominal Value</th>
-                  <th>Total Issued</th>
-                  <th>Rights</th>
-                  <th>Status</th>
-                  {user?.roles?.includes('super_admin') && <th>Company</th>}
-                  <th className="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shares.map((share) => (
-                  <tr key={share.id}>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div>
-                          <div className="fw-bold">{share.class}</div>
-                          <div className="text-muted small">{share.description}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{share.type}</td>
-                    <td>{`${share.nominalValue} ${share.currency}`}</td>
-                    <td>{share.totalIssued.toLocaleString()}</td>
-                    <td>
-                      <div className="small">
-                        {share.votingRights && <Badge bg="info" className="me-1">Voting</Badge>}
-                        {share.dividendRights && <Badge bg="info" className="me-1">Dividend</Badge>}
-                        {share.transferable && <Badge bg="info">Transferable</Badge>}
-                      </div>
-                    </td>
-                    <td>
-                      <Badge bg={
-                        share.status === 'Active' ? 'success' :
-                        share.status === 'Inactive' ? 'warning' :
-                        'secondary'
-                      }>
-                        {share.status}
-                      </Badge>
-                    </td>
-                    {user?.roles?.includes('super_admin') && (
-                      <td>{share.company?.name || share.company?.legalName}</td>
-                    )}
-                    <td className="text-end">
-                      <Button
-                        variant="link"
-                        className="p-0 me-3"
-                        onClick={() => handleEditShare(share)}
-                      >
-                        <FaEdit className="text-primary" />
-                      </Button>
-                      <Button
-                        variant="link"
-                        className="p-0"
-                        onClick={() => handleDeleteShare(share)}
-                      >
-                        <FaTrash className="text-danger" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {shares.length === 0 && (
-                  <tr>
-                    <td colSpan={user?.roles?.includes('super_admin') ? 8 : 7} className="text-center py-5">
-                      <div className="d-flex flex-column align-items-center">
-                        <div className="bg-light p-4 rounded-circle mb-3">
-                          <FaCoins className="text-muted" size={32} />
-                        </div>
-                        <h5 className="text-muted mb-2">No Share Classes Found</h5>
-                        <p className="text-muted mb-4">Get started by adding your first share class or importing data</p>
-                        <div>
-                          <Button variant="outline-primary" className="me-2" onClick={() => setShowImportModal(true)}>
-                            <FaFileImport className="me-2" /> Import Share Classes
-                          </Button>
-                          <Button variant="primary" onClick={handleAddShare}>
-                            <FaPlus className="me-2" /> Add Share Class
-                          </Button>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-          </div>
-        </div>
-
-        {/* Recent Activities */}
-        <Card>
-          <Card.Body>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="mb-0">
-                <FaClock className="me-2" />
-                Recent Activities
-              </h5>
-            </div>
-            {activitiesLoading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border spinner-border-sm text-primary"></div>
-                <p className="text-muted small mt-2 mb-0">Loading activities...</p>
-              </div>
-            ) : recentActivities.length > 0 ? (
-              <div style={timelineStyles.timeline}>
-                {recentActivities.map((activity, index) => (
-                  <div key={index} style={timelineStyles.timelineItem} className="pb-3">
-                    <div className="d-flex">
-                      <div className="me-3">
-                        <Badge bg="light" className="p-2">
-                          {activity.type === 'added' ? (
-                            <FaPlus className="text-success" />
-                          ) : activity.type === 'updated' ? (
-                            <FaEdit className="text-primary" />
-                          ) : activity.type === 'status_changed' ? (
-                            <FaEdit className="text-warning" />
-                          ) : activity.type === 'removed' ? (
-                            <FaTrash className="text-danger" />
-                          ) : (
-                            <FaEdit className="text-primary" />
-                          )}
-                        </Badge>
-                      </div>
-                      <div>
-                        <p className="mb-0">{activity.description}</p>
-                        <small className="text-muted">
-                          {formatDDMMYYYY(new Date(activity.time))}
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted mb-0">No recent activities</p>
-            )}
-          </Card.Body>
-        </Card>
-      </div>
+      
+      <MainView
+        title="Share Register"
+        description="Record and manage company share classes and their details"
+        entityType="share"
+        summaryCards={summaryCards}
+        renderTable={renderTable}
+        renderActions={renderActions}
+        renderFilters={renderFilters}
+        handleExport={handleExport}
+      />
     </>
   );
 };

@@ -10,7 +10,7 @@ import {
   formatDDMMYYYY,
   isValidDateOfBirth,
   isValidStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface ImportShareholderModalProps {
   show: boolean;

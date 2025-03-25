@@ -11,7 +11,7 @@ import {
   isValidStatutoryDate,
   isValidDateOfBirth,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface ImportBeneficialOwnerModalProps {
   show: boolean;

@@ -9,7 +9,7 @@ import {
   formatDDMMYYYY,
   isValidStatutoryDate,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface ImportBoardMinuteModalProps {
   show: boolean;

@@ -17,7 +17,7 @@ import {
   formatDDMMYYYY,
   isValidStatutoryDate,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 // PreviewData extends Allotment but with all fields as strings since they come from CSV
 interface PreviewData extends Omit<Allotment, 'numberOfShares' | 'pricePerShare' | 'amountPaid'> {

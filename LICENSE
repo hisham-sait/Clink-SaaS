@@ -1,21 +1,86 @@
-MIT License
+BRADÁN ACCOUNTANTS COMMERCIAL LICENSE AGREEMENT
 
-Copyright (c) 2024 Bradán Accountants
+Copyright (c) 2024-2025 Bradán Accountants
+All Rights Reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. DEFINITIONS
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+"Software" refers to the Bradán Accountants application, including all source code, object code, interfaces, content, fonts, documentation, and any updates or upgrades.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+"Licensor" refers to Bradán Accountants, the copyright holder and provider of the Software.
+
+"Licensee" refers to the individual or entity that has purchased a license to use the Software.
+
+"Authorized User" refers to an individual employee, contractor, or agent authorized by the Licensee to use the Software.
+
+"Subscription Period" refers to the period for which the Licensee has paid the applicable license fees.
+
+2. PROPRIETARY RIGHTS
+
+The Software is the intellectual property of and is owned by the Licensor. The structure, organization, and code of the Software are valuable trade secrets and confidential information of the Licensor. The Software is protected by law, including but not limited to copyright law. The Licensor reserves all rights not expressly granted to the Licensee.
+
+3. LICENSE GRANT
+
+3.1 Proprietary License: Subject to the payment of applicable license fees and compliance with the terms of this Agreement, the Licensor grants the Licensee a non-exclusive, non-transferable, revocable license to use the Software for the Licensee's internal business operations.
+
+3.2 Subscription Terms: This license is valid only for the Subscription Period. The Licensee must renew the subscription by paying the then-current license fees to continue using the Software beyond the Subscription Period.
+
+3.3 User Limitations: The license is limited to the number of Authorized Users specified in the Licensee's purchase order or subscription agreement. The Licensee shall not allow more than the specified number of Authorized Users to access or use the Software.
+
+3.4 Enterprise Usage: For enterprise deployments, additional terms may apply as specified in a separate enterprise agreement between the Licensor and the Licensee.
+
+4. RESTRICTIONS
+
+The Licensee shall not:
+
+4.1 Copy, modify, adapt, translate, or create derivative works based on the Software.
+
+4.2 Reverse engineer, decompile, disassemble, or otherwise attempt to discover the source code of the Software.
+
+4.3 Rent, lease, sell, sublicense, assign, distribute, publish, transfer, or otherwise make the Software available to any third party.
+
+4.4 Remove, alter, or obscure any proprietary notices on the Software.
+
+4.5 Use the Software for any purpose that violates applicable laws or regulations.
+
+4.6 Use the Software to develop a competing product or service.
+
+5. MAINTENANCE AND SUPPORT
+
+5.1 During the Subscription Period, the Licensor will provide maintenance updates and technical support according to the level of support purchased by the Licensee.
+
+5.2 The Licensor has no obligation to provide maintenance or support beyond the Subscription Period unless the Licensee renews the subscription.
+
+6. CONFIDENTIALITY
+
+6.1 The Licensee acknowledges that the Software contains valuable trade secrets and confidential information of the Licensor.
+
+6.2 The Licensee agrees to maintain the confidentiality of the Software and not to disclose the Software to any third party without the prior written consent of the Licensor.
+
+7. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. THE LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL MEET THE LICENSEE'S REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE.
+
+8. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR DATA USE, ARISING OUT OF OR RELATED TO THIS AGREEMENT, WHETHER IN CONTRACT, TORT, OR OTHERWISE, EVEN IF THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+9. TERM AND TERMINATION
+
+9.1 This Agreement is effective upon the Licensee's acceptance and shall continue for the duration of the Subscription Period.
+
+9.2 The Licensor may terminate this Agreement immediately if the Licensee breaches any provision of this Agreement.
+
+9.3 Upon termination, the Licensee shall cease all use of the Software and destroy all copies of the Software in its possession or control.
+
+10. GENERAL PROVISIONS
+
+10.1 Governing Law: This Agreement shall be governed by and construed in accordance with the laws of Ireland, without regard to its conflict of law principles.
+
+10.2 Entire Agreement: This Agreement constitutes the entire agreement between the parties concerning the subject matter hereof and supersedes all prior and contemporaneous agreements, proposals, or representations, written or oral.
+
+10.3 Severability: If any provision of this Agreement is held to be unenforceable, the remaining provisions shall continue in full force and effect.
+
+10.4 No Waiver: The failure of either party to enforce any rights granted hereunder or to take action against the other party in the event of any breach shall not be deemed a waiver by that party as to subsequent enforcement of rights or subsequent actions in the event of future breaches.
+
+BY USING THE SOFTWARE, THE LICENSEE ACKNOWLEDGES THAT IT HAS READ THIS AGREEMENT, UNDERSTANDS IT, AND AGREES TO BE BOUND BY ITS TERMS AND CONDITIONS.

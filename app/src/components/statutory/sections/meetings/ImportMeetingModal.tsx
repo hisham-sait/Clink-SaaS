@@ -10,7 +10,7 @@ import {
   formatDDMMYYYY,
   isValidStatutoryDate,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface ImportMeetingModalProps {
   show: boolean;

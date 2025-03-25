@@ -11,7 +11,7 @@ import {
   formatDDMMYYYY,
   isValidStatutoryDate,
   formatStatutoryDate
-} from '@bradan/shared';
+} from '../../../../utils';
 
 interface MeetingModalProps {
   show: boolean;
