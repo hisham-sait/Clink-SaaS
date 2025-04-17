@@ -9,9 +9,9 @@ export interface DateParseOptions {
 }
 
 /**
- * Interface for statutory date validation options
+ * Interface for date validation options
  */
-export interface StatutoryDateOptions {
+export interface DateValidationOptions {
   allowFuture?: boolean;
   maxYearsInPast?: number;
   maxYearsInFuture?: number;
@@ -246,12 +246,12 @@ export function parseFromInput(dateStr: string): Date | null {
 }
 
 /**
- * Validates a date for statutory requirements
+ * Validates a date is within acceptable range
  * @param date - The date to validate
  * @param options - Optional configuration
- * @returns Whether the date is valid for statutory purposes
+ * @returns Whether the date is valid
  */
-export function isValidStatutoryDate(date: Date | null, options: StatutoryDateOptions = {}): boolean {
+export function isDateWithinRange(date: Date | null, options: DateValidationOptions = {}): boolean {
   if (!date || !isDateInRange(date)) return false;
 
   const {
@@ -273,20 +273,20 @@ export function isValidStatutoryDate(date: Date | null, options: StatutoryDateOp
 }
 
 /**
- * Validates a date of birth for statutory requirements
+ * Validates a date of birth
  * @param dateStr - The date string to validate
  * @returns Whether the date is valid for a date of birth
  */
 export function isValidDateOfBirth(dateStr: string): boolean {
   const date = parseDate(dateStr);
-  return isValidStatutoryDate(date, {
+  return isDateWithinRange(date, {
     allowFuture: false,
     maxYearsInPast: 120
   });
 }
 
 /**
- * Validates an appointment date for statutory requirements
+ * Validates an appointment date
  * @param appointmentDate - The appointment date string
  * @param dateOfBirth - The date of birth string for comparison
  * @returns Whether the appointment date is valid
@@ -295,8 +295,8 @@ export function isValidAppointmentDate(appointmentDate: string, dateOfBirth?: st
   const appDate = parseDate(appointmentDate);
   if (!appDate) return false;
 
-  // Basic statutory date validation
-  if (!isValidStatutoryDate(appDate, { allowFuture: false })) return false;
+  // Basic date validation
+  if (!isDateWithinRange(appDate, { allowFuture: false })) return false;
 
   // If DOB provided, ensure appointment date is after person turned 18
   if (dateOfBirth) {
@@ -311,7 +311,7 @@ export function isValidAppointmentDate(appointmentDate: string, dateOfBirth?: st
 }
 
 /**
- * Validates a resignation date for statutory requirements
+ * Validates a resignation date
  * @param resignationDate - The resignation date string
  * @param appointmentDate - The appointment date string for comparison
  * @returns Whether the resignation date is valid
@@ -322,8 +322,8 @@ export function isValidResignationDate(resignationDate: string, appointmentDate:
 
   if (!resDate || !appDate) return false;
 
-  // Basic statutory date validation
-  if (!isValidStatutoryDate(resDate, { allowFuture: false })) return false;
+  // Basic date validation
+  if (!isDateWithinRange(resDate, { allowFuture: false })) return false;
 
   // Ensure resignation date is after appointment date
   if (isBefore(resDate, appDate) || isEqual(resDate, appDate)) return false;
@@ -332,12 +332,12 @@ export function isValidResignationDate(resignationDate: string, appointmentDate:
 }
 
 /**
- * Formats a date for statutory display
+ * Formats a date for display
  * @param date - The date to format
  * @param format - The desired format (default: DD/MM/YYYY)
  * @returns The formatted date string
  */
-export function formatStatutoryDate(date: Date | string | null, outputFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD' = 'DD/MM/YYYY'): string {
+export function formatDisplayDate(date: Date | string | null, outputFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD' = 'DD/MM/YYYY'): string {
   if (!date) return '';
 
   const parsedDate = typeof date === 'string' ? parseDate(date) : date;
@@ -347,11 +347,11 @@ export function formatStatutoryDate(date: Date | string | null, outputFormat: 'D
 }
 
 /**
- * Formats a date for statutory documents
+ * Formats a date for formal documents
  * @param date - The date to format
  * @returns The formatted date string (e.g., "1st January 2025")
  */
-export function formatStatutoryDocument(date: Date | string | null): string {
+export function formatFormalDocument(date: Date | string | null): string {
   if (!date) return '';
 
   const parsedDate = typeof date === 'string' ? parseDate(date) : date;

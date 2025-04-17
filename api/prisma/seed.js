@@ -1,6 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
 const createSettingsData = require('./seeds/settings');
-const createStatutoryData = require('./seeds/statutory');
 const seedAuth = require('./seeds/auth');
 const seedPlans = require('./seeds/plans');
 const { seedBilling } = require('./seeds/billing');
@@ -34,11 +33,6 @@ async function main() {
     await seedBilling();
     console.log('✓ Billing data created');
     
-    // Create statutory data
-    console.log('Creating statutory data...');
-    const statutoryData = await createStatutoryData();
-    console.log('✓ Statutory data created');
-    
     // Create product sections
     console.log('Creating product sections...');
     await seedSections();
@@ -52,8 +46,7 @@ async function main() {
     console.log('Seed completed successfully');
     
     return {
-      settings: settingsData,
-      statutory: statutoryData
+      settings: settingsData
     };
   } catch (error) {
     console.error('Error during seeding:', error);

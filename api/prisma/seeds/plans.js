@@ -20,7 +20,7 @@ async function seedPlans() {
           'Up to 2 users',
           'Single company',
           'Basic compliance tracking',
-          'Basic statutory management'
+          'Basic document management'
         ],
         maxUsers: 2,
         maxCompanies: 1,
@@ -36,7 +36,7 @@ async function seedPlans() {
           'Up to 5 users',
           'Up to 3 companies',
           'Advanced compliance tracking',
-          'Full statutory management',
+          'Full document management',
           'Basic reporting',
           'Email support'
         ],
@@ -54,7 +54,7 @@ async function seedPlans() {
           'Up to 15 users',
           'Up to 10 companies',
           'Advanced compliance tracking',
-          'Full statutory management',
+          'Full document management',
           'Advanced reporting',
           'Priority email support',
           'Audit trail',
@@ -74,7 +74,7 @@ async function seedPlans() {
           'Unlimited users',
           'Unlimited companies',
           'Advanced compliance tracking',
-          'Full statutory management',
+          'Full document management',
           'Advanced reporting',
           'Priority support',
           'Audit trail',

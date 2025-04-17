@@ -12,13 +12,13 @@ import './App.css';
 const Auth = lazy(() => import('./components/auth/Auth'));
 const Dashboard = lazy(() => import('./components/dashboards/Dashboard'));
 const Settings = lazy(() => import('./components/settings/Settings'));
-const Statutory = lazy(() => import('./components/statutory/Statutory'));
 const CRM = lazy(() => import('./components/crm/CRM'));
 const Products = lazy(() => import('./components/products/Products'));
+const Links = lazy(() => import('./components/links/Links'));
 const Help = lazy(() => import('./components/help/Help'));
 const FormEmbedPage = lazy(() => import('./components/forms/FormEmbedPage'));
 
-type SectionType = 'statutory' | 'crm' | 'products' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 const AppContent = () => {
@@ -30,7 +30,7 @@ const AppContent = () => {
   });
   const [notificationCount] = useState(0);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [activeSection, setActiveSection] = useState<SectionType>('statutory');
+  const [activeSection, setActiveSection] = useState<SectionType>('products');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Apply theme to document
@@ -166,14 +166,6 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/statutory/*"
-              element={
-                <ProtectedRoute>
-                  <Statutory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/crm/*"
               element={
                 <ProtectedRoute>
@@ -197,12 +189,24 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/links/*"
+              element={
+                <ProtectedRoute>
+                  <Links />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Form embed route */}
             <Route path="/embed/form/:formId" element={<FormEmbedPage />} />
 
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Exclude shortlink and digital link routes from catch-all */}
+            <Route path="/s/*" element={null} />
+            <Route path="/r/*" element={null} />
+            <Route path="/d/*" element={null} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

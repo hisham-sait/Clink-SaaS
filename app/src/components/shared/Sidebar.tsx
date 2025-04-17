@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import StatutorySidebar from '../statutory/StatutorySidebar';
 import SettingsSidebar from '../settings/SettingsSidebar';
 import HelpSidebar from '../help/HelpSidebar';
 import CRMSidebar from '../crm/CRMSidebar';
 import ProductsSidebar from '../products/ProductsSidebar';
+import LinksSidebar from '../links/LinksSidebar';
 
-type SectionType = 'statutory' | 'crm' | 'products' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'settings' | 'help';
 
 interface ModuleConfig {
   icon: string;
@@ -21,11 +21,11 @@ interface SidebarProps {
 }
 
 const moduleConfigs: Record<SectionType, ModuleConfig> = {
-  statutory: { icon: 'bi-journal-bookmark', title: 'Statutory' },
   settings: { icon: 'bi-gear', title: 'Settings' },
   help: { icon: 'bi-question-circle', title: 'Help' },
   crm: { icon: 'bi-people', title: 'CRM' },
-  products: { icon: 'bi-box', title: 'Products' }
+  products: { icon: 'bi-box', title: 'Products' },
+  links: { icon: 'bi-link-45deg', title: 'Links' }
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -70,8 +70,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const renderSidebar = () => {
     switch (activeSection) {
-      case 'statutory':
-        return <StatutorySidebar isExpanded={isExpanded} />;
       case 'settings':
         return <SettingsSidebar isExpanded={isExpanded} />;
       case 'help':
@@ -80,6 +78,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         return <CRMSidebar isExpanded={isExpanded} />;
       case 'products':
         return <ProductsSidebar isExpanded={isExpanded} />;
+      case 'links':
+        return <LinksSidebar isExpanded={isExpanded} />;
       default:
         return <div className="p-4">Coming Soon</div>;
     }

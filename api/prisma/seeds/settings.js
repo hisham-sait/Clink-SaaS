@@ -14,17 +14,6 @@ async function createSettingsData() {
     await prisma.userPreference.deleteMany({});
     await prisma.securitySettings.deleteMany({});
     await prisma.activity.deleteMany({});
-    await prisma.actionItem.deleteMany({});
-    await prisma.discussion.deleteMany({});
-    await prisma.resolution.deleteMany({});
-    await prisma.director.deleteMany({});
-    await prisma.shareholder.deleteMany({});
-    await prisma.share.deleteMany({});
-    await prisma.beneficialOwner.deleteMany({});
-    await prisma.charge.deleteMany({});
-    await prisma.allotment.deleteMany({});
-    await prisma.meeting.deleteMany({});
-    await prisma.boardMinute.deleteMany({});
     await prisma.primaryContact.deleteMany({});
     await prisma.userCompany.deleteMany({});
     await prisma.company.deleteMany({});

@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Table, Row, Col, Form, InputGroup, Modal, Alert } from 'react-bootstrap';
 import { FaLayerGroup, FaPlus, FaSearch, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaSave } from 'react-icons/fa';
-import api from '../../../../services/api';
+import { SectionsService } from '../../../../services/products';
+
+// Import modal components
+import AddSectionModal from './AddSectionModal';
+import EditSectionModal from './EditSectionModal';
+import DeleteSectionModal from './DeleteSectionModal';
 
 const Sections: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -29,16 +34,8 @@ const Sections: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      const response = await api.get(`/products/sections/${user.companyId}`);
-      setSections(response.data);
+      const sections = await SectionsService.getSections();
+      setSections(sections || []);
     } catch (err: any) {
       console.error('Error fetching sections:', err);
       setError(err.message || 'Failed to fetch sections');
@@ -106,14 +103,6 @@ const Sections: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Generate a code from the name if it's empty
       let sectionCode = newSection.code;
       if (!sectionCode.trim()) {
@@ -131,11 +120,11 @@ const Sections: React.FC = () => {
         displayIn: newSection.displayIn
       };
       
-      // Save to API
-      const response = await api.post(`/products/sections/${user.companyId}`, sectionData);
+      // Use the service layer to create the section
+      const createdSection = await SectionsService.createSection(sectionData);
       
       // Add the new section to the state
-      setSections([...sections, response.data]);
+      setSections([...sections, createdSection]);
       
       // Close the modal
       setShowAddModal(false);
@@ -170,20 +159,16 @@ const Sections: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedSection?.id) {
+        throw new Error('No section selected');
       }
       
-      // Update via API
-      const response = await api.put(`/products/sections/${user.companyId}/${selectedSection.id}`, selectedSection);
+      // Use the service layer to update the section
+      const updatedSection = await SectionsService.updateSection(selectedSection.id, selectedSection);
       
       // Update the section in the state
       const updatedSections = sections.map(section => 
-        section.id === selectedSection.id ? response.data : section
+        section.id === selectedSection.id ? updatedSection : section
       );
       
       setSections(updatedSections);
@@ -204,16 +189,12 @@ const Sections: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedSection?.id) {
+        throw new Error('No section selected');
       }
       
-      // Delete via API
-      await api.delete(`/products/sections/${user.companyId}/${selectedSection.id}`);
+      // Use the service layer to delete the section
+      await SectionsService.deleteSection(selectedSection.id);
       
       // Remove the section from the state
       const filteredSections = sections.filter(section => section.id !== selectedSection.id);
@@ -235,12 +216,8 @@ const Sections: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!section?.id) {
+        throw new Error('Invalid section');
       }
       
       const sectionIndex = sections.findIndex(s => s.id === section.id);
@@ -264,11 +241,11 @@ const Sections: React.FC = () => {
         // Get the IDs in the new order
         const sectionIds = newSections.map(s => s.id);
         
-        // Update via API
-        const response = await api.put(`/products/sections/${user.companyId}/reorder`, { sectionIds });
+        // Use the service layer to reorder sections
+        const updatedSections = await SectionsService.reorderSections(sectionIds);
         
         // Update the state with the response
-        setSections(response.data);
+        setSections(updatedSections);
       }
     } catch (err: any) {
       console.error(`Error moving section ${direction}:`, err);
@@ -403,169 +380,33 @@ const Sections: React.FC = () => {
         </Card.Body>
       </Card>
       
-      {/* Add Section Modal */}
-      <Modal show={showAddModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Section</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="name"
-                value={newSection.name}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Code</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="code"
-                value={newSection.code}
-                onChange={handleInputChange}
-                placeholder="e.g. technical-specs, dimensions"
-              />
-              <Form.Text className="text-muted">
-                A unique identifier for the section. If left blank, it will be generated from the name.
-              </Form.Text>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={3}
-                name="description"
-                value={newSection.description}
-                onChange={handleInputChange}
-                placeholder="Describe the purpose of this section"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Display In</Form.Label>
-              <Form.Select
-                name="displayIn"
-                value={newSection.displayIn}
-                onChange={handleInputChange}
-              >
-                <option value="both">Both Panels</option>
-                <option value="left">Left Panel Only</option>
-                <option value="right">Right Panel Only</option>
-              </Form.Select>
-              <Form.Text className="text-muted">
-                Choose where this section should be displayed in the product view.
-              </Form.Text>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveSection}>
-            <FaSave className="me-2" />
-            Save Section
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Modals */}
+      <AddSectionModal
+        show={showAddModal}
+        onHide={handleCloseModal}
+        newSection={newSection}
+        handleInputChange={handleInputChange}
+        handleSaveSection={handleSaveSection}
+      />
       
-      {/* Edit Section Modal */}
-      <Modal show={showEditModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Section</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedSection && (
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Name</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="name"
-                  value={selectedSection.name}
-                  onChange={handleEditInputChange}
-                  required
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Code</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="code"
-                  value={selectedSection.code}
-                  onChange={handleEditInputChange}
-                  placeholder="e.g. technical-specs, dimensions"
-                />
-                <Form.Text className="text-muted">
-                  A unique identifier for the section. If left blank, it will be generated from the name.
-                </Form.Text>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control 
-                  as="textarea" 
-                  rows={3}
-                  name="description"
-                  value={selectedSection.description}
-                  onChange={handleEditInputChange}
-                  placeholder="Describe the purpose of this section"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Display In</Form.Label>
-                <Form.Select
-                  name="displayIn"
-                  value={selectedSection.displayIn || 'both'}
-                  onChange={handleEditInputChange}
-                >
-                  <option value="both">Both Panels</option>
-                  <option value="left">Left Panel Only</option>
-                  <option value="right">Right Panel Only</option>
-                </Form.Select>
-                <Form.Text className="text-muted">
-                  Choose where this section should be displayed in the product view.
-                </Form.Text>
-              </Form.Group>
-            </Form>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleUpdateSection}>
-            <FaSave className="me-2" />
-            Update Section
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <EditSectionModal
+        show={showEditModal}
+        onHide={handleCloseModal}
+        selectedSection={selectedSection}
+        handleInputChange={handleEditInputChange}
+        handleUpdateSection={handleUpdateSection}
+      />
       
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedSection && (
-            <p>
-              Are you sure you want to delete the section <strong>{selectedSection.name}</strong>?
-              This action cannot be undone.
-            </p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleConfirmDelete}>
-            <FaTrash className="me-2" />
-            Delete Section
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <DeleteSectionModal
+        show={showDeleteModal}
+        onHide={handleCloseModal}
+        selectedSection={selectedSection ? {
+          id: selectedSection.id,
+          name: selectedSection.name,
+          attributeCount: selectedSection._count?.attributes
+        } : null}
+        handleConfirmDelete={handleConfirmDelete}
+      />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { FaBox, FaTag, FaLayerGroup, FaFileImport, FaPlus, FaCog, FaUpload, FaList } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import api from '../../../../services/api';
+import { ProductsService, CategoriesService, AttributesService, FamiliesService, ActivityService } from '../../../../services/products';
 
 interface DashboardStats {
   totalProducts: number;
@@ -54,34 +54,25 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
 
       // Fetch products count
-      const productsResponse = await api.get(`/products/products/${user.companyId}`);
-      const totalProducts = productsResponse.data.pagination?.total || 0;
+      const productsResponse = await ProductsService.getProducts();
+      const totalProducts = productsResponse.pagination?.total || 0;
       
       // Fetch categories count
-      const categoriesResponse = await api.get(`/products/categories/${user.companyId}`);
-      const totalCategories = categoriesResponse.data.categories?.length || 0;
+      const categoriesResponse = await CategoriesService.getCategories();
+      const totalCategories = categoriesResponse.categories?.length || 0;
       
       // Fetch attributes count and usage
-      const attributesResponse = await api.get(`/products/attributes/${user.companyId}`);
-      const attributes = attributesResponse.data || [];
+      const attributes = await AttributesService.getAttributes();
       const totalAttributes = attributes.length;
       const totalAttributesInUse = attributes.filter((attr: Attribute) => 
         attr.usage && attr.usage.productCount > 0
       ).length;
       
       // Fetch families count
-      const familiesResponse = await api.get(`/products/families/${user.companyId}`);
-      const totalFamilies = familiesResponse.data?.length || 0;
+      const families = await FamiliesService.getFamilies();
+      const totalFamilies = families.length || 0;
       
       // Update stats
       setStats({
@@ -94,9 +85,9 @@ const Dashboard: React.FC = () => {
       
       // Try to fetch recent activity if available
       try {
-        const activityResponse = await api.get(`/products/activity/${user.companyId}`);
-        if (activityResponse.data && Array.isArray(activityResponse.data)) {
-          setRecentActivity(activityResponse.data.slice(0, 5)); // Get the 5 most recent activities
+        const activities = await ActivityService.getActivities();
+        if (activities && Array.isArray(activities)) {
+          setRecentActivity(activities.slice(0, 5)); // Get the 5 most recent activities
         }
       } catch (activityError) {
         console.log('Recent activity not available:', activityError);

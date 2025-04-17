@@ -39,18 +39,6 @@ async function seedAuth(inputPlans) {
     await prisma.client.deleteMany();
     await prisma.organisation.deleteMany();
 
-    // Delete statutory models
-    await prisma.actionItem.deleteMany();
-    await prisma.discussion.deleteMany();
-    await prisma.resolution.deleteMany();
-    await prisma.boardMinute.deleteMany();
-    await prisma.meeting.deleteMany();
-    await prisma.director.deleteMany();
-    await prisma.shareholder.deleteMany();
-    await prisma.share.deleteMany();
-    await prisma.beneficialOwner.deleteMany();
-    await prisma.charge.deleteMany();
-    await prisma.allotment.deleteMany();
     await prisma.activity.deleteMany();
 
     // Delete billing related models

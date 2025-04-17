@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Row, Col, Alert, ProgressBar, Table, Badge } from 'react-bootstrap';
 import { FaFileImport, FaFileExport, FaDownload, FaUpload, FaHistory, FaCheck, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { ImportExportService, CategoriesService } from '../../../../services/products';
 
 const ImportExport: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
@@ -11,8 +12,25 @@ const ImportExport: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [importResult, setImportResult] = useState<any | null>(null);
   
+  // State for categories
+  const [categories, setCategories] = useState<any[]>([]);
+  
   // Mock data for import history
   const importHistory: any[] = [];
+  
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await CategoriesService.getCategories();
+        setCategories(response.categories || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -20,49 +38,94 @@ const ImportExport: React.FC = () => {
     }
   };
   
-  const handleImportSubmit = (e: React.FormEvent) => {
+  const handleImportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!importFile) return;
     
-    // Simulate file upload
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          // Mock import result
-          setImportResult({
-            success: true,
-            processed: 120,
-            succeeded: 115,
-            failed: 5,
-            errors: [
-              { row: 5, error: 'Missing required field: name' },
-              { row: 23, error: 'Invalid category' },
-              { row: 45, error: 'Duplicate SKU' },
-              { row: 78, error: 'Invalid attribute value' },
-              { row: 102, error: 'Missing required field: sku' }
-            ]
-          });
-          return 100;
-        }
-        return prev + 10;
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 300);
+      
+      // Use the service layer to import products
+      const result = await ImportExportService.importProducts(importFile);
+      
+      // Complete the progress bar
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      // Set the import result
+      setImportResult(result);
+    } catch (error: any) {
+      console.error('Error importing products:', error);
+      setImportResult({
+        success: false,
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        errors: [{ row: 0, error: error.message || 'Unknown error occurred during import' }]
       });
-    }, 300);
+    } finally {
+      setIsUploading(false);
+    }
   };
   
-  const handleExportSubmit = (e: React.FormEvent) => {
+  const handleExportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would trigger an API call to export products
-    console.log('Exporting products:', { format: exportFormat, filter: exportFilter });
+    
+    try {
+      // Build query parameters
+      const params: any = {};
+      if (exportFilter) params.categoryId = exportFilter;
+      
+      // Use the service layer to export products
+      const exportBlob = await ImportExportService.exportProducts(params);
+      
+      // Create a URL for the blob
+      const url = URL.createObjectURL(exportBlob);
+      
+      // Create a link to download the export
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `products-export.${exportFormat}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting products:', error);
+      alert('Failed to export products. Please try again.');
+    }
   };
   
-  const handleDownloadTemplate = () => {
-    // In a real app, this would trigger an API call to download a template
-    console.log('Downloading import template');
+  const handleDownloadTemplate = async () => {
+    try {
+      // Use the service layer to download the template
+      const templateBlob = await ImportExportService.downloadTemplate();
+      
+      // Create a URL for the blob
+      const url = URL.createObjectURL(templateBlob);
+      
+      // Create a link to download the template
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'import-template.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      alert('Failed to download template. Please try again.');
+    }
   };
   
   return (
@@ -275,9 +338,11 @@ const ImportExport: React.FC = () => {
                       onChange={(e) => setExportFilter(e.target.value || null)}
                     >
                       <option value="">All Categories</option>
-                      <option value="category1">Category 1</option>
-                      <option value="category2">Category 2</option>
-                      <option value="category3">Category 3</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
                     </Form.Select>
                   </Form.Group>
                 </Col>

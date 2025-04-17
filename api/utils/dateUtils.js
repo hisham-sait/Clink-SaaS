@@ -230,12 +230,12 @@ function parseFromInput(dateStr) {
 }
 
 /**
- * Validates a date for statutory requirements
+ * Validates a date is within acceptable range
  * @param {Date|null} date - The date to validate
  * @param {Object} options - Optional configuration
- * @returns {boolean} Whether the date is valid for statutory purposes
+ * @returns {boolean} Whether the date is valid
  */
-function isValidStatutoryDate(date, options = {}) {
+function isDateWithinRange(date, options = {}) {
   if (!date || !isDateInRange(date)) return false;
 
   const {
@@ -257,20 +257,20 @@ function isValidStatutoryDate(date, options = {}) {
 }
 
 /**
- * Validates a date of birth for statutory requirements
+ * Validates a date of birth
  * @param {string} dateStr - The date string to validate
  * @returns {boolean} Whether the date is valid for a date of birth
  */
 function isValidDateOfBirth(dateStr) {
   const date = parseDate(dateStr);
-  return isValidStatutoryDate(date, {
+  return isDateWithinRange(date, {
     allowFuture: false,
     maxYearsInPast: 120
   });
 }
 
 /**
- * Validates an appointment date for statutory requirements
+ * Validates an appointment date
  * @param {string} appointmentDate - The appointment date string
  * @param {string} [dateOfBirth] - The date of birth string for comparison
  * @returns {boolean} Whether the appointment date is valid
@@ -279,8 +279,8 @@ function isValidAppointmentDate(appointmentDate, dateOfBirth) {
   const appDate = parseDate(appointmentDate);
   if (!appDate) return false;
 
-  // Basic statutory date validation
-  if (!isValidStatutoryDate(appDate, { allowFuture: false })) return false;
+  // Basic date validation
+  if (!isDateWithinRange(appDate, { allowFuture: false })) return false;
 
   // If DOB provided, ensure appointment date is after person turned 18
   if (dateOfBirth) {
@@ -295,7 +295,7 @@ function isValidAppointmentDate(appointmentDate, dateOfBirth) {
 }
 
 /**
- * Validates a resignation date for statutory requirements
+ * Validates a resignation date
  * @param {string} resignationDate - The resignation date string
  * @param {string} appointmentDate - The appointment date string for comparison
  * @returns {boolean} Whether the resignation date is valid
@@ -306,8 +306,8 @@ function isValidResignationDate(resignationDate, appointmentDate) {
 
   if (!resDate || !appDate) return false;
 
-  // Basic statutory date validation
-  if (!isValidStatutoryDate(resDate, { allowFuture: false })) return false;
+  // Basic date validation
+  if (!isDateWithinRange(resDate, { allowFuture: false })) return false;
 
   // Ensure resignation date is after appointment date
   if (isBefore(resDate, appDate) || isEqual(resDate, appDate)) return false;
@@ -316,12 +316,12 @@ function isValidResignationDate(resignationDate, appointmentDate) {
 }
 
 /**
- * Formats a date for statutory display
+ * Formats a date for display
  * @param {Date|string|null} date - The date to format
  * @param {string} [outputFormat='DD/MM/YYYY'] - The desired format
  * @returns {string} The formatted date string
  */
-function formatStatutoryDate(date, outputFormat = 'DD/MM/YYYY') {
+function formatDisplayDate(date, outputFormat = 'DD/MM/YYYY') {
   if (!date) return '';
 
   const parsedDate = typeof date === 'string' ? parseDate(date) : date;
@@ -331,11 +331,11 @@ function formatStatutoryDate(date, outputFormat = 'DD/MM/YYYY') {
 }
 
 /**
- * Formats a date for statutory documents
+ * Formats a date for formal documents
  * @param {Date|string|null} date - The date to format
  * @returns {string} The formatted date string (e.g., "1st January 2025")
  */
-function formatStatutoryDocument(date) {
+function formatFormalDocument(date) {
   if (!date) return '';
 
   const parsedDate = typeof date === 'string' ? parseDate(date) : date;
@@ -357,11 +357,11 @@ module.exports = {
   formatForInput,
   parseFromInput,
   
-  // Statutory date utilities
-  isValidStatutoryDate,
+  // Date validation utilities
+  isDateWithinRange,
   isValidDateOfBirth,
   isValidAppointmentDate,
   isValidResignationDate,
-  formatStatutoryDate,
-  formatStatutoryDocument
+  formatDisplayDate,
+  formatFormalDocument
 };

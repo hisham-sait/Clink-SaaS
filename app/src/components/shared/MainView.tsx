@@ -3,7 +3,7 @@ import { Table, Button, Badge, Row, Col, Card, Dropdown } from 'react-bootstrap'
 import { FaClock, FaFileExport, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
-import { Activity } from '../../services/statutory/types';
+import { Activity } from '../../services/types';
 import { formatDDMMYYYY } from '../../utils';
 
 // All styles moved from MainView.css into this component
@@ -157,21 +157,10 @@ const MainView: React.FC<MainViewProps> = ({
     try {
       setActivitiesLoading(true);
       
-      // Determine if this is a statutory or CRM entity
-      const isCrmEntity = ['contact', 'client', 'organisation', 'service', 'proposal'].includes(entityType);
-      
-      if (isCrmEntity) {
-        // Use CRM activities endpoint
-        const activities = await api.get(`/crm/activities/${user?.companyId}?entityType=${entityType}&limit=5`);
-        if (activities.data) {
-          setRecentActivities(activities.data);
-        }
-      } else {
-        // Use statutory activities endpoint
-        const response = await api.get(`/statutory/activities/${user?.companyId}?entityType=${entityType}&limit=5`);
-        if (response.data?.activities) {
-          setRecentActivities(response.data.activities);
-        }
+      // Use CRM activities endpoint
+      const activities = await api.get(`/crm/activities/${user?.companyId}?entityType=${entityType}&limit=5`);
+      if (activities.data) {
+        setRecentActivities(activities.data);
       }
     } catch (err) {
       console.error('Error fetching recent activities:', err);
@@ -182,15 +171,7 @@ const MainView: React.FC<MainViewProps> = ({
 
   const defaultHandleExport = async (type: 'pdf' | 'excel') => {
     try {
-      // Determine if this is a statutory or CRM entity
-      const isCrmEntity = ['contact', 'client', 'organisation', 'service', 'proposal'].includes(entityType);
-      
-      let endpoint;
-      if (isCrmEntity) {
-        endpoint = `/crm/${entityType}s/${user?.companyId}/export/${type}`;
-      } else {
-        endpoint = `/statutory/${entityType}s/${user?.companyId}/export/${type}`;
-      }
+      let endpoint = `/crm/${entityType}s/${user?.companyId}/export/${type}`;
       
       const response = await api.get(endpoint, {
         responseType: 'blob'

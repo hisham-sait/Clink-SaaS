@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-type SectionType = 'statutory' | 'crm' | 'products' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 interface Section {
@@ -42,9 +42,9 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
   const { user, logout } = useAuth();
 
   const topSections: Section[] = [
-    { id: 'statutory', title: 'Statutory', icon: 'bi bi-journal-bookmark', route: '/statutory/dashboard' },
     { id: 'crm', title: 'CRM', icon: 'bi bi-people', route: '/crm/contacts' },
-    { id: 'products', title: 'Products', icon: 'bi bi-box', route: '/products/dashboard' }
+    { id: 'products', title: 'Products', icon: 'bi bi-box', route: '/products/dashboard' },
+    { id: 'links', title: 'Links', icon: 'bi bi-link-45deg', route: '/links/dashboard' }
   ];
 
   const bottomSections: Section[] = [
@@ -85,9 +85,6 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
     onSectionChange(section);
     
     switch(section) {
-      case 'statutory':
-        navigate(`/${section}/dashboard`);
-        break;
       case 'settings':
       case 'help':
         navigate(`/${section}`);
@@ -97,6 +94,9 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
         break;
       case 'products':
         navigate('/products/catalog');
+        break;
+      case 'links':
+        navigate('/links/dashboard');
         break;
     }
   };

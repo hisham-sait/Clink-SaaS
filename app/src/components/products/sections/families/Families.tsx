@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Table, Row, Col, Form, InputGroup, Badge, Modal, Alert } from 'react-bootstrap';
+import { Card, Button, Table, Row, Col, Form, InputGroup, Badge, Alert, Modal } from 'react-bootstrap';
 import { FaLayerGroup, FaPlus, FaSearch, FaEdit, FaTrash, FaEye, FaSave } from 'react-icons/fa';
-import api from '../../../../services/api';
+import { FamiliesService, AttributesService } from '../../../../services/products';
+
+// Import modal components
+import AddFamilyModal from './AddFamilyModal';
+import EditFamilyModal from './EditFamilyModal';
+import DeleteFamilyModal from './DeleteFamilyModal';
+import ViewFamilyModal from './ViewFamilyModal';
 
 const Families: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -25,22 +31,14 @@ const Families: React.FC = () => {
     fetchFamilies();
   }, []);
   
-  // Function to fetch families from the API
+  // Function to fetch families using the service layer
   const fetchFamilies = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      const response = await api.get(`/products/families/${user.companyId}`);
-      setFamilies(response.data || []);
+      const families = await FamiliesService.getFamilies();
+      setFamilies(families || []);
     } catch (err: any) {
       console.error('Error fetching families:', err);
       setError(err.message || 'Failed to fetch families');
@@ -81,14 +79,6 @@ const Families: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Create a copy of the family data to modify
       const familyData = { ...newFamily };
       
@@ -104,8 +94,8 @@ const Families: React.FC = () => {
       // Log the family being saved (for debugging)
       console.log('Saving family:', familyData);
       
-      // Make the API call to save the family
-      await api.post(`/products/families/${user.companyId}`, familyData);
+      // Use the service layer to create the family
+      await FamiliesService.createFamily(familyData);
       
       // Refresh the families list
       await fetchFamilies();
@@ -146,12 +136,8 @@ const Families: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedFamily?.id) {
+        throw new Error('No family selected');
       }
       
       // Create a copy of the family data to modify
@@ -169,8 +155,8 @@ const Families: React.FC = () => {
       // Log the family being updated (for debugging)
       console.log('Updating family:', familyData);
       
-      // Make the API call to update the family
-      await api.put(`/products/families/${user.companyId}/${familyData.id}`, familyData);
+      // Use the service layer to update the family
+      await FamiliesService.updateFamily(familyData.id, familyData);
       
       // Refresh the families list
       await fetchFamilies();
@@ -190,16 +176,12 @@ const Families: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedFamily?.id) {
+        throw new Error('No family selected');
       }
       
-      // Make the API call to delete the family
-      await api.delete(`/products/families/${user.companyId}/${selectedFamily.id}`);
+      // Use the service layer to delete the family
+      await FamiliesService.deleteFamily(selectedFamily.id);
       
       // Refresh the families list
       await fetchFamilies();
@@ -350,211 +332,46 @@ const Families: React.FC = () => {
         </Card.Body>
       </Card>
 
-      {/* Add Family Modal */}
-      <Modal show={showAddModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Family</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="name"
-                value={newFamily.name}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Code</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="code"
-                value={newFamily.code}
-                onChange={handleInputChange}
-                placeholder="e.g. electronics, clothing"
-              />
-              <Form.Text className="text-muted">
-                A unique identifier for the family. If left blank, it will be generated from the name.
-              </Form.Text>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={3}
-                name="description"
-                value={newFamily.description}
-                onChange={handleInputChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Attributes</Form.Label>
-              <p className="text-muted small">You can add attributes to this family after creation.</p>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveFamily}>
-            <FaSave className="me-2" />
-            Save Family
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Modals */}
+      <AddFamilyModal
+        show={showAddModal}
+        onHide={handleCloseModal}
+        newFamily={newFamily}
+        handleInputChange={handleInputChange}
+        handleSaveFamily={handleSaveFamily}
+      />
       
-      {/* Edit Family Modal */}
-      <Modal show={showEditModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Family</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedFamily && (
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Name</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="name"
-                  value={selectedFamily.name}
-                  onChange={handleEditInputChange}
-                  required
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Code</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="code"
-                  value={selectedFamily.code}
-                  onChange={handleEditInputChange}
-                  placeholder="e.g. electronics, clothing"
-                />
-                <Form.Text className="text-muted">
-                  A unique identifier for the family. If left blank, it will be generated from the name.
-                </Form.Text>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control 
-                  as="textarea" 
-                  rows={3}
-                  name="description"
-                  value={selectedFamily.description || ''}
-                  onChange={handleEditInputChange}
-                />
-              </Form.Group>
-            </Form>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleUpdateFamily}>
-            <FaSave className="me-2" />
-            Update Family
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <EditFamilyModal
+        show={showEditModal}
+        onHide={handleCloseModal}
+        selectedFamily={selectedFamily}
+        handleInputChange={handleEditInputChange}
+        handleUpdateFamily={handleUpdateFamily}
+      />
       
-      {/* View Family Modal */}
-      <Modal show={showViewModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Family Details</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedFamily && (
-            <>
-              <Row>
-                <Col md={6}>
-                  <p><strong>Name:</strong> {selectedFamily.name}</p>
-                  <p><strong>Code:</strong> {selectedFamily.code}</p>
-                  <p><strong>Created:</strong> {new Date(selectedFamily.createdAt).toLocaleDateString()}</p>
-                  <p><strong>Updated:</strong> {new Date(selectedFamily.updatedAt).toLocaleDateString()}</p>
-                </Col>
-                <Col md={6}>
-                  <p><strong>Attributes:</strong> {selectedFamily._count?.requiredAttributes || 0}</p>
-                  <p><strong>Products:</strong> {selectedFamily._count?.products || 0}</p>
-                  <p><strong>Description:</strong> {selectedFamily.description || 'No description provided'}</p>
-                </Col>
-              </Row>
-
-              <h6 className="mt-4">Required Attributes</h6>
-              {selectedFamily.requiredAttributes && selectedFamily.requiredAttributes.length > 0 ? (
-                <Table responsive>
-                  <thead>
-                    <tr>
-                      <th>Attribute</th>
-                      <th>Type</th>
-                      <th>Required</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedFamily.requiredAttributes.map((attr: any) => (
-                      <tr key={attr.id}>
-                        <td>{attr.attribute.name}</td>
-                        <td>{attr.attribute.type}</td>
-                        <td>{attr.isRequired ? 'Yes' : 'No'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              ) : (
-                <p className="text-muted">No attributes assigned to this family yet.</p>
-              )}
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Close
-          </Button>
-          <Button variant="primary" onClick={() => {
-            handleCloseModal();
-            if (selectedFamily) {
-              handleEditFamily(selectedFamily);
-            }
-          }}>
-            <FaEdit className="me-2" />
-            Edit Family
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <ViewFamilyModal
+        show={showViewModal}
+        onHide={handleCloseModal}
+        selectedFamily={selectedFamily}
+        onEdit={() => {
+          handleCloseModal();
+          if (selectedFamily) {
+            handleEditFamily(selectedFamily);
+          }
+        }}
+      />
       
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedFamily && (
-            <p>
-              Are you sure you want to delete the family <strong>{selectedFamily.name}</strong>?
-              This action cannot be undone.
-              {selectedFamily._count?.products > 0 && (
-                <Alert variant="warning" className="mt-3">
-                  <strong>Warning:</strong> This family has {selectedFamily._count.products} products associated with it.
-                  Deleting this family may affect these products.
-                </Alert>
-              )}
-            </p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleConfirmDelete}>
-            <FaTrash className="me-2" />
-            Delete Family
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <DeleteFamilyModal
+        show={showDeleteModal}
+        onHide={handleCloseModal}
+        selectedFamily={selectedFamily ? {
+          id: selectedFamily.id,
+          name: selectedFamily.name,
+          attributeCount: selectedFamily._count?.requiredAttributes,
+          productCount: selectedFamily._count?.products
+        } : null}
+        handleConfirmDelete={handleConfirmDelete}
+      />
     </div>
   );
 };

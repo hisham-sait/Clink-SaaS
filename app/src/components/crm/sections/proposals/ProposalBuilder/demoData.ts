@@ -231,7 +231,7 @@ export const demoProposal = {
       content: `
         <h2>Introduction</h2>
         <p>Thank you for the opportunity to present this website development proposal for [Client Name]. We are excited about the possibility of working with you to create a modern, effective website that will help you achieve your business goals.</p>
-        <p>At Bradán Accountants, we specialize in developing custom websites that are not only visually appealing but also functional, user-friendly, and optimized for performance.</p>
+        <p>At SeeGap, we specialize in developing custom websites that are not only visually appealing but also functional, user-friendly, and optimized for performance.</p>
       `,
       isAIGenerated: false,
       order: 1

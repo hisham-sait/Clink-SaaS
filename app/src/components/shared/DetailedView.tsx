@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Badge, Button, ButtonGroup, Nav } from 'react-bootstrap';
 import { FaArrowLeft, FaEdit, FaClock, FaFile } from 'react-icons/fa';
-import { Activity } from '../../services/statutory/types';
+import { Activity } from '../../services/types';
 import { formatDDMMYYYY } from '../../utils';
 
 // All styles moved from DetailedView.css into this component

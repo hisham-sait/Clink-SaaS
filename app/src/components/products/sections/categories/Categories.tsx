@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Table, Row, Col, Form, InputGroup, Modal, Alert } from 'react-bootstrap';
+import { Card, Button, Table, Row, Col, Form, InputGroup, Alert, Modal } from 'react-bootstrap';
 import { FaFolder, FaFolderPlus, FaSearch, FaEdit, FaTrash, FaArrowUp, FaArrowDown, FaSave } from 'react-icons/fa';
-import api from '../../../../services/api';
+import { CategoriesService } from '../../../../services/products';
+
+// Import modal components
+import AddCategoryModal from './AddCategoryModal';
+import EditCategoryModal from './EditCategoryModal';
+import DeleteCategoryModal from './DeleteCategoryModal';
 
 const Categories: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -24,22 +29,14 @@ const Categories: React.FC = () => {
     fetchCategories();
   }, []);
   
-  // Function to fetch categories from the API
+  // Function to fetch categories using the service layer
   const fetchCategories = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      const response = await api.get(`/products/categories/${user.companyId}`);
-      setCategories(response.data.categories || []);
+      const response = await CategoriesService.getCategories();
+      setCategories(response.categories || []);
     } catch (err: any) {
       console.error('Error fetching categories:', err);
       setError(err.message || 'Failed to fetch categories');
@@ -79,14 +76,6 @@ const Categories: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Create a copy of the category data to modify
       const categoryData = { ...newCategory };
       
@@ -109,8 +98,8 @@ const Categories: React.FC = () => {
       // Log the category being saved (for debugging)
       console.log('Saving category:', apiData);
       
-      // Make the API call to save the category
-      await api.post(`/products/categories/${user.companyId}`, apiData);
+      // Use the service layer to create the category
+      await CategoriesService.createCategory(apiData);
       
       // Refresh the categories list
       await fetchCategories();
@@ -147,14 +136,6 @@ const Categories: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Create a copy of the category data to modify
       const categoryData = { ...selectedCategory };
       
@@ -177,8 +158,8 @@ const Categories: React.FC = () => {
       // Log the category being updated (for debugging)
       console.log('Updating category:', apiData);
       
-      // Make the API call to update the category
-      await api.put(`/products/categories/${user.companyId}/${categoryData.id}`, apiData);
+      // Use the service layer to update the category
+      await CategoriesService.updateCategory(categoryData.id, apiData);
       
       // Refresh the categories list
       await fetchCategories();
@@ -198,16 +179,12 @@ const Categories: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedCategory?.id) {
+        throw new Error('No category selected');
       }
       
-      // Make the API call to delete the category
-      await api.delete(`/products/categories/${user.companyId}/${selectedCategory.id}`);
+      // Use the service layer to delete the category
+      await CategoriesService.deleteCategory(selectedCategory.id);
       
       // Refresh the categories list
       await fetchCategories();
@@ -227,16 +204,12 @@ const Categories: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!category?.id) {
+        throw new Error('Invalid category');
       }
       
-      // Make the API call to move the category
-      await api.put(`/products/categories/${user.companyId}/${category.id}/move`, { direction });
+      // Use the service layer to move the category
+      await CategoriesService.moveCategory(category.id, direction);
       
       // Refresh the categories list
       await fetchCategories();
@@ -376,186 +349,36 @@ const Categories: React.FC = () => {
         </Card.Body>
       </Card>
       
-      {/* Add Category Modal */}
-      <Modal show={showAddModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Category</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="name"
-                value={newCategory.name}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Code</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="code"
-                value={newCategory.code}
-                onChange={handleInputChange}
-                placeholder="e.g. electronics, clothing"
-              />
-              <Form.Text className="text-muted">
-                A unique identifier for the category. If left blank, it will be generated from the name.
-              </Form.Text>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Parent Category</Form.Label>
-              <Form.Select 
-                name="parentId"
-                value={newCategory.parentId}
-                onChange={handleInputChange}
-              >
-                <option value="">None (Top Level)</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Level</Form.Label>
-              <Form.Control 
-                type="number" 
-                name="level"
-                value={newCategory.level}
-                onChange={handleInputChange}
-                min={1}
-                max={10}
-              />
-              <Form.Text className="text-muted">
-                The level in the category hierarchy. Top-level categories are level 1.
-              </Form.Text>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveCategory}>
-            <FaSave className="me-2" />
-            Save Category
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Modals */}
+      <AddCategoryModal
+        show={showAddModal}
+        onHide={handleCloseModal}
+        newCategory={newCategory}
+        categories={categories}
+        handleInputChange={handleInputChange}
+        handleSaveCategory={handleSaveCategory}
+      />
       
-      {/* Edit Category Modal */}
-      <Modal show={showEditModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Category</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedCategory && (
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Name</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="name"
-                  value={selectedCategory.name}
-                  onChange={handleEditInputChange}
-                  required
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Code</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="code"
-                  value={selectedCategory.code}
-                  onChange={handleEditInputChange}
-                  placeholder="e.g. electronics, clothing"
-                />
-                <Form.Text className="text-muted">
-                  A unique identifier for the category. If left blank, it will be generated from the name.
-                </Form.Text>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Parent Category</Form.Label>
-                <Form.Select 
-                  name="parentId"
-                  value={selectedCategory.parentId || ''}
-                  onChange={handleEditInputChange}
-                >
-                  <option value="">None (Top Level)</option>
-                  {categories
-                    .filter(cat => cat.id !== selectedCategory.id) // Can't be its own parent
-                    .map((category) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))
-                  }
-                </Form.Select>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Level</Form.Label>
-                <Form.Control 
-                  type="number" 
-                  name="level"
-                  value={selectedCategory.level}
-                  onChange={handleEditInputChange}
-                  min={1}
-                  max={10}
-                />
-                <Form.Text className="text-muted">
-                  The level in the category hierarchy. Top-level categories are level 1.
-                </Form.Text>
-              </Form.Group>
-            </Form>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleUpdateCategory}>
-            <FaSave className="me-2" />
-            Update Category
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <EditCategoryModal
+        show={showEditModal}
+        onHide={handleCloseModal}
+        selectedCategory={selectedCategory}
+        categories={categories}
+        handleInputChange={handleEditInputChange}
+        handleUpdateCategory={handleUpdateCategory}
+      />
       
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedCategory && (
-            <p>
-              Are you sure you want to delete the category <strong>{selectedCategory.name}</strong>?
-              This action cannot be undone.
-              {selectedCategory.productsCount > 0 && (
-                <Alert variant="warning" className="mt-3">
-                  <strong>Warning:</strong> This category has {selectedCategory.productsCount} products associated with it.
-                  Deleting this category may affect these products.
-                </Alert>
-              )}
-              {categories.some(cat => cat.parentId === selectedCategory.id) && (
-                <Alert variant="warning" className="mt-3">
-                  <strong>Warning:</strong> This category has subcategories.
-                  Deleting this category may affect these subcategories.
-                </Alert>
-              )}
-            </p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleConfirmDelete}>
-            <FaTrash className="me-2" />
-            Delete Category
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <DeleteCategoryModal
+        show={showDeleteModal}
+        onHide={handleCloseModal}
+        selectedCategory={selectedCategory ? {
+          id: selectedCategory.id,
+          name: selectedCategory.name,
+          productCount: selectedCategory.productsCount,
+          childrenCount: categories.filter(cat => cat.parentId === selectedCategory.id).length
+        } : null}
+        handleConfirmDelete={handleConfirmDelete}
+      />
     </div>
   );
 };

@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Table, Badge, Row, Col, Form, InputGroup, Dropdown, Modal, Alert, ProgressBar } from 'react-bootstrap';
 import { FaBox, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaSave, FaEdit, FaTrash, FaEye, FaDownload } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../../services/api';
+import { ProductsService, CategoriesService, FamiliesService, ImportExportService } from '../../../../services/products';
+
+// Import modal components
+import AddProductModal from './AddProductModal';
+import EditProductModal from './EditProductModal';
+import DeleteProductModal from './DeleteProductModal';
+import BulkEditModal from './BulkEditModal';
+import BulkDeleteModal from './BulkDeleteModal';
+import ImportProductsModal from './ImportProductsModal';
 
 const Catalog: React.FC = () => {
   const navigate = useNavigate();
@@ -53,29 +61,21 @@ const Catalog: React.FC = () => {
     fetchFamilies();
   }, []);
   
-  // Function to fetch products from the API
+  // Function to fetch products using the service layer
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Build query parameters
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (selectedCategory) params.append('categoryId', selectedCategory);
-      if (selectedFamily) params.append('familyId', selectedFamily);
-      if (selectedStatus) params.append('status', selectedStatus);
+      const params: any = {};
+      if (searchTerm) params.search = searchTerm;
+      if (selectedCategory) params.categoryId = selectedCategory;
+      if (selectedFamily) params.familyId = selectedFamily;
+      if (selectedStatus) params.status = selectedStatus;
       
-      const response = await api.get(`/products/products/${user.companyId}?${params.toString()}`);
-      setProducts(response.data.products || []);
+      const response = await ProductsService.getProducts(params);
+      setProducts(response.products || []);
     } catch (err: any) {
       console.error('Error fetching products:', err);
       setError(err.message || 'Failed to fetch products');
@@ -84,38 +84,22 @@ const Catalog: React.FC = () => {
     }
   };
   
-  // Function to fetch categories from the API
+  // Function to fetch categories using the service layer
   const fetchCategories = async () => {
     try {
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      const response = await api.get(`/products/categories/${user.companyId}`);
-      setCategories(response.data.categories || []);
+      const response = await CategoriesService.getCategories();
+      setCategories(response.categories || []);
     } catch (err: any) {
       console.error('Error fetching categories:', err);
       // Don't set error state here to avoid blocking the UI
     }
   };
   
-  // Function to fetch families from the API
+  // Function to fetch families using the service layer
   const fetchFamilies = async () => {
     try {
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      const response = await api.get(`/products/families/${user.companyId}`);
-      setFamilies(response.data || []);
+      const families = await FamiliesService.getFamilies();
+      setFamilies(families || []);
     } catch (err: any) {
       console.error('Error fetching families:', err);
       // Don't set error state here to avoid blocking the UI
@@ -206,20 +190,12 @@ const Catalog: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       if (!selectedProduct) {
         throw new Error('No product selected');
       }
       
-      // Make the API call to update the product
-      await api.put(`/products/products/${user.companyId}/${selectedProduct.id}`, editedProduct);
+      // Use the service layer to update the product
+      await ProductsService.updateProduct(selectedProduct.id, editedProduct);
       
       // Refresh the products list
       await fetchProducts();
@@ -238,16 +214,8 @@ const Catalog: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      // Make the API call to save the product
-      await api.post(`/products/products/${user.companyId}`, newProduct);
+      // Use the service layer to create the product
+      await ProductsService.createProduct(newProduct);
       
       // Refresh the products list
       await fetchProducts();
@@ -293,30 +261,14 @@ const Catalog: React.FC = () => {
       setImportLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', importFile);
-      
-      // Make the API call to import products
-      const response = await api.post(`/products/import-export/${user.companyId}/import`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // Use the service layer to import products
+      const response = await ImportExportService.importProducts(importFile);
       
       // Set import result
-      setImportResult(response.data);
+      setImportResult(response);
       
       // Refresh the products list if import was successful
-      if (response.data.success) {
+      if (response.success) {
         await fetchProducts();
       }
     } catch (err: any) {
@@ -329,21 +281,22 @@ const Catalog: React.FC = () => {
   
   const handleDownloadTemplate = async () => {
     try {
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
+      // Use the service layer to download the template
+      const templateBlob = await ImportExportService.downloadTemplate();
       
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
+      // Create a URL for the blob
+      const url = URL.createObjectURL(templateBlob);
       
       // Create a link to download the template
       const link = document.createElement('a');
-      link.href = `/api/products/import-export/${user.companyId}/import-template`;
+      link.href = url;
       link.download = 'import-template.csv';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Clean up the URL
+      URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error('Error downloading template:', err);
       setError(err.message || 'Failed to download template');
@@ -352,26 +305,27 @@ const Catalog: React.FC = () => {
   
   const handleExportProducts = async () => {
     try {
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Build query parameters
-      const params = new URLSearchParams();
-      if (selectedCategory) params.append('categoryId', selectedCategory);
-      if (selectedFamily) params.append('familyId', selectedFamily);
+      const params: any = {};
+      if (selectedCategory) params.categoryId = selectedCategory;
+      if (selectedFamily) params.familyId = selectedFamily;
+      
+      // Use the service layer to export products
+      const exportBlob = await ImportExportService.exportProducts(params);
+      
+      // Create a URL for the blob
+      const url = URL.createObjectURL(exportBlob);
       
       // Create a link to download the export
       const link = document.createElement('a');
-      link.href = `/api/products/import-export/${user.companyId}/export?${params.toString()}`;
+      link.href = url;
       link.download = 'products-export.csv';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Clean up the URL
+      URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error('Error exporting products:', err);
       setError(err.message || 'Failed to export products');
@@ -681,546 +635,133 @@ const Catalog: React.FC = () => {
         </Card.Body>
       </Card>
 
-      {/* Add Product Modal */}
-      <Modal show={showAddModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Name</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    name="name"
-                    value={newProduct.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>SKU</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    name="sku"
-                    value={newProduct.sku}
-                    onChange={handleInputChange}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={3}
-                name="description"
-                value={newProduct.description}
-                onChange={handleInputChange}
-              />
-            </Form.Group>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Type</Form.Label>
-                  <Form.Select 
-                    name="type"
-                    value={newProduct.type}
-                    onChange={handleInputChange}
-                  >
-                    <option value="PHYSICAL">Physical</option>
-                    <option value="DIGITAL">Digital</option>
-                    <option value="SERVICE">Service</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
-                  <Form.Select 
-                    name="status"
-                    value={newProduct.status}
-                    onChange={handleInputChange}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Draft">Draft</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Category</Form.Label>
-                  <Form.Select 
-                    name="categoryId"
-                    value={newProduct.categoryId}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((category: any) => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Family</Form.Label>
-                  <Form.Select 
-                    name="familyId"
-                    value={newProduct.familyId}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Family</option>
-                    {families.map((family: any) => (
-                      <option key={family.id} value={family.id}>{family.name}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveProduct}>
-            <FaSave className="me-2" />
-            Save Product
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Edit Product Modal */}
-      <Modal show={showEditModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedProduct && (
-            <Form>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Name</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="name"
-                      value={editedProduct.name}
-                      onChange={handleEditInputChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>SKU</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="sku"
-                      value={editedProduct.sku}
-                      onChange={handleEditInputChange}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control 
-                  as="textarea" 
-                  rows={3}
-                  name="description"
-                  value={editedProduct.description}
-                  onChange={handleEditInputChange}
-                />
-              </Form.Group>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select 
-                      name="type"
-                      value={editedProduct.type}
-                      onChange={handleEditInputChange}
-                    >
-                      <option value="PHYSICAL">Physical</option>
-                      <option value="DIGITAL">Digital</option>
-                      <option value="SERVICE">Service</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Status</Form.Label>
-                    <Form.Select 
-                      name="status"
-                      value={editedProduct.status}
-                      onChange={handleEditInputChange}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                      <option value="Draft">Draft</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Category</Form.Label>
-                    <Form.Select 
-                      name="categoryId"
-                      value={editedProduct.categoryId}
-                      onChange={handleEditInputChange}
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((category: any) => (
-                        <option key={category.id} value={category.id}>{category.name}</option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Family</Form.Label>
-                    <Form.Select 
-                      name="familyId"
-                      value={editedProduct.familyId}
-                      onChange={handleEditInputChange}
-                    >
-                      <option value="">Select Family</option>
-                      {families.map((family: any) => (
-                        <option key={family.id} value={family.id}>{family.name}</option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Form>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleUpdateProduct}>
-            <FaSave className="me-2" />
-            Update Product
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Delete Product Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedProduct && (
-            <p>
-              Are you sure you want to delete the product <strong>{selectedProduct.name}</strong>?
-              This action cannot be undone.
-            </p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={async () => {
-              try {
-                setLoading(true);
-                
-                // Get the user from localStorage to get the companyId
-                const storedUser = localStorage.getItem('user');
-                const user = storedUser ? JSON.parse(storedUser) : null;
-                
-                if (!user?.companyId || !selectedProduct) {
-                  throw new Error('Missing required data');
-                }
-                
-                // Make the API call to delete the product
-                await api.delete(`/products/products/${user.companyId}/${selectedProduct.id}`);
-                
-                // Refresh the products list
-                await fetchProducts();
-                
-                // Close the modal
-                setShowDeleteModal(false);
-              } catch (err: any) {
-                console.error('Error deleting product:', err);
-                setError(err.message || 'Failed to delete product');
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <FaTrash className="me-2" />
-            Delete Product
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Bulk Edit Modal */}
-      <Modal show={showBulkEditModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Bulk Edit Products</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>You are editing {selectedProducts.length} products.</p>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Select 
-                name="status"
-                value={editedProduct.status}
-                onChange={handleEditInputChange}
-              >
-                <option value="">No Change</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Draft">Draft</option>
-              </Form.Select>
-              <Form.Text className="text-muted">
-                Leave as "No Change" to keep the current status for each product.
-              </Form.Text>
-            </Form.Group>
+      {/* Modals */}
+      <AddProductModal
+        show={showAddModal}
+        onHide={handleCloseModal}
+        newProduct={newProduct}
+        categories={categories}
+        families={families}
+        handleInputChange={handleInputChange}
+        handleSaveProduct={handleSaveProduct}
+      />
+      
+      <EditProductModal
+        show={showEditModal}
+        onHide={handleCloseModal}
+        selectedProduct={selectedProduct}
+        editedProduct={editedProduct}
+        categories={categories}
+        families={families}
+        handleInputChange={handleEditInputChange}
+        handleUpdateProduct={handleUpdateProduct}
+      />
+      
+      <DeleteProductModal
+        show={showDeleteModal}
+        onHide={handleCloseModal}
+        selectedProduct={selectedProduct}
+        handleConfirmDelete={async () => {
+          try {
+            setLoading(true);
             
-            <Form.Group className="mb-3">
-              <Form.Label>Category</Form.Label>
-              <Form.Select 
-                name="categoryId"
-                value={editedProduct.categoryId}
-                onChange={handleEditInputChange}
-              >
-                <option value="">No Change</option>
-                {categories.map((category: any) => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </Form.Select>
-              <Form.Text className="text-muted">
-                Leave as "No Change" to keep the current category for each product.
-              </Form.Text>
-            </Form.Group>
+            if (!selectedProduct) {
+              throw new Error('No product selected');
+            }
             
-            <Form.Group className="mb-3">
-              <Form.Label>Family</Form.Label>
-              <Form.Select 
-                name="familyId"
-                value={editedProduct.familyId}
-                onChange={handleEditInputChange}
-              >
-                <option value="">No Change</option>
-                {families.map((family: any) => (
-                  <option key={family.id} value={family.id}>{family.name}</option>
-                ))}
-              </Form.Select>
-              <Form.Text className="text-muted">
-                Leave as "No Change" to keep the current family for each product.
-              </Form.Text>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={async () => {
-              try {
-                setLoading(true);
-                
-                // Get the user from localStorage to get the companyId
-                const storedUser = localStorage.getItem('user');
-                const user = storedUser ? JSON.parse(storedUser) : null;
-                
-                if (!user?.companyId) {
-                  throw new Error('Company ID not found');
-                }
-                
-                // Create update data object, only including fields that have values
-                const updateData: any = {};
-                if (editedProduct.status) updateData.status = editedProduct.status;
-                if (editedProduct.categoryId) updateData.categoryId = editedProduct.categoryId;
-                if (editedProduct.familyId) updateData.familyId = editedProduct.familyId;
-                
-                // Make the API call to bulk update products
-                await api.post(`/products/products/${user.companyId}/bulk-edit`, {
-                  ids: selectedProducts,
-                  data: updateData
-                });
-                
-                // Refresh the products list
-                await fetchProducts();
-                
-                // Reset selected products
-                setSelectedProducts([]);
-                
-                // Close the modal
-                setShowBulkEditModal(false);
-              } catch (err: any) {
-                console.error('Error bulk editing products:', err);
-                setError(err.message || 'Failed to bulk edit products');
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <FaSave className="me-2" />
-            Update Products
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Bulk Delete Modal */}
-      <Modal show={showBulkDeleteModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Bulk Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>
-            Are you sure you want to delete <strong>{selectedProducts.length}</strong> products?
-            This action cannot be undone.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={async () => {
-              try {
-                setLoading(true);
-                
-                // Get the user from localStorage to get the companyId
-                const storedUser = localStorage.getItem('user');
-                const user = storedUser ? JSON.parse(storedUser) : null;
-                
-                if (!user?.companyId) {
-                  throw new Error('Company ID not found');
-                }
-                
-                // Make the API call to bulk delete products
-                await api.post(`/products/products/${user.companyId}/bulk-delete`, {
-                  ids: selectedProducts
-                });
-                
-                // Refresh the products list
-                await fetchProducts();
-                
-                // Reset selected products
-                setSelectedProducts([]);
-                
-                // Close the modal
-                setShowBulkDeleteModal(false);
-              } catch (err: any) {
-                console.error('Error bulk deleting products:', err);
-                setError(err.message || 'Failed to bulk delete products');
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
-            <FaTrash className="me-2" />
-            Delete Products
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Import Products Modal */}
-      <Modal show={showImportModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Import Products</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {importResult ? (
-            <div>
-              <Alert variant={importResult.success ? 'success' : 'danger'}>
-                <Alert.Heading>{importResult.success ? 'Import Successful' : 'Import Failed'}</Alert.Heading>
-                <p>
-                  Processed: {importResult.processed} products<br />
-                  Succeeded: {importResult.succeeded} products<br />
-                  Failed: {importResult.failed} products
-                </p>
-              </Alert>
-              
-              {importResult.errors && importResult.errors.length > 0 && (
-                <div className="mt-3">
-                  <h6>Errors:</h6>
-                  <ul className="text-danger">
-                    {importResult.errors.map((error: any, index: number) => (
-                      <li key={index}>
-                        Row {error.row}: {error.error}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              <div className="d-flex justify-content-end mt-3">
-                <Button variant="primary" onClick={handleCloseModal}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>CSV File</Form.Label>
-                <Form.Control 
-                  type="file" 
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  disabled={importLoading}
-                />
-                <Form.Text className="text-muted">
-                  Upload a CSV file with product data. Make sure it follows the required format.
-                </Form.Text>
-              </Form.Group>
-              
-              <div className="d-flex justify-content-between mt-4">
-                <Button 
-                  variant="outline-secondary" 
-                  onClick={handleDownloadTemplate}
-                  disabled={importLoading}
-                >
-                  <FaDownload className="me-2" />
-                  Download Template
-                </Button>
-                
-                <Button 
-                  variant="primary" 
-                  onClick={handleImportProducts}
-                  disabled={!importFile || importLoading}
-                >
-                  {importLoading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Importing...
-                    </>
-                  ) : (
-                    <>
-                      <FaFileImport className="me-2" />
-                      Import Products
-                    </>
-                  )}
-                </Button>
-              </div>
-            </Form>
-          )}
-        </Modal.Body>
-      </Modal>
+            // Use the service layer to delete the product
+            await ProductsService.deleteProduct(selectedProduct.id);
+            
+            // Refresh the products list
+            await fetchProducts();
+            
+            // Close the modal
+            setShowDeleteModal(false);
+          } catch (err: any) {
+            console.error('Error deleting product:', err);
+            setError(err.message || 'Failed to delete product');
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+      
+      <BulkEditModal
+        show={showBulkEditModal}
+        onHide={handleCloseModal}
+        selectedProducts={selectedProducts}
+        editedProduct={editedProduct}
+        categories={categories}
+        families={families}
+        handleInputChange={handleEditInputChange}
+        handleBulkUpdate={async () => {
+          try {
+            setLoading(true);
+            
+            // Create update data object, only including fields that have values
+            const updateData: any = {};
+            if (editedProduct.status) updateData.status = editedProduct.status;
+            if (editedProduct.categoryId) updateData.categoryId = editedProduct.categoryId;
+            if (editedProduct.familyId) updateData.familyId = editedProduct.familyId;
+            
+            // Use the service layer to bulk update products
+            await ProductsService.bulkUpdateProducts(selectedProducts, updateData);
+            
+            // Refresh the products list
+            await fetchProducts();
+            
+            // Reset selected products
+            setSelectedProducts([]);
+            
+            // Close the modal
+            setShowBulkEditModal(false);
+          } catch (err: any) {
+            console.error('Error bulk editing products:', err);
+            setError(err.message || 'Failed to bulk edit products');
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+      
+      <BulkDeleteModal
+        show={showBulkDeleteModal}
+        onHide={handleCloseModal}
+        selectedProducts={selectedProducts}
+        handleBulkDelete={async () => {
+          try {
+            setLoading(true);
+            
+            // Use the service layer to bulk delete products
+            await ProductsService.bulkDeleteProducts(selectedProducts);
+            
+            // Refresh the products list
+            await fetchProducts();
+            
+            // Reset selected products
+            setSelectedProducts([]);
+            
+            // Close the modal
+            setShowBulkDeleteModal(false);
+          } catch (err: any) {
+            console.error('Error bulk deleting products:', err);
+            setError(err.message || 'Failed to bulk delete products');
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+      
+      <ImportProductsModal
+        show={showImportModal}
+        onHide={handleCloseModal}
+        importFile={importFile}
+        importLoading={importLoading}
+        importResult={importResult}
+        handleFileChange={handleFileChange}
+        handleImportProducts={handleImportProducts}
+        handleDownloadTemplate={handleDownloadTemplate}
+      />
     </div>
   );
 };

@@ -12,9 +12,14 @@ import {
   FaFile
 } from 'react-icons/fa';
 import DetailedView, { InfoList, InfoListItem, SectionHeader, StatusBadge } from '../../../shared/DetailedView';
-import { Activity } from '../../../../services/statutory/types';
+import { Activity } from '../../../../services/types';
 import { useAuth } from '../../../../contexts/AuthContext';
-import api from '../../../../services/api';
+import { 
+  ProductsService, 
+  SectionsService, 
+  AttributesService, 
+  ActivityService 
+} from '../../../../services/products';
 
 interface ProductActivity {
   id: string;
@@ -97,13 +102,9 @@ const ProductView: React.FC = () => {
     try {
       setSectionsLoading(true);
       
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      // Fetch sections from API
-      const response = await api.get(`/products/sections/${user.companyId}`);
-      setSections(response.data);
+      // Use the service layer to fetch sections
+      const sections = await SectionsService.getSections();
+      setSections(sections || []);
     } catch (error) {
       console.error('Error fetching sections:', error);
       
@@ -142,13 +143,9 @@ const ProductView: React.FC = () => {
     try {
       setAttributesLoading(true);
       
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      // Fetch attributes from API
-      const response = await api.get(`/products/attributes/${user.companyId}`);
-      setAttributes(response.data);
+      // Use the service layer to fetch attributes
+      const attributes = await AttributesService.getAttributes();
+      setAttributes(attributes || []);
     } catch (error) {
       console.error('Error fetching attributes:', error);
       setAttributes([]);
@@ -160,16 +157,16 @@ const ProductView: React.FC = () => {
   const fetchProductData = async () => {
     try {
       setLoading(true);
-      if (!user?.companyId || !id) return;
+      if (!id) return;
 
-      // Get product details
-      const response = await api.get(`/products/products/${user.companyId}/${id}`);
-      setProduct(response.data);
+      // Use the service layer to get product details
+      const product = await ProductsService.getProduct(id);
+      setProduct(product);
 
       // Get activities
       setActivitiesLoading(true);
-      const activitiesResponse = await api.get(`/products/activity/${user.companyId}`);
-      const productActivities = activitiesResponse.data
+      const activities = await ActivityService.getActivities();
+      const productActivities = activities
         .filter((a: ProductActivity) => a.itemId === id && a.type === 'product')
         .map(mapToActivity);
       setActivities(productActivities);

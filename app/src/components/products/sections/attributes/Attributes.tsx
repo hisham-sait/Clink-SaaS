@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Table, Row, Col, Form, InputGroup, Badge, Modal, Alert } from 'react-bootstrap';
+import { Card, Button, Table, Row, Col, Form, InputGroup, Badge, Alert, Modal } from 'react-bootstrap';
 import { FaTag, FaPlus, FaSearch, FaEdit, FaTrash, FaSave, FaTable } from 'react-icons/fa';
-import api from '../../../../services/api';
+import { AttributesService, SectionsService } from '../../../../services/products';
+
+// Import modal components
+import AddAttributeModal from './AddAttributeModal';
+import EditAttributeModal from './EditAttributeModal';
+import DeleteAttributeModal from './DeleteAttributeModal';
 
 const Attributes: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -40,21 +45,13 @@ const Attributes: React.FC = () => {
     fetchSections();
   }, []);
   
-  // Function to fetch sections from the API
+  // Function to fetch sections using the service layer
   const fetchSections = async () => {
     try {
       setSectionsLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
-      const response = await api.get(`/products/sections/${user.companyId}`);
-      setSections(response.data || []);
+      const sections = await SectionsService.getSections();
+      setSections(sections || []);
     } catch (err: any) {
       console.error('Error fetching sections:', err);
       setError(err.message || 'Failed to fetch sections');
@@ -63,25 +60,17 @@ const Attributes: React.FC = () => {
     }
   };
   
-  // Function to fetch attributes from the API
+  // Function to fetch attributes using the service layer
   const fetchAttributes = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Add type filter if selected
-      const typeParam = selectedType ? `?type=${selectedType}` : '';
+      const params = selectedType ? { type: selectedType } : {};
       
-      const response = await api.get(`/products/attributes/${user.companyId}${typeParam}`);
-      setAttributes(response.data || []);
+      const attributes = await AttributesService.getAttributes(params);
+      setAttributes(attributes || []);
     } catch (err: any) {
       console.error('Error fetching attributes:', err);
       setError(err.message || 'Failed to fetch attributes');
@@ -154,14 +143,6 @@ const Attributes: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
-      }
-      
       // Create a copy of the attribute data to modify
       const attributeData = { ...newAttribute };
       
@@ -175,6 +156,8 @@ const Attributes: React.FC = () => {
       }
       
       // Handle different attribute types
+      let apiData: any;
+      
       if (attributeData.type === 'SELECT' || attributeData.type === 'MULTISELECT') {
         // Convert options string to array for SELECT and MULTISELECT types
         const optionsArray = attributeData.options
@@ -183,38 +166,27 @@ const Attributes: React.FC = () => {
           .filter((option: string) => option.length > 0);
         
         // Prepare the data to send to the API
-        const apiData = {
+        apiData = {
           ...attributeData,
           options: optionsArray.length > 0 ? optionsArray : null
         };
-        
-        // Log the attribute being saved (for debugging)
-        console.log('Saving attribute:', apiData);
-        
-        // Make the API call to save the attribute
-        await api.post(`/products/attributes/${user.companyId}`, apiData);
       } else if (attributeData.type === 'TABLE') {
         // For TABLE type, include the tableConfig
-        const apiData = {
+        apiData = {
           ...attributeData,
           tableConfig: attributeData.tableConfig
         };
-        
-        // Log the attribute being saved (for debugging)
-        console.log('Saving TABLE attribute:', apiData);
-        
-        // Make the API call to save the attribute
-        await api.post(`/products/attributes/${user.companyId}`, apiData);
       } else {
         // For other types, just remove the options field
-        const { options, tableConfig, ...apiData } = attributeData;
-        
-        // Log the attribute being saved (for debugging)
-        console.log('Saving attribute:', apiData);
-        
-        // Make the API call to save the attribute
-        await api.post(`/products/attributes/${user.companyId}`, apiData);
+        const { options, tableConfig, ...rest } = attributeData;
+        apiData = rest;
       }
+      
+      // Log the attribute being saved (for debugging)
+      console.log('Saving attribute:', apiData);
+      
+      // Use the service layer to create the attribute
+      await AttributesService.createAttribute(apiData);
       
       // Refresh the attributes list
       await fetchAttributes();
@@ -282,12 +254,8 @@ const Attributes: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedAttribute?.id) {
+        throw new Error('No attribute selected');
       }
       
       // Create a copy of the attribute data to modify
@@ -303,6 +271,8 @@ const Attributes: React.FC = () => {
       }
       
       // Handle different attribute types
+      let apiData: any;
+      
       if (attributeData.type === 'SELECT' || attributeData.type === 'MULTISELECT') {
         // Convert options string to array for SELECT and MULTISELECT types
         const optionsArray = typeof attributeData.options === 'string' 
@@ -313,38 +283,27 @@ const Attributes: React.FC = () => {
           : attributeData.options;
         
         // Prepare the data to send to the API
-        const apiData = {
+        apiData = {
           ...attributeData,
           options: optionsArray.length > 0 ? optionsArray : null
         };
-        
-        // Log the attribute being updated (for debugging)
-        console.log('Updating attribute:', apiData);
-        
-        // Make the API call to update the attribute
-        await api.put(`/products/attributes/${user.companyId}/${attributeData.id}`, apiData);
       } else if (attributeData.type === 'TABLE') {
         // For TABLE type, include the tableConfig
-        const apiData = {
+        apiData = {
           ...attributeData,
           tableConfig: attributeData.tableConfig
         };
-        
-        // Log the attribute being updated (for debugging)
-        console.log('Updating TABLE attribute:', apiData);
-        
-        // Make the API call to update the attribute
-        await api.put(`/products/attributes/${user.companyId}/${attributeData.id}`, apiData);
       } else {
         // For other types, just remove the options field
-        const { options, tableConfig, ...apiData } = attributeData;
-        
-        // Log the attribute being updated (for debugging)
-        console.log('Updating attribute:', apiData);
-        
-        // Make the API call to update the attribute
-        await api.put(`/products/attributes/${user.companyId}/${attributeData.id}`, apiData);
+        const { options, tableConfig, ...rest } = attributeData;
+        apiData = rest;
       }
+      
+      // Log the attribute being updated (for debugging)
+      console.log('Updating attribute:', apiData);
+      
+      // Use the service layer to update the attribute
+      await AttributesService.updateAttribute(attributeData.id, apiData);
       
       // Refresh the attributes list
       await fetchAttributes();
@@ -364,16 +323,12 @@ const Attributes: React.FC = () => {
     try {
       setLoading(true);
       
-      // Get the user from localStorage to get the companyId
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      
-      if (!user?.companyId) {
-        throw new Error('Company ID not found');
+      if (!selectedAttribute?.id) {
+        throw new Error('No attribute selected');
       }
       
-      // Make the API call to delete the attribute
-      await api.delete(`/products/attributes/${user.companyId}/${selectedAttribute.id}`);
+      // Use the service layer to delete the attribute
+      await AttributesService.deleteAttribute(selectedAttribute.id);
       
       // Refresh the attributes list
       await fetchAttributes();
@@ -580,378 +535,33 @@ const Attributes: React.FC = () => {
         </Card.Body>
       </Card>
       
-      {/* Add Attribute Modal */}
-      <Modal show={showAddModal} onHide={handleCloseModal} size={newAttribute.type === 'TABLE' ? 'lg' : undefined}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Attribute</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Name</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    name="name"
-                    value={newAttribute.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Code</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    name="code"
-                    value={newAttribute.code}
-                    onChange={handleInputChange}
-                    placeholder="e.g. color, size"
-                  />
-                  <Form.Text className="text-muted">
-                    A unique identifier for the attribute. If left blank, it will be generated from the name.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Type</Form.Label>
-                  <Form.Select 
-                    name="type"
-                    value={newAttribute.type}
-                    onChange={handleInputChange}
-                  >
-                    {attributeTypes.map((type) => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Section</Form.Label>
-                  <Form.Select 
-                    name="sectionId"
-                    value={newAttribute.sectionId}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">No Section</option>
-                    {sections.map((section) => (
-                      <option key={section.id} value={section.id}>{section.name}</option>
-                    ))}
-                  </Form.Select>
-                  <Form.Text className="text-muted">
-                    Select a section to display this attribute in.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-            {(newAttribute.type === 'SELECT' || newAttribute.type === 'MULTISELECT') && (
-              <Form.Group className="mb-3">
-                <Form.Label>Options</Form.Label>
-                <Form.Control 
-                  as="textarea" 
-                  rows={3}
-                  name="options"
-                  value={newAttribute.options}
-                  onChange={handleInputChange}
-                  placeholder="Enter options, one per line"
-                />
-                <Form.Text className="text-muted">
-                  Enter one option per line. These will be the available choices for this attribute.
-                </Form.Text>
-              </Form.Group>
-            )}
-            
-            {/* TABLE configuration */}
-            {renderTableConfig()}
-            
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Check 
-                    type="checkbox"
-                    id="isRequired"
-                    name="isRequired"
-                    label="Required"
-                    checked={newAttribute.isRequired}
-                    onChange={handleInputChange}
-                  />
-                  <Form.Text className="text-muted">
-                    If checked, this attribute must have a value.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Check 
-                    type="checkbox"
-                    id="isUnique"
-                    name="isUnique"
-                    label="Unique"
-                    checked={newAttribute.isUnique}
-                    onChange={handleInputChange}
-                  />
-                  <Form.Text className="text-muted">
-                    If checked, this attribute's value must be unique across products.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Check 
-                    type="checkbox"
-                    id="isLocalizable"
-                    name="isLocalizable"
-                    label="Localizable"
-                    checked={newAttribute.isLocalizable}
-                    onChange={handleInputChange}
-                  />
-                  <Form.Text className="text-muted">
-                    If checked, this attribute can have different values per locale.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Check 
-                    type="checkbox"
-                    id="isScopable"
-                    name="isScopable"
-                    label="Scopable"
-                    checked={newAttribute.isScopable}
-                    onChange={handleInputChange}
-                  />
-                  <Form.Text className="text-muted">
-                    If checked, this attribute can have different values per channel.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveAttribute}>
-            <FaSave className="me-2" />
-            Save Attribute
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Modals */}
+      <AddAttributeModal
+        show={showAddModal}
+        onHide={handleCloseModal}
+        newAttribute={newAttribute}
+        attributeTypes={attributeTypes}
+        sections={sections}
+        handleInputChange={handleInputChange}
+        handleSaveAttribute={handleSaveAttribute}
+      />
       
-      {/* Edit Attribute Modal */}
-      <Modal show={showEditModal} onHide={handleCloseModal} size={selectedAttribute?.type === 'TABLE' ? 'lg' : undefined}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Attribute</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedAttribute && (
-            <Form>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Name</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="name"
-                      value={selectedAttribute.name}
-                      onChange={handleEditInputChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Code</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="code"
-                      value={selectedAttribute.code}
-                      onChange={handleEditInputChange}
-                      placeholder="e.g. color, size"
-                    />
-                    <Form.Text className="text-muted">
-                      A unique identifier for the attribute. If left blank, it will be generated from the name.
-                    </Form.Text>
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Type</Form.Label>
-                    <Form.Select 
-                      name="type"
-                      value={selectedAttribute.type}
-                      onChange={handleEditInputChange}
-                    >
-                      {attributeTypes.map((type) => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Section</Form.Label>
-                    <Form.Select 
-                      name="sectionId"
-                      value={selectedAttribute.sectionId || ''}
-                      onChange={handleEditInputChange}
-                    >
-                      <option value="">No Section</option>
-                      {sections.map((section) => (
-                        <option key={section.id} value={section.id}>{section.name}</option>
-                      ))}
-                    </Form.Select>
-                    <Form.Text className="text-muted">
-                      Select a section to display this attribute in.
-                    </Form.Text>
-                  </Form.Group>
-                </Col>
-              </Row>
-              {(selectedAttribute.type === 'SELECT' || selectedAttribute.type === 'MULTISELECT') && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Options</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={3}
-                    name="options"
-                    value={selectedAttribute.options}
-                    onChange={handleEditInputChange}
-                    placeholder="Enter options, one per line"
-                  />
-                  <Form.Text className="text-muted">
-                    Enter one option per line. These will be the available choices for this attribute.
-                  </Form.Text>
-                </Form.Group>
-              )}
-              
-              {/* TABLE configuration for edit */}
-              {renderTableConfig(true)}
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Check 
-                      type="checkbox"
-                      id="editIsRequired"
-                      name="isRequired"
-                      label="Required"
-                      checked={selectedAttribute.isRequired}
-                      onChange={handleEditInputChange}
-                    />
-                    <Form.Text className="text-muted">
-                      If checked, this attribute must have a value.
-                    </Form.Text>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Check 
-                      type="checkbox"
-                      id="editIsUnique"
-                      name="isUnique"
-                      label="Unique"
-                      checked={selectedAttribute.isUnique}
-                      onChange={handleEditInputChange}
-                    />
-                    <Form.Text className="text-muted">
-                      If checked, this attribute's value must be unique across products.
-                    </Form.Text>
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Check 
-                      type="checkbox"
-                      id="editIsLocalizable"
-                      name="isLocalizable"
-                      label="Localizable"
-                      checked={selectedAttribute.isLocalizable}
-                      onChange={handleEditInputChange}
-                    />
-                    <Form.Text className="text-muted">
-                      If checked, this attribute can have different values per locale.
-                    </Form.Text>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Check 
-                      type="checkbox"
-                      id="editIsScopable"
-                      name="isScopable"
-                      label="Scopable"
-                      checked={selectedAttribute.isScopable}
-                      onChange={handleEditInputChange}
-                    />
-                    <Form.Text className="text-muted">
-                      If checked, this attribute can have different values per channel.
-                    </Form.Text>
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Form>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleUpdateAttribute}>
-            <FaSave className="me-2" />
-            Update Attribute
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <EditAttributeModal
+        show={showEditModal}
+        onHide={handleCloseModal}
+        selectedAttribute={selectedAttribute}
+        attributeTypes={attributeTypes}
+        sections={sections}
+        handleInputChange={handleEditInputChange}
+        handleUpdateAttribute={handleUpdateAttribute}
+      />
       
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedAttribute && (
-            <p>
-              Are you sure you want to delete the attribute <strong>{selectedAttribute.name}</strong>?
-              This action cannot be undone.
-              {selectedAttribute.usage && (selectedAttribute.usage.productCount > 0 || selectedAttribute.usage.familyCount > 0) && (
-                <Alert variant="warning" className="mt-3">
-                  <strong>Warning:</strong> This attribute is currently in use:
-                  <ul className="mb-0 mt-2">
-                    {selectedAttribute.usage.productCount > 0 && (
-                      <li>Used by {selectedAttribute.usage.productCount} products</li>
-                    )}
-                    {selectedAttribute.usage.familyCount > 0 && (
-                      <li>Used by {selectedAttribute.usage.familyCount} families</li>
-                    )}
-                  </ul>
-                  <p className="mt-2 mb-0">Deleting this attribute may affect these items.</p>
-                </Alert>
-              )}
-            </p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleConfirmDelete}>
-            <FaTrash className="me-2" />
-            Delete Attribute
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <DeleteAttributeModal
+        show={showDeleteModal}
+        onHide={handleCloseModal}
+        selectedAttribute={selectedAttribute}
+        handleConfirmDelete={handleConfirmDelete}
+      />
     </div>
   );
 };

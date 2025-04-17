@@ -39,7 +39,7 @@ const logger = winston.createLogger({
 });
 
 // Create import queue
-const importQueue = new Queue('statutory-imports', {
+const importQueue = new Queue('data-imports', {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
