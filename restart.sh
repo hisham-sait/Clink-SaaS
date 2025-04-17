@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Simple restart script for Bradán Accountants application
+# Simple restart script for Clink SaaS multi-tenant application
 
 # Color codes for better readability
 GREEN='\033[0;32m'

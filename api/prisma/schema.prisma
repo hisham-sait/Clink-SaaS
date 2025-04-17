@@ -217,6 +217,10 @@ model Company {
   proposalTemplates ProposalTemplate[]
   sectionTemplates SectionTemplate[]
   deals            Deal[]           // Added: Relation to deals
+  // PIM Relations
+  productCategories ProductCategory[]
+  productFamilies   ProductFamily[]
+  productAttributes ProductAttribute[]
 }
 
 model UserCompany {
@@ -385,25 +389,40 @@ model Organisation {
   @@index([industry])
 }
 
+// PIM Models
 model Product {
-  id          String        @id @default(cuid())
-  name        String
-  description String
-  type        ProductType
-  category    String
-  unit        String?
-  sku         String?
-  status      Status        @default(Active)
-  companyId   String
-  company     Company       @relation(fields: [companyId], references: [id])
-  tiers       ProductTier[]
-  proposals   ProposalProduct[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
+  id                String              @id @default(cuid())
+  name              String
+  description       String              @db.Text
+  type              ProductType
+  sku               String?
+  status            Status              @default(Active)
+  companyId         String
+  company           Company             @relation(fields: [companyId], references: [id])
+  tiers             ProductTier[]
+  proposals         ProposalProduct[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  // PIM Relations
+  categoryId        String?
+  category          ProductCategory?    @relation(fields: [categoryId], references: [id])
+  familyId          String?
+  family            ProductFamily?      @relation(fields: [familyId], references: [id])
+  attributeValues   ProductAttributeValue[]
+  variants          ProductVariant[]    @relation("ParentProduct")
+  parentId          String?
+  parent            Product?            @relation("ParentProduct", fields: [parentId], references: [id])
+  media             ProductMedia[]
+  completeness      Int?                // Percentage of required attributes filled
+  isVariant         Boolean             @default(false)
+  variantAxis       String[]            // Attributes used for variants (e.g., ["size", "color"])
+  
   @@index([companyId])
   @@index([type])
-  @@index([category])
+  @@index([categoryId])
+  @@index([familyId])
+  @@index([parentId])
+  @@index([status])
 }
 
 model ProductTier {
@@ -418,6 +437,156 @@ model ProductTier {
   updatedAt   DateTime  @updatedAt
 
   @@index([productId])
+}
+
+model ProductCategory {
+  id          String            @id @default(cuid())
+  name        String
+  code        String
+  description String?           @db.Text
+  parentId    String?
+  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    ProductCategory[] @relation("CategoryHierarchy")
+  level       Int               @default(1)
+  companyId   String
+  company     Company           @relation(fields: [companyId], references: [id])
+  products    Product[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([parentId])
+}
+
+model ProductFamily {
+  id                String                @id @default(cuid())
+  name              String
+  code              String
+  description       String?               @db.Text
+  companyId         String
+  company           Company               @relation(fields: [companyId], references: [id])
+  products          Product[]
+  attributeGroups   ProductAttributeGroup[]
+  requiredAttributes ProductFamilyAttribute[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model ProductAttributeGroup {
+  id          String                @id @default(cuid())
+  name        String
+  code        String
+  description String?               @db.Text
+  order       Int                   @default(1)
+  familyId    String
+  family      ProductFamily         @relation(fields: [familyId], references: [id])
+  attributes  ProductFamilyAttribute[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@unique([familyId, code])
+  @@index([familyId])
+}
+
+model ProductAttribute {
+  id                String                @id @default(cuid())
+  name              String
+  code              String
+  type              AttributeType
+  description       String?               @db.Text
+  options           Json?                 // For select/multiselect attributes
+  unit              String?               // For numeric attributes
+  isLocalizable     Boolean               @default(false)
+  isScopable        Boolean               @default(false) // For channel-specific values
+  isUnique          Boolean               @default(false)
+  isRequired        Boolean               @default(false)
+  validationRules   Json?                 // Validation rules (min, max, regex, etc.)
+  companyId         String
+  company           Company               @relation(fields: [companyId], references: [id])
+  attributeValues   ProductAttributeValue[]
+  familyAttributes  ProductFamilyAttribute[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+}
+
+model ProductFamilyAttribute {
+  id              String                @id @default(cuid())
+  familyId        String
+  family          ProductFamily         @relation(fields: [familyId], references: [id])
+  attributeId     String
+  attribute       ProductAttribute      @relation(fields: [attributeId], references: [id])
+  groupId         String?
+  group           ProductAttributeGroup? @relation(fields: [groupId], references: [id])
+  isRequired      Boolean               @default(false)
+  order           Int                   @default(1)
+
+  @@unique([familyId, attributeId])
+  @@index([familyId])
+  @@index([attributeId])
+  @@index([groupId])
+}
+
+model ProductAttributeValue {
+  id              String            @id @default(cuid())
+  productId       String
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeId     String
+  attribute       ProductAttribute  @relation(fields: [attributeId], references: [id])
+  value           Json              // Store different types of values
+  locale          String?           // For localizable attributes
+  scope           String?           // For scopable attributes (e.g., channel)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([productId, attributeId, locale, scope])
+  @@index([productId])
+  @@index([attributeId])
+}
+
+model ProductVariant {
+  id              String            @id @default(cuid())
+  productId       String
+  product         Product           @relation("ParentProduct", fields: [productId], references: [id], onDelete: Cascade)
+  variantCode     String
+  variantTitle    String
+  variantValues   Json              // Variant-specific attribute values
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([productId, variantCode])
+  @@index([productId])
+}
+
+model ProductMedia {
+  id              String            @id @default(cuid())
+  productId       String
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type            MediaType
+  url             String
+  filename        String
+  originalName    String
+  mimeType        String
+  size            Int
+  width           Int?              // For images
+  height          Int?              // For images
+  title           String?
+  description     String?           @db.Text
+  alt             String?
+  order           Int               @default(1)
+  locale          String?           // For localized media
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([productId])
+  @@index([type])
 }
 
 model Proposal {
@@ -499,6 +668,29 @@ enum PlanType {
   BASIC
   STANDARD
   PREMIUM
+}
+
+enum AttributeType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  BOOLEAN
+  DATE
+  DATETIME
+  SELECT
+  MULTISELECT
+  PRICE
+  IMAGE
+  FILE
+  REFERENCE
+  METRIC
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  OTHER
 }
 
 model Client {

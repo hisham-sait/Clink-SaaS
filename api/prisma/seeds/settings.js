@@ -31,11 +31,11 @@ async function createSettingsData() {
 
     // Get users from auth seed
     const superAdmin = await prisma.user.findUnique({
-      where: { email: 'superadmin@bradan.com' }
+      where: { email: 'superadmin@clink.com' }
     });
 
     const platformAdmin = await prisma.user.findUnique({
-      where: { email: 'platformadmin@bradan.com' }
+      where: { email: 'platformadmin@clink.com' }
     });
 
     if (!superAdmin || !platformAdmin) {
@@ -45,14 +45,14 @@ async function createSettingsData() {
     // Create initial companies
     const companies = [
       {
-        name: 'Bradán Accountants',
-        legalName: 'Bradán Accountants Limited',
-        registrationNumber: 'BR123456',
+        name: 'Clink SaaS',
+        legalName: 'Clink SaaS Limited',
+        registrationNumber: 'CL123456',
         vatNumber: 'VAT123456',
         status: 'Active',
         isPrimary: true,
         isMyOrg: true,
-        tags: ['Accounting', 'Professional Services'],
+        tags: ['SaaS', 'Technology'],
         createdById: superAdmin.id,
         userCompanies: {
           create: [{
@@ -62,7 +62,7 @@ async function createSettingsData() {
         },
         billingDetails: {
           create: {
-            address: '123 Business Park',
+            address: '123 Tech Park',
             city: 'Dublin',
             state: 'Dublin',
             country: 'Ireland',
@@ -250,8 +250,8 @@ async function createSettingsData() {
       data: {
         userId: superAdmin.id,
         type: 'system',
-        title: 'Welcome to Bradán',
-        message: 'Welcome to Bradán Accountants platform. Get started by exploring the dashboard.',
+        title: 'Welcome to Clink SaaS',
+        message: 'Welcome to Clink SaaS platform. Get started by exploring the dashboard.',
         read: false
       }
     });

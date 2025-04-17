@@ -4,8 +4,9 @@ import StatutorySidebar from '../statutory/StatutorySidebar';
 import SettingsSidebar from '../settings/SettingsSidebar';
 import HelpSidebar from '../help/HelpSidebar';
 import CRMSidebar from '../crm/CRMSidebar';
+import ProductsSidebar from '../products/ProductsSidebar';
 
-type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'settings' | 'help';
+type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'products' | 'settings' | 'help';
 
 interface ModuleConfig {
   icon: string;
@@ -25,7 +26,8 @@ const moduleConfigs: Record<SectionType, ModuleConfig> = {
   tax: { icon: 'bi-calculator', title: 'Tax' },
   settings: { icon: 'bi-gear', title: 'Settings' },
   help: { icon: 'bi-question-circle', title: 'Help' },
-  crm: { icon: 'bi-people', title: 'CRM' }
+  crm: { icon: 'bi-people', title: 'CRM' },
+  products: { icon: 'bi-box', title: 'Products' }
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -78,6 +80,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         return <HelpSidebar isExpanded={isExpanded} />;
       case 'crm':
         return <CRMSidebar isExpanded={isExpanded} />;
+      case 'products':
+        return <ProductsSidebar isExpanded={isExpanded} />;
       default:
         return <div className="p-4">Coming Soon</div>;
     }

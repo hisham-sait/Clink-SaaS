@@ -159,11 +159,7 @@ async function seedAuth(inputPlans) {
             'Platform Admin',
             'Company Admin',
             'Company Manager',
-            'Accountant',
             'Viewer',
-            'Auditor',
-            'Tax Advisor',
-            'Legal Advisor',
             'Consultant'
           ]
         },
@@ -184,11 +180,7 @@ async function seedAuth(inputPlans) {
           canManage: [
             'Company Admin',
             'Company Manager',
-            'Accountant',
             'Viewer',
-            'Auditor',
-            'Tax Advisor',
-            'Legal Advisor',
             'Consultant'
           ]
         },
@@ -217,11 +209,7 @@ async function seedAuth(inputPlans) {
         metadata: {
           canManage: [
             'Company Manager',
-            'Accountant',
             'Viewer',
-            'Auditor',
-            'Tax Advisor',
-            'Legal Advisor',
             'Consultant'
           ]
         },
@@ -258,81 +246,8 @@ async function seedAuth(inputPlans) {
         }
       },
       {
-        name: 'Accountant',
-        description: 'Financial access',
-        scope: RoleScope.Company,
-        isSystem: true,
-        isCustom: false,
-        permissions: {
-          create: [
-            'companies-view',
-            'plans-view',
-            'billing-view',
-            'settings-view'
-          ].map(code => ({
-            permissionId: createdPermissions[code].id,
-            assignedAt: new Date()
-          }))
-        }
-      },
-      {
         name: 'Viewer',
         description: 'Read-only access',
-        scope: RoleScope.Company,
-        isSystem: true,
-        isCustom: false,
-        permissions: {
-          create: [
-            'companies-view',
-            'plans-view',
-            'settings-view'
-          ].map(code => ({
-            permissionId: createdPermissions[code].id,
-            assignedAt: new Date()
-          }))
-        }
-      },
-
-      // Third Party Level
-      {
-        name: 'Auditor',
-        description: 'External auditor access',
-        scope: RoleScope.Company,
-        isSystem: true,
-        isCustom: false,
-        permissions: {
-          create: [
-            'companies-view',
-            'plans-view',
-            'billing-view',
-            'settings-view'
-          ].map(code => ({
-            permissionId: createdPermissions[code].id,
-            assignedAt: new Date()
-          }))
-        }
-      },
-      {
-        name: 'Tax Advisor',
-        description: 'External tax advisor access',
-        scope: RoleScope.Company,
-        isSystem: true,
-        isCustom: false,
-        permissions: {
-          create: [
-            'companies-view',
-            'plans-view',
-            'billing-view',
-            'settings-view'
-          ].map(code => ({
-            permissionId: createdPermissions[code].id,
-            assignedAt: new Date()
-          }))
-        }
-      },
-      {
-        name: 'Legal Advisor',
-        description: 'External legal advisor access',
         scope: RoleScope.Company,
         isSystem: true,
         isCustom: false,
@@ -382,7 +297,7 @@ async function seedAuth(inputPlans) {
     console.log('Creating super admin user...');
     const superAdmin = await prisma.user.create({
       data: {
-        email: 'superadmin@bradan.com',
+        email: 'superadmin@clink.com',
         password: await bcrypt.hash('superadmin123', 10),
         firstName: 'Super',
         lastName: 'Admin',
@@ -398,9 +313,9 @@ async function seedAuth(inputPlans) {
     console.log('Creating test company...');
     const company = await prisma.company.create({
       data: {
-        name: 'Test Company Ltd',
-        legalName: 'Test Company Limited',
-        registrationNumber: '12345678',
+        name: 'Clink SaaS Ltd',
+        legalName: 'Clink SaaS Limited',
+        registrationNumber: 'CL123456',
         vatNumber: 'GB123456789',
         status: 'Active',
         isPrimary: true,
@@ -408,7 +323,7 @@ async function seedAuth(inputPlans) {
         createdById: superAdmin.id,
         billingDetails: {
           create: {
-            address: '123 Test Street',
+            address: '123 Tech Street',
             city: 'London',
             state: 'London',
             country: 'United Kingdom',
@@ -434,7 +349,7 @@ async function seedAuth(inputPlans) {
     const users = [
       // Platform Level
       {
-        email: 'platformadmin@bradan.com',
+        email: 'platformadmin@clink.com',
         password: await bcrypt.hash('platformadmin123', 10),
         firstName: 'Platform',
         lastName: 'Admin',
@@ -449,7 +364,7 @@ async function seedAuth(inputPlans) {
       
       // Company Level
       {
-        email: 'companyadmin@bradan.com',
+        email: 'companyadmin@clink.com',
         password: await bcrypt.hash('companyadmin123', 10),
         firstName: 'Company',
         lastName: 'Admin',
@@ -462,7 +377,7 @@ async function seedAuth(inputPlans) {
         billingCompanyId: company.id
       },
       {
-        email: 'manager@bradan.com',
+        email: 'manager@clink.com',
         password: await bcrypt.hash('manager123', 10),
         firstName: 'Company',
         lastName: 'Manager',
@@ -475,20 +390,7 @@ async function seedAuth(inputPlans) {
         billingCompanyId: company.id
       },
       {
-        email: 'accountant@bradan.com',
-        password: await bcrypt.hash('accountant123', 10),
-        firstName: 'Company',
-        lastName: 'Accountant',
-        status: UserStatus.Active,
-        joinedAt: new Date(),
-        roles: {
-          create: [{ roleId: createdRoles['Accountant'].id, assignedAt: new Date() }]
-        },
-        planId: plans[1].id, // Starter plan
-        billingCompanyId: company.id
-      },
-      {
-        email: 'viewer@bradan.com',
+        email: 'viewer@clink.com',
         password: await bcrypt.hash('viewer123', 10),
         firstName: 'Company',
         lastName: 'Viewer',
@@ -500,49 +402,8 @@ async function seedAuth(inputPlans) {
         planId: plans[0].id, // Free plan
         billingCompanyId: company.id
       },
-
-      // Third Party Level
       {
-        email: 'auditor@bradan.com',
-        password: await bcrypt.hash('auditor123', 10),
-        firstName: 'External',
-        lastName: 'Auditor',
-        status: UserStatus.Active,
-        joinedAt: new Date(),
-        roles: {
-          create: [{ roleId: createdRoles['Auditor'].id, assignedAt: new Date() }]
-        },
-        planId: plans[1].id, // Starter plan
-        billingCompanyId: company.id
-      },
-      {
-        email: 'taxadvisor@bradan.com',
-        password: await bcrypt.hash('taxadvisor123', 10),
-        firstName: 'Tax',
-        lastName: 'Advisor',
-        status: UserStatus.Active,
-        joinedAt: new Date(),
-        roles: {
-          create: [{ roleId: createdRoles['Tax Advisor'].id, assignedAt: new Date() }]
-        },
-        planId: plans[1].id, // Starter plan
-        billingCompanyId: company.id
-      },
-      {
-        email: 'legaladvisor@bradan.com',
-        password: await bcrypt.hash('legaladvisor123', 10),
-        firstName: 'Legal',
-        lastName: 'Advisor',
-        status: UserStatus.Active,
-        joinedAt: new Date(),
-        roles: {
-          create: [{ roleId: createdRoles['Legal Advisor'].id, assignedAt: new Date() }]
-        },
-        planId: plans[0].id, // Free plan
-        billingCompanyId: company.id
-      },
-      {
-        email: 'consultant@bradan.com',
+        email: 'consultant@clink.com',
         password: await bcrypt.hash('consultant123', 10),
         firstName: 'External',
         lastName: 'Consultant',

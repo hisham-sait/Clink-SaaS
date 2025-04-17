@@ -26,8 +26,6 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Remove express-fileupload as we're using multer for file uploads
-
 // Configure Prisma with better error logging
 const prisma = new PrismaClient({
   log: [
@@ -75,6 +73,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/statutory', auth, require('./routes/statutory'));
 app.use('/api/settings', auth, require('./routes/settings'));
 app.use('/api/crm', auth, require('./routes/crm'));
+app.use('/api/products', auth, require('./routes/products'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -156,36 +155,35 @@ process.on('unhandledRejection', (reason, promise) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Clink SaaS API server running on port ${port}`);
   console.log('Environment:', process.env.NODE_ENV);
   console.log('Features enabled:');
-  console.log('- Authentication:');
-  console.log('  • Login');
-  console.log('  • Registration');
-  console.log('  • Password reset');
-  console.log('- Statutory compliance management:');
-  console.log('  • Directors and officers');
-  console.log('  • Shareholders and shares');
-  console.log('  • Beneficial owners');
-  console.log('  • Charges and securities');
-  console.log('  • Share allotments');
-  console.log('  • Meetings and resolutions');
-  console.log('  • Board minutes');
-  console.log('- Settings management:');
+  console.log('- Multi-tenant Architecture:');
+  console.log('  • Tenant isolation');
+  console.log('  • Company management');
+  console.log('- Authentication & Authorization:');
+  console.log('  • JWT-based authentication');
+  console.log('  • Role-based access control');
   console.log('  • User management');
-  console.log('  • Role management');
-  console.log('  • Company management');
-  console.log('  • Security settings');
-  console.log('  • Preferences');
-  console.log('  • Integrations');
-  console.log('  • Billing');
-  console.log('  • Notifications');
-  console.log('- CRM management:');
+  console.log('- CRM Management:');
   console.log('  • Contact management');
-  console.log('  • Company management');
+  console.log('  • Deal tracking');
+  console.log('  • Pipeline management');
   console.log('  • Activity tracking');
-  console.log('- Import/Export:');
-  console.log('  • Queue processor initialized');
+  console.log('- Product Management:');
+  console.log('  • Product catalog');
+  console.log('  • Categories & families');
+  console.log('  • Attributes & variants');
+  console.log('  • Media management');
+  console.log('  • Import/Export capabilities');
+  console.log('- Settings Management:');
+  console.log('  • User settings');
+  console.log('  • Company settings');
+  console.log('  • Role management');
+  console.log('  • Billing & subscription');
+  console.log('- Data Management:');
+  console.log('  • Import/Export capabilities');
+  console.log('  • Background job processing');
 });
 
 // Export app for testing

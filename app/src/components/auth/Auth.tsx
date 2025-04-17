@@ -12,16 +12,12 @@ interface QuickLoginUser {
 }
 
 const quickLoginUsers: QuickLoginUser[] = [
-  { email: 'superadmin@bradan.com', password: 'superadmin123', role: 'Super Admin', icon: 'bi-shield-lock' },
-  { email: 'platformadmin@bradan.com', password: 'platformadmin123', role: 'Platform Admin', icon: 'bi-gear' },
-  { email: 'companyadmin@bradan.com', password: 'companyadmin123', role: 'Company Admin', icon: 'bi-building' },
-  { email: 'manager@bradan.com', password: 'manager123', role: 'Company Manager', icon: 'bi-person-workspace' },
-  { email: 'accountant@bradan.com', password: 'accountant123', role: 'Accountant', icon: 'bi-calculator' },
-  { email: 'viewer@bradan.com', password: 'viewer123', role: 'Viewer', icon: 'bi-eye' },
-  { email: 'auditor@bradan.com', password: 'auditor123', role: 'Auditor', icon: 'bi-file-earmark-text' },
-  { email: 'taxadvisor@bradan.com', password: 'taxadvisor123', role: 'Tax Advisor', icon: 'bi-cash-stack' },
-  { email: 'legaladvisor@bradan.com', password: 'legaladvisor123', role: 'Legal Advisor', icon: 'bi-bank' },
-  { email: 'consultant@bradan.com', password: 'consultant123', role: 'Consultant', icon: 'bi-briefcase' }
+  { email: 'superadmin@clink.com', password: 'superadmin123', role: 'Super Admin', icon: 'bi-shield-lock' },
+  { email: 'platformadmin@clink.com', password: 'platformadmin123', role: 'Platform Admin', icon: 'bi-gear' },
+  { email: 'companyadmin@clink.com', password: 'companyadmin123', role: 'Company Admin', icon: 'bi-building' },
+  { email: 'manager@clink.com', password: 'manager123', role: 'Company Manager', icon: 'bi-person-workspace' },
+  { email: 'viewer@clink.com', password: 'viewer123', role: 'Viewer', icon: 'bi-eye' },
+  { email: 'consultant@clink.com', password: 'consultant123', role: 'Consultant', icon: 'bi-briefcase' }
 ];
 
 const Login = () => {
