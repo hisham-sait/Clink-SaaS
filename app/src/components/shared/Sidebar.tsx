@@ -6,7 +6,7 @@ import HelpSidebar from '../help/HelpSidebar';
 import CRMSidebar from '../crm/CRMSidebar';
 import ProductsSidebar from '../products/ProductsSidebar';
 
-type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'products' | 'settings' | 'help';
+type SectionType = 'statutory' | 'crm' | 'products' | 'settings' | 'help';
 
 interface ModuleConfig {
   icon: string;
@@ -22,8 +22,6 @@ interface SidebarProps {
 
 const moduleConfigs: Record<SectionType, ModuleConfig> = {
   statutory: { icon: 'bi-journal-bookmark', title: 'Statutory' },
-  compliance: { icon: 'bi-shield-check', title: 'Compliance' },
-  tax: { icon: 'bi-calculator', title: 'Tax' },
   settings: { icon: 'bi-gear', title: 'Settings' },
   help: { icon: 'bi-question-circle', title: 'Help' },
   crm: { icon: 'bi-people', title: 'CRM' },

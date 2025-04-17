@@ -23,6 +23,11 @@ const ProductsSidebar: React.FC<ProductsSidebarProps> = ({ isExpanded = true }) 
       route: '/products/categories'
     },
     {
+      label: 'Sections',
+      icon: 'bi-layers',
+      route: '/products/sections'
+    },
+    {
       label: 'Attributes',
       icon: 'bi-tag',
       route: '/products/attributes'

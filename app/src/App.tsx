@@ -13,14 +13,12 @@ const Auth = lazy(() => import('./components/auth/Auth'));
 const Dashboard = lazy(() => import('./components/dashboards/Dashboard'));
 const Settings = lazy(() => import('./components/settings/Settings'));
 const Statutory = lazy(() => import('./components/statutory/Statutory'));
-const Compliance = lazy(() => import('./components/compliance/Compliance'));
-const Tax = lazy(() => import('./components/tax/Tax'));
 const CRM = lazy(() => import('./components/crm/CRM'));
 const Products = lazy(() => import('./components/products/Products'));
 const Help = lazy(() => import('./components/help/Help'));
 const FormEmbedPage = lazy(() => import('./components/forms/FormEmbedPage'));
 
-type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'products' | 'settings' | 'help';
+type SectionType = 'statutory' | 'crm' | 'products' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 const AppContent = () => {
@@ -172,22 +170,6 @@ const AppContent = () => {
               element={
                 <ProtectedRoute>
                   <Statutory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/compliance/*"
-              element={
-                <ProtectedRoute>
-                  <Compliance />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tax/*"
-              element={
-                <ProtectedRoute>
-                  <Tax />
                 </ProtectedRoute>
               }
             />

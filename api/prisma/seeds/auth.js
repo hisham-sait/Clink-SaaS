@@ -69,6 +69,14 @@ async function seedAuth(inputPlans) {
     // Delete product related models
     await prisma.productTier.deleteMany();
     await prisma.product.deleteMany();
+    await prisma.productAttributeValue.deleteMany();
+    await prisma.productFamilyAttribute.deleteMany();
+    await prisma.productAttributeGroup.deleteMany();
+    await prisma.productAttribute.deleteMany();
+    await prisma.productFamily.deleteMany();
+    await prisma.productCategory.deleteMany();
+    await prisma.productSection.deleteMany();
+    await prisma.productActivity.deleteMany();
     
     await prisma.company.deleteMany();
 

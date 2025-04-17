@@ -350,6 +350,36 @@ router.delete('/:companyId/:id', async (req, res) => {
   }
 });
 
+// Bulk edit products
+router.post('/:companyId/bulk-edit', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const { ids, data } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'No product IDs provided' });
+    }
+    
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'No update data provided' });
+    }
+    
+    // Update products that match both the IDs and company ID
+    const result = await prisma.product.updateMany({
+      where: {
+        id: { in: ids },
+        companyId
+      },
+      data
+    });
+    
+    res.json({ updated: result.count });
+  } catch (error) {
+    console.error('Error bulk editing products:', error);
+    res.status(500).json({ error: 'Failed to update products' });
+  }
+});
+
 // Bulk delete products
 router.post('/:companyId/bulk-delete', async (req, res) => {
   try {

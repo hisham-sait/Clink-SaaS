@@ -4,7 +4,8 @@ const createStatutoryData = require('./seeds/statutory');
 const seedAuth = require('./seeds/auth');
 const seedPlans = require('./seeds/plans');
 const { seedBilling } = require('./seeds/billing');
-const seedServices = require('./seeds/services');
+const seedSections = require('./seeds/sections');
+const seedFMCGProducts = require('./seeds/fmcg-products');
 
 const prisma = new PrismaClient();
 
@@ -33,15 +34,20 @@ async function main() {
     await seedBilling();
     console.log('✓ Billing data created');
     
-    // Create services data
-    console.log('Creating services data...');
-    await seedServices();
-    console.log('✓ Services data created');
-    
     // Create statutory data
     console.log('Creating statutory data...');
     const statutoryData = await createStatutoryData();
     console.log('✓ Statutory data created');
+    
+    // Create product sections
+    console.log('Creating product sections...');
+    await seedSections();
+    console.log('✓ Product sections created');
+    
+    // Create FMCG products
+    console.log('Creating FMCG products...');
+    await seedFMCGProducts();
+    console.log('✓ FMCG products created');
     
     console.log('Seed completed successfully');
     

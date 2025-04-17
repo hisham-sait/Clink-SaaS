@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-type SectionType = 'statutory' | 'compliance' | 'tax' | 'crm' | 'products' | 'settings' | 'help';
+type SectionType = 'statutory' | 'crm' | 'products' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 interface Section {
@@ -43,8 +43,6 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
 
   const topSections: Section[] = [
     { id: 'statutory', title: 'Statutory', icon: 'bi bi-journal-bookmark', route: '/statutory/dashboard' },
-    { id: 'compliance', title: 'Compliance', icon: 'bi bi-shield-check', route: '/compliance/dashboard' },
-    { id: 'tax', title: 'Tax', icon: 'bi bi-calculator', route: '/tax/dashboard' },
     { id: 'crm', title: 'CRM', icon: 'bi bi-people', route: '/crm/contacts' },
     { id: 'products', title: 'Products', icon: 'bi bi-box', route: '/products/dashboard' }
   ];
@@ -88,8 +86,6 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
     
     switch(section) {
       case 'statutory':
-      case 'compliance':
-      case 'tax':
         navigate(`/${section}/dashboard`);
         break;
       case 'settings':

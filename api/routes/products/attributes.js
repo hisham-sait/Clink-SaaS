@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 router.get('/:companyId', async (req, res) => {
   try {
     const { companyId } = req.params;
-    const { type } = req.query;
+    const { type, sectionId } = req.query;
     
     const where = { companyId };
     
@@ -16,12 +16,41 @@ router.get('/:companyId', async (req, res) => {
       where.type = type;
     }
     
+    // Filter by section if provided
+    if (sectionId) {
+      where.sectionId = sectionId;
+    }
+    
     const attributes = await prisma.productAttribute.findMany({
       where,
+      include: {
+        section: true
+      },
       orderBy: { name: 'asc' }
     });
     
-    res.json(attributes);
+    // Get usage statistics for each attribute
+    const attributesWithUsage = await Promise.all(
+      attributes.map(async (attribute) => {
+        const productCount = await prisma.productAttributeValue.count({
+          where: { attributeId: attribute.id }
+        });
+        
+        const familyCount = await prisma.productFamilyAttribute.count({
+          where: { attributeId: attribute.id }
+        });
+        
+        return {
+          ...attribute,
+          usage: {
+            productCount,
+            familyCount
+          }
+        };
+      })
+    );
+    
+    res.json(attributesWithUsage);
   } catch (error) {
     console.error('Error fetching attributes:', error);
     res.status(500).json({ error: 'Failed to fetch attributes' });
@@ -34,7 +63,10 @@ router.get('/:companyId/:id', async (req, res) => {
     const { companyId, id } = req.params;
     
     const attribute = await prisma.productAttribute.findFirst({
-      where: { id, companyId }
+      where: { id, companyId },
+      include: {
+        section: true
+      }
     });
     
     if (!attribute) {
@@ -210,13 +242,23 @@ router.delete('/:companyId/:id', async (req, res) => {
 
 // Helper function to validate attribute data based on type
 function validateAttributeData(attributeData) {
-  const { type, options, validationRules } = attributeData;
+  const { type, options, validationRules, tableConfig } = attributeData;
   
   if (!type) return; // Skip validation if type is not provided
   
   // Validate options for select/multiselect types
   if ((type === 'SELECT' || type === 'MULTISELECT') && (!options || !Array.isArray(options))) {
     throw new Error(`Options must be provided for ${type} attribute type`);
+  }
+  
+  // Validate table configuration for TABLE type
+  if (type === 'TABLE') {
+    if (!tableConfig) {
+      // If tableConfig is not provided, we'll use a default in the route handler
+      console.log('No tableConfig provided for TABLE attribute, will use default');
+    } else if (!tableConfig.columns || !Array.isArray(tableConfig.columns) || tableConfig.columns.length === 0) {
+      throw new Error('TABLE attribute must have at least one column defined in tableConfig');
+    }
   }
   
   // Validate validation rules

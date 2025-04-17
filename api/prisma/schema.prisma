@@ -38,6 +38,7 @@ model User {
   securitySettings SecuritySettings?
   plan          Plan?        @relation(fields: [planId], references: [id])  // Added: Relation to Plan
   billingCompany Company?    @relation("UserBillingCompany", fields: [billingCompanyId], references: [id]) // Added: Relation to billing Company
+  productActivities ProductActivity[]
 }
 
 model SecuritySettings {
@@ -221,6 +222,7 @@ model Company {
   productCategories ProductCategory[]
   productFamilies   ProductFamily[]
   productAttributes ProductAttribute[]
+  productSections   ProductSection[]
 }
 
 model UserCompany {
@@ -412,6 +414,7 @@ model Product {
   variants          ProductVariant[]    @relation("ParentProduct")
   parentId          String?
   parent            Product?            @relation("ParentProduct", fields: [parentId], references: [id])
+  children          Product[]           @relation("ParentProduct")
   media             ProductMedia[]
   completeness      Int?                // Percentage of required attributes filled
   isVariant         Boolean             @default(false)
@@ -507,6 +510,8 @@ model ProductAttribute {
   validationRules   Json?                 // Validation rules (min, max, regex, etc.)
   companyId         String
   company           Company               @relation(fields: [companyId], references: [id])
+  sectionId         String?
+  section           ProductSection?       @relation(fields: [sectionId], references: [id])
   attributeValues   ProductAttributeValue[]
   familyAttributes  ProductFamilyAttribute[]
   createdAt         DateTime              @default(now())
@@ -515,6 +520,7 @@ model ProductAttribute {
   @@unique([companyId, code])
   @@index([companyId])
   @@index([type])
+  @@index([sectionId])
 }
 
 model ProductFamilyAttribute {
@@ -587,6 +593,41 @@ model ProductMedia {
 
   @@index([productId])
   @@index([type])
+}
+
+model ProductSection {
+  id              String            @id @default(cuid())
+  name            String
+  code            String
+  description     String?           @db.Text
+  displayIn       String            @default("both") // 'left', 'right', or 'both'
+  order           Int               @default(1)
+  companyId       String
+  company         Company           @relation(fields: [companyId], references: [id])
+  attributes      ProductAttribute[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model ProductActivity {
+  id              String            @id @default(cuid())
+  companyId       String
+  userId          String?
+  action          String            // created, updated, deleted, etc.
+  itemType        String            // product, category, family, attribute, etc.
+  itemId          String
+  itemName        String
+  details         Json?             // Additional details about the activity
+  timestamp       DateTime          @default(now())
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([itemType, itemId])
+  @@index([timestamp])
 }
 
 model Proposal {
