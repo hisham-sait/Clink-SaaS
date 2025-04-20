@@ -9,11 +9,13 @@ const prisma = new PrismaClient();
 const shortlinksRoutes = require('./shortlinks');
 const digitallinksRoutes = require('./digitallinks');
 const categoriesRoutes = require('./categories');
+const qrcodesRoutes = require('./qrcodes');
 
 // Use route modules
 router.use('/shortlinks', shortlinksRoutes);
 router.use('/digitallinks', digitallinksRoutes);
 router.use('/categories', categoriesRoutes);
+router.use('/qrcodes', qrcodesRoutes);
 
 // Get all links (both shortlinks and digitallinks) for a company
 router.get('/', auth, async (req, res) => {
@@ -44,6 +46,22 @@ router.get('/', auth, async (req, res) => {
         _count: {
           select: {
             digitalLinkClicks: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    
+    // Get QR codes
+    const qrCodes = await prisma.qRCode.findMany({
+      where: { companyId },
+      include: {
+        category: true,
+        _count: {
+          select: {
+            qrCodeClicks: true
           }
         }
       },
@@ -90,8 +108,27 @@ router.get('/', auth, async (req, res) => {
       updatedAt: link.updatedAt
     }));
     
+    const formattedQRCodes = qrCodes.map(qrCode => ({
+      id: qrCode.id,
+      type: 'qrcode',
+      title: qrCode.title,
+      content: qrCode.content,
+      contentType: qrCode.contentType,
+      config: qrCode.config,
+      clicks: qrCode._count.qrCodeClicks,
+      status: qrCode.status,
+      expiresAt: qrCode.expiresAt,
+      category: qrCode.category,
+      createdAt: qrCode.createdAt,
+      updatedAt: qrCode.updatedAt
+    }));
+    
     // Combine and sort by creation date
-    const allLinks = [...formattedShortlinks, ...formattedDigitallinks].sort((a, b) => 
+    const allLinks = [
+      ...formattedShortlinks, 
+      ...formattedDigitallinks,
+      ...formattedQRCodes
+    ].sort((a, b) => 
       new Date(b.createdAt) - new Date(a.createdAt)
     );
     
@@ -124,6 +161,11 @@ router.get('/dashboard', auth, async (req, res) => {
       where: { companyId }
     });
     
+    // Get total QR codes count
+    const qrCodesCount = await prisma.qRCode.count({
+      where: { companyId }
+    });
+    
     // Get total clicks for shortlinks
     const shortlinksClicks = await prisma.linkClick.count({
       where: {
@@ -137,6 +179,15 @@ router.get('/dashboard', auth, async (req, res) => {
     const digitallinksClicks = await prisma.digitalLinkClick.count({
       where: {
         digitalLink: {
+          companyId
+        }
+      }
+    });
+    
+    // Get total clicks for QR codes
+    const qrCodesClicks = await prisma.qRCodeClick.count({
+      where: {
+        qrCode: {
           companyId
         }
       }
@@ -186,6 +237,27 @@ router.get('/dashboard', auth, async (req, res) => {
       take: 5
     });
     
+    const recentQRCodeClicks = await prisma.qRCodeClick.findMany({
+      where: {
+        qrCode: {
+          companyId
+        }
+      },
+      include: {
+        qrCode: {
+          select: {
+            title: true,
+            content: true,
+            contentType: true
+          }
+        }
+      },
+      orderBy: {
+        timestamp: 'desc'
+      },
+      take: 5
+    });
+    
     // Format recent activity
     const formattedRecentShortlinkClicks = recentShortlinkClicks.map(click => ({
       id: click.id,
@@ -220,8 +292,28 @@ router.get('/dashboard', auth, async (req, res) => {
       timestamp: click.timestamp
     }));
     
+    const formattedRecentQRCodeClicks = recentQRCodeClicks.map(click => ({
+      id: click.id,
+      type: 'qrcode',
+      linkId: click.qrCodeId,
+      linkTitle: click.qrCode.title,
+      contentType: click.qrCode.contentType,
+      content: click.qrCode.content,
+      ipAddress: click.ipAddress,
+      userAgent: click.userAgent,
+      referrer: click.referrer,
+      location: click.location,
+      device: click.device,
+      browser: click.browser,
+      timestamp: click.timestamp
+    }));
+    
     // Combine and sort by timestamp
-    const recentActivity = [...formattedRecentShortlinkClicks, ...formattedRecentDigitallinkClicks].sort((a, b) => 
+    const recentActivity = [
+      ...formattedRecentShortlinkClicks, 
+      ...formattedRecentDigitallinkClicks,
+      ...formattedRecentQRCodeClicks
+    ].sort((a, b) => 
       new Date(b.timestamp) - new Date(a.timestamp)
     ).slice(0, 10);
     
@@ -256,6 +348,21 @@ router.get('/dashboard', auth, async (req, res) => {
       take: 5
     });
     
+    const topQRCodes = await prisma.qRCode.findMany({
+      where: { companyId },
+      include: {
+        _count: {
+          select: {
+            qrCodeClicks: true
+          }
+        }
+      },
+      orderBy: {
+        clicks: 'desc'
+      },
+      take: 5
+    });
+    
     // Format top performing links
     const formattedTopShortlinks = topShortlinks.map(link => ({
       id: link.id,
@@ -279,20 +386,36 @@ router.get('/dashboard', auth, async (req, res) => {
       createdAt: link.createdAt
     }));
     
+    const formattedTopQRCodes = topQRCodes.map(qrCode => ({
+      id: qrCode.id,
+      type: 'qrcode',
+      title: qrCode.title,
+      contentType: qrCode.contentType,
+      content: qrCode.content,
+      clicks: qrCode._count.qrCodeClicks,
+      createdAt: qrCode.createdAt
+    }));
+    
     // Combine and sort by clicks
-    const topLinks = [...formattedTopShortlinks, ...formattedTopDigitallinks].sort((a, b) => 
+    const topLinks = [
+      ...formattedTopShortlinks, 
+      ...formattedTopDigitallinks,
+      ...formattedTopQRCodes
+    ].sort((a, b) => 
       b.clicks - a.clicks
     ).slice(0, 5);
     
     res.json({
       success: true,
       data: {
-        totalLinks: shortlinksCount + digitallinksCount,
+        totalLinks: shortlinksCount + digitallinksCount + qrCodesCount,
         shortlinksCount,
         digitallinksCount,
-        totalClicks: shortlinksClicks + digitallinksClicks,
+        qrCodesCount,
+        totalClicks: shortlinksClicks + digitallinksClicks + qrCodesClicks,
         shortlinksClicks,
         digitallinksClicks,
+        qrCodesClicks,
         recentActivity,
         topLinks
       }

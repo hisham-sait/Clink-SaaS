@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const auth = require('../../middleware/auth');
 
 // Get all companies
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRoles = req.user?.roles || [];
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -15,19 +16,17 @@ router.get('/', async (req, res) => {
 
     let companies;
 
-    if (userRole === 'Super Administrator') {
+    const isSuperAdmin = Array.isArray(userRoles) && userRoles.includes('Super Administrator');
+    if (isSuperAdmin) {
       // Super admin can access all companies
       companies = await prisma.company.findMany({
         include: {
-          directors: true,
-          shareholders: true,
-          shares: true,
-          beneficialOwners: true,
-          charges: true,
-          allotments: true,
-          meetings: true,
-          boardMinutes: true,
+          userCompanies: true,
+          createdBy: true,
+          roles: true,
           activities: true,
+          primaryContact: true,
+          billingDetails: true,
         },
       });
     } else {
@@ -46,15 +45,12 @@ router.get('/', async (req, res) => {
           ]
         },
         include: {
-          directors: true,
-          shareholders: true,
-          shares: true,
-          beneficialOwners: true,
-          charges: true,
-          allotments: true,
-          meetings: true,
-          boardMinutes: true,
+          userCompanies: true,
+          createdBy: true,
+          roles: true,
           activities: true,
+          primaryContact: true,
+          billingDetails: true,
         },
       });
     }
@@ -66,10 +62,10 @@ router.get('/', async (req, res) => {
 });
 
 // Get accessible companies for current user
-router.get('/accessible', async (req, res) => {
+router.get('/accessible', auth, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRoles = req.user?.roles || [];
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -77,7 +73,8 @@ router.get('/accessible', async (req, res) => {
 
     let companies;
 
-    if (userRole === 'Super Administrator') {
+    const isSuperAdmin = Array.isArray(userRoles) && userRoles.includes('Super Administrator');
+    if (isSuperAdmin) {
       // Super admin can access all companies
       companies = await prisma.company.findMany();
     } else {
@@ -106,18 +103,54 @@ router.get('/accessible', async (req, res) => {
 });
 
 // Get company by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRoles = req.user?.roles || [];
+    const companyId = req.params.id;
+
+    console.log('GET company by ID - Request params:', {
+      companyId,
+      userId,
+      userRoles
+    });
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // First, check if the company exists
+    const companyExists = await prisma.company.findUnique({
+      where: { id: companyId }
+    });
+
+    if (!companyExists) {
+      console.log(`Company with ID ${companyId} not found`);
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    // For Super Administrators, allow access to any company
+    const isSuperAdmin = Array.isArray(userRoles) && userRoles.includes('Super Administrator');
+    if (isSuperAdmin) {
+      console.log('User is Super Administrator, allowing access to company');
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        include: {
+          userCompanies: true,
+          createdBy: true,
+          roles: true,
+          activities: true,
+          primaryContact: true,
+          billingDetails: true,
+        },
+      });
+      return res.json(company);
+    }
+
+    // For regular users, check if they have access to the company
     const company = await prisma.company.findFirst({
       where: {
-        id: req.params.id,
+        id: companyId,
         OR: [
           { createdById: userId },
           {
@@ -130,35 +163,32 @@ router.get('/:id', async (req, res) => {
         ]
       },
       include: {
-        directors: true,
-        shareholders: true,
-        shares: true,
-        beneficialOwners: true,
-        charges: true,
-        allotments: true,
-        meetings: true,
-        boardMinutes: true,
+        userCompanies: true,
+        createdBy: true,
+        roles: true,
         activities: true,
+        primaryContact: true,
+        billingDetails: true,
       },
     });
 
-    if (!company && userRole !== 'Super Administrator') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
     if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
+      console.log(`User ${userId} does not have access to company ${companyId}`);
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     res.json(company);
   } catch (error) {
     console.error('Error fetching company:', error);
-    res.status(500).json({ error: 'Failed to fetch company' });
+    res.status(500).json({ 
+      error: 'Failed to fetch company',
+      details: error.message
+    });
   }
 });
 
 // Create company
-router.post('/create', async (req, res) => {
+router.post('/create', auth, async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -214,15 +244,12 @@ router.post('/create', async (req, res) => {
         }
       },
       include: {
-        directors: true,
-        shareholders: true,
-        shares: true,
-        beneficialOwners: true,
-        charges: true,
-        allotments: true,
-        meetings: true,
-        boardMinutes: true,
+        userCompanies: true,
+        createdBy: true,
+        roles: true,
         activities: true,
+        primaryContact: true,
+        billingDetails: true,
       },
     });
     res.status(201).json(company);
@@ -233,10 +260,10 @@ router.post('/create', async (req, res) => {
 });
 
 // Update company
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRoles = req.user?.roles || [];
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -259,7 +286,8 @@ router.put('/:id', async (req, res) => {
       }
     });
 
-    if (!hasAccess && userRole !== 'Super Administrator') {
+    const isSuperAdmin = Array.isArray(userRoles) && userRoles.includes('Super Administrator');
+    if (!hasAccess && !isSuperAdmin) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -307,15 +335,12 @@ router.put('/:id', async (req, res) => {
         status
       },
       include: {
-        directors: true,
-        shareholders: true,
-        shares: true,
-        beneficialOwners: true,
-        charges: true,
-        allotments: true,
-        meetings: true,
-        boardMinutes: true,
+        userCompanies: true,
+        createdBy: true,
+        roles: true,
         activities: true,
+        primaryContact: true,
+        billingDetails: true,
       },
     });
     res.json(company);
@@ -326,10 +351,10 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete company
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const userRoles = req.user?.roles || [];
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -353,7 +378,8 @@ router.delete('/:id', async (req, res) => {
       }
     });
 
-    if (!hasAccess && userRole !== 'Super Administrator') {
+    const isSuperAdmin = Array.isArray(userRoles) && userRoles.includes('Super Administrator');
+    if (!hasAccess && !isSuperAdmin) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -368,7 +394,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Set primary organization
-router.post('/:id/set-primary', async (req, res) => {
+router.post('/:id/set-primary', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },
@@ -384,7 +410,7 @@ router.post('/:id/set-primary', async (req, res) => {
 });
 
 // Set my organization
-router.post('/:id/set-my-org', async (req, res) => {
+router.post('/:id/set-my-org', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },
@@ -400,7 +426,7 @@ router.post('/:id/set-my-org', async (req, res) => {
 });
 
 // Add tag
-router.post('/:id/tags', async (req, res) => {
+router.post('/:id/tags', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },
@@ -418,7 +444,7 @@ router.post('/:id/tags', async (req, res) => {
 });
 
 // Remove tag
-router.delete('/:id/tags/:tag', async (req, res) => {
+router.delete('/:id/tags/:tag', auth, async (req, res) => {
   try {
     const company = await prisma.company.findUnique({
       where: { id: req.params.id },
@@ -438,7 +464,7 @@ router.delete('/:id/tags/:tag', async (req, res) => {
 });
 
 // Archive company
-router.post('/:id/archive', async (req, res) => {
+router.post('/:id/archive', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },
@@ -454,7 +480,7 @@ router.post('/:id/archive', async (req, res) => {
 });
 
 // Activate company
-router.post('/:id/activate', async (req, res) => {
+router.post('/:id/activate', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },
@@ -470,7 +496,7 @@ router.post('/:id/activate', async (req, res) => {
 });
 
 // Upload logo
-router.post('/:id/logo', async (req, res) => {
+router.post('/:id/logo', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },
@@ -486,7 +512,7 @@ router.post('/:id/logo', async (req, res) => {
 });
 
 // Get primary contact
-router.get('/:id/primary-contact', async (req, res) => {
+router.get('/:id/primary-contact', auth, async (req, res) => {
   try {
     const company = await prisma.company.findUnique({
       where: { id: req.params.id },
@@ -505,7 +531,7 @@ router.get('/:id/primary-contact', async (req, res) => {
 });
 
 // Update primary contact
-router.put('/:id/primary-contact', async (req, res) => {
+router.put('/:id/primary-contact', auth, async (req, res) => {
   try {
     const company = await prisma.company.update({
       where: { id: req.params.id },

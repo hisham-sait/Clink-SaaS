@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
 const multer = require('multer');
@@ -9,6 +8,7 @@ const auth = require('./middleware/auth');
 const { importQueue } = require('./services/queue');
 const fs = require('fs');
 const path = require('path');
+const prisma = require('./services/prisma');
 
 dotenv.config();
 
@@ -30,33 +30,6 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure Prisma with better error logging
-const prisma = new PrismaClient({
-  log: [
-    { level: 'query', emit: 'event' },
-    { level: 'info', emit: 'event' },
-    { level: 'warn', emit: 'event' },
-    { level: 'error', emit: 'event' }
-  ]
-});
-
-// Add Prisma logging events
-prisma.$on('error', (e) => {
-  console.error('Prisma Error:', e);
-});
-
-prisma.$on('warn', (e) => {
-  console.warn('Prisma Warning:', e);
-});
-
-prisma.$on('info', (e) => {
-  console.info('Prisma Info:', e);
-});
-
-prisma.$on('query', (e) => {
-  console.log('Prisma Query:', e);
-});
-
 // Initialize queue processor
 importQueue.on('completed', (job, result) => {
   console.log(`Job ${job.id} completed with result:`, result);
@@ -70,19 +43,25 @@ importQueue.on('progress', (job, progress) => {
   console.log(`Job ${job.id} progress: ${progress}%`);
 });
 
-// Public auth routes (no auth middleware)
+// Public routes (no auth middleware)
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/engage/public', require('./routes/engage/public'));
 
 // Protected routes
 app.use('/api/settings', auth, require('./routes/settings'));
 app.use('/api/crm', auth, require('./routes/crm'));
 app.use('/api/products', auth, require('./routes/products'));
 app.use('/api/links', auth, require('./routes/links'));
+app.use('/api/engage', auth, require('./routes/engage'));
 
 // Public resolver routes (no auth middleware)
 app.use('/r', require('./routes/links/resolver'));
 // Add direct shortlink resolver route
 app.use('/', require('./routes/links/resolver'));
+// Form and Survey resolvers
+app.use('/r', require('./routes/engage/resolver'));
+// Add direct form and survey resolver routes
+app.use('/', require('./routes/engage/resolver'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

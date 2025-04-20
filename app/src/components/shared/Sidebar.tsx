@@ -5,8 +5,10 @@ import HelpSidebar from '../help/HelpSidebar';
 import CRMSidebar from '../crm/CRMSidebar';
 import ProductsSidebar from '../products/ProductsSidebar';
 import LinksSidebar from '../links/LinksSidebar';
+import EngageSidebar from '../engage/EngageSidebar';
+import api from '../../services/api';
 
-type SectionType = 'crm' | 'products' | 'links' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'settings' | 'help';
 
 interface ModuleConfig {
   icon: string;
@@ -25,7 +27,8 @@ const moduleConfigs: Record<SectionType, ModuleConfig> = {
   help: { icon: 'bi-question-circle', title: 'Help' },
   crm: { icon: 'bi-people', title: 'CRM' },
   products: { icon: 'bi-box', title: 'Products' },
-  links: { icon: 'bi-link-45deg', title: 'Links' }
+  links: { icon: 'bi-link-45deg', title: 'Links' },
+  engage: { icon: 'bi-chat-dots', title: 'Engage' }
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -41,16 +44,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     const fetchCompanyDetails = async () => {
       if (user?.companyId) {
         try {
-          const response = await fetch(`http://localhost:3000/api/settings/companies/${user.companyId}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (response.ok) {
-            const company = await response.json();
-            setCompanyName(company.name);
-          }
+          // Use the API service instead of direct fetch
+          const response = await api.get(`/settings/companies/${user.companyId}`);
+          setCompanyName(response.data.name);
         } catch (error) {
           console.error('Error loading company:', error);
         }
@@ -68,6 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     return moduleConfigs[activeSection]?.title || '';
   };
 
+  // Render the appropriate sidebar based on the active section
   const renderSidebar = () => {
     switch (activeSection) {
       case 'settings':
@@ -80,6 +77,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         return <ProductsSidebar isExpanded={isExpanded} />;
       case 'links':
         return <LinksSidebar isExpanded={isExpanded} />;
+      case 'engage':
+        return <EngageSidebar isExpanded={isExpanded} />;
       default:
         return <div className="p-4">Coming Soon</div>;
     }

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= form.title %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+    .form-header {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .form-footer {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .thank-you-message {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-container">
+      <div class="form-header">
+        <h1><%= form.title %></h1>
+        <% if (form.description) { %>
+          <p class="text-muted"><%= form.description %></p>
+        <% } %>
+      </div>
+      
+      <form id="publicForm" action="/api/engage/public/forms/submit/<%= form.slug %>" method="POST" enctype="application/x-www-form-urlencoded">
+        <div id="formElements"></div>
+        
+        <div class="form-footer">
+          <% if (form.settings.showResetButton) { %>
+            <button type="reset" class="btn btn-outline-secondary me-2"><%= form.settings.resetButtonText || 'Reset' %></button>
+          <% } %>
+          
+          <% if (form.settings.showSubmitButton !== false) { %>
+            <button type="submit" class="btn btn-primary"><%= form.settings.submitButtonText || 'Submit' %></button>
+          <% } %>
+        </div>
+      </form>
+      
+      <div id="thankYouMessage" class="thank-you-message">
+        <div class="alert alert-success">
+          <h4 class="alert-heading">Thank you!</h4>
+          <p>Your form has been submitted successfully.</p>
+          <% if (form.settings.redirectAfterSubmit && form.settings.redirectUrl) { %>
+            <p>You will be redirected shortly...</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Form data from server
+    const formData = <%- JSON.stringify(form) %>;
+    
+    // Function to render form elements
+    function renderFormElements() {
+      const container = document.getElementById('formElements');
+      const elements = formData.elements || [];
+      
+      elements.forEach(element => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mb-3';
+        
+        let html = '';
+        
+        switch(element.type) {
+          case 'text':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+              <input type="text" class="form-control" name="${element.id}" placeholder="${element.placeholder || ''}" ${element.required ? 'required' : ''}>
+            `;
+            break;
+            
+          case 'textarea':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+              <textarea class="form-control" name="${element.id}" rows="3" placeholder="${element.placeholder || ''}" ${element.required ? 'required' : ''}></textarea>
+            `;
+            break;
+            
+          case 'checkbox':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+            `;
+            
+            if (element.options && element.options.length) {
+              element.options.forEach((option, index) => {
+                html += `
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="${element.id}" value="${option}" id="${element.id}-option-${index}">
+                    <label class="form-check-label" for="${element.id}-option-${index}">${option}</label>
+                  </div>
+                `;
+              });
+            }
+            break;
+            
+          case 'radio':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+            `;
+            
+            if (element.options && element.options.length) {
+              element.options.forEach((option, index) => {
+                html += `
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="${element.id}" value="${option}" id="${element.id}-option-${index}" ${element.required ? 'required' : ''}>
+                    <label class="form-check-label" for="${element.id}-option-${index}">${option}</label>
+                  </div>
+                `;
+              });
+            }
+            break;
+            
+          case 'select':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+              <select class="form-select" name="${element.id}" ${element.required ? 'required' : ''}>
+                <option value="">Select an option</option>
+            `;
+            
+            if (element.options && element.options.length) {
+              element.options.forEach(option => {
+                html += `<option value="${option}">${option}</option>`;
+              });
+            }
+            
+            html += `</select>`;
+            break;
+            
+          case 'date':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+              <input type="date" class="form-control" name="${element.id}" ${element.required ? 'required' : ''}>
+            `;
+            break;
+            
+          case 'file':
+            html = `
+              <label class="form-label">${element.label}${element.required ? '<span class="text-danger">*</span>' : ''}</label>
+              ${element.description ? `<div class="form-text mb-1">${element.description}</div>` : ''}
+              <input type="file" class="form-control" name="${element.id}" ${element.required ? 'required' : ''}>
+            `;
+            break;
+        }
+        
+        wrapper.innerHTML = html;
+        container.appendChild(wrapper);
+      });
+    }
+    
+    // Handle form submission success
+    <% if (form.settings.redirectAfterSubmit && form.settings.redirectUrl) { %>
+    document.getElementById('publicForm').addEventListener('submit', function() {
+      // Show thank you message
+      setTimeout(() => {
+        document.getElementById('publicForm').style.display = 'none';
+        document.getElementById('thankYouMessage').style.display = 'block';
+        
+        // Redirect after a delay
+        setTimeout(() => {
+          window.location.href = '<%= form.settings.redirectUrl %>';
+        }, 3000);
+      }, 100);
+    });
+    <% } %>
+    
+    // Initialize form
+    renderFormElements();
+  </script>
+</body>
+</html>

@@ -15,10 +15,12 @@ const Settings = lazy(() => import('./components/settings/Settings'));
 const CRM = lazy(() => import('./components/crm/CRM'));
 const Products = lazy(() => import('./components/products/Products'));
 const Links = lazy(() => import('./components/links/Links'));
+const Engage = lazy(() => import('./components/engage/Engage'));
 const Help = lazy(() => import('./components/help/Help'));
 const FormEmbedPage = lazy(() => import('./components/forms/FormEmbedPage'));
+const SurveyEmbedPage = lazy(() => import('./components/surveys/SurveyEmbedPage'));
 
-type SectionType = 'crm' | 'products' | 'links' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 const AppContent = () => {
@@ -197,16 +199,35 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/engage/*"
+              element={
+                <ProtectedRoute>
+                  <Engage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Form embed route */}
+            {/* Form embed route - for internal use */}
             <Route path="/embed/form/:formId" element={<FormEmbedPage />} />
+            
+            {/* Public form and survey routes are handled by the backend */}
 
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            {/* Exclude shortlink and digital link routes from catch-all */}
+            {/* Exclude shortlink, digital link, form, and survey routes from catch-all */}
             <Route path="/s/*" element={null} />
             <Route path="/r/*" element={null} />
             <Route path="/d/*" element={null} />
+            <Route path="/f/*" element={null} />
+            <Route path="/y/*" element={null} />
+            {/* Redirect old form and survey URLs to new format */}
+            <Route path="/forms/:formId" element={
+              <Navigate to={`/f/${window.location.pathname.split('/').pop()}`} replace />
+            } />
+            <Route path="/surveys/:surveyId" element={
+              <Navigate to={`/y/${window.location.pathname.split('/').pop()}`} replace />
+            } />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

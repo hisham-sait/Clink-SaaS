@@ -4,6 +4,7 @@ import Dashboard from './sections/dashboard/Dashboard';
 import Shortlinks from './sections/shortlinks/Shortlinks';
 import Digitallinks from './sections/digitallinks/Digitallinks';
 import Categories from './sections/categories/Categories';
+import Qrcodes from './sections/qrcodes/Qrcodes';
 
 const Links: React.FC = () => {
   return (
@@ -12,6 +13,7 @@ const Links: React.FC = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="shortlinks" element={<Shortlinks />} />
         <Route path="digitallinks" element={<Digitallinks />} />
+        <Route path="qrcodes" element={<Qrcodes />} />
         <Route path="categories" element={<Categories />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>

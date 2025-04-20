@@ -69,6 +69,15 @@ app/.angular/
 app/coverage/
 app/.env
 
+# Dash specific
+dash/venv/
+dash/*.db
+dash/superset.db
+dash/.dependencies_installed
+dash/__pycache__/
+dash/**/__pycache__/
+dash/**/*.py[cod]
+
 # Debug
 debug.log
 debug/

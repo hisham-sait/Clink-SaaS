@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import FormEmbed from '../crm/sections/forms/FormEmbed';
+import FormEmbed from '../engage/sections/forms/FormEmbed';
 
 const FormEmbedPage: React.FC = () => {
   const { formId } = useParams<{ formId: string }>();

@@ -1,0 +1,98 @@
+/**
+ * Clink Theme CSS Template for Superset
+ * 
+ * This CSS template can be loaded through the Superset UI to further customize the appearance
+ * of dashboards. To use this template:
+ * 
+ * 1. Log in to Superset as an admin
+ * 2. Go to "Settings" > "CSS Templates"
+ * 3. Click "+" to add a new template
+ * 4. Name it "Clink Theme"
+ * 5. Copy and paste the CSS below
+ * 6. Save the template
+ * 7. When creating or editing a dashboard, you can select this template in the dashboard properties
+ */
+
+/* Dashboard container */
+.dashboard-content {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+}
+
+/* Dashboard header */
+.dashboard-header {
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  padding: 16px;
+}
+
+.dashboard-header .dashboard-component-header {
+  font-weight: 600;
+}
+
+/* Chart containers */
+.dashboard-component-chart-holder {
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-component-chart-holder:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Chart headers */
+.chart-header {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  font-weight: 600;
+}
+
+/* Filter indicators */
+.filter-indicator {
+  background-color: #0d6efd;
+  color: white;
+}
+
+/* Dashboard tabs */
+.dashboard-component-tabs .nav-tabs .nav-item .nav-link {
+  color: #6c757d;
+}
+
+.dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+/* Dark theme support */
+.dashboard--dark {
+  color: #f8f9fa;
+}
+
+.dashboard--dark .dashboard-header,
+.dashboard--dark .dashboard-component-chart-holder {
+  background-color: #1e1f20;
+  border-color: #343a40;
+}
+
+.dashboard--dark .dashboard-component-tabs .nav-tabs .nav-item .nav-link {
+  color: #adb5bd;
+}
+
+.dashboard--dark .dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
+}

@@ -41,6 +41,7 @@ model User {
   productActivities     ProductActivity[]
   linkActivities        LinkActivity[]
   digitalLinkActivities DigitalLinkActivity[]
+  qrCodeActivities      QRCodeActivity[]
 }
 
 model SecuritySettings {
@@ -221,6 +222,13 @@ model Company {
   links              Link[]
   digitalLinks       DigitalLink[]
   linkCategories     LinkCategory[]
+  qrCodes            QRCode[]
+  // Engage Relations
+  forms              Form[]
+  formCategories     FormCategory[]
+  surveys            Survey[]
+  surveyCategories   SurveyCategory[]
+  datasets           Dataset[]
 }
 
 model UserCompany {
@@ -907,7 +915,6 @@ model Link {
   linkActivities LinkActivity[]
 
   @@index([companyId])
-  @@index([shortCode])
   @@index([status])
   @@index([categoryId])
 }
@@ -954,9 +961,43 @@ model LinkCategory {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   DigitalLink DigitalLink[]
+  qrCodes     QRCode[]
 
   @@unique([companyId, name])
   @@index([companyId])
+}
+
+// Data Management Models
+model Dataset {
+  id            String       @id @default(cuid())
+  name          String
+  description   String?
+  type          String       // "form", "survey", "upload", "webhook"
+  sourceId      String?      // formId or surveyId if applicable
+  sourceName    String?      // Name of the source form/survey
+  webhookId     String?      @unique // Unique ID for webhook access
+  webhookSecret String?      // Secret for webhook authentication
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  records       DataRecord[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([sourceId])
+}
+
+model DataRecord {
+  id        String   @id @default(cuid())
+  datasetId String
+  dataset   Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  data      Json     // The actual data
+  metadata  Json?    // Additional metadata
+  createdAt DateTime @default(now())
+
+  @@index([datasetId])
+  @@index([createdAt])
 }
 
 // GS1 Digital Link Model
@@ -1020,6 +1061,158 @@ model DigitalLinkActivity {
   @@index([digitalLinkId])
   @@index([userId])
   @@index([timestamp])
+}
+
+// QR Code Models
+model QRCode {
+  id                String           @id @default(cuid())
+  title             String
+  content           String           @db.Text
+  contentType       String           // url, text, vcard, email, sms, wifi
+  config            Json             // Stores all customization options
+  status            Status           @default(Active)
+  expiresAt         DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  companyId         String
+  company           Company          @relation(fields: [companyId], references: [id])
+  categoryId        String?
+  category          LinkCategory?    @relation(fields: [categoryId], references: [id])
+  clicks            Int              @default(0)
+  qrCodeClicks      QRCodeClick[]
+  qrCodeActivities  QRCodeActivity[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([categoryId])
+}
+
+model QRCodeClick {
+  id            String   @id @default(cuid())
+  qrCodeId      String
+  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  location      String?
+  device        String?
+  browser       String?
+  timestamp     DateTime @default(now())
+
+  @@index([qrCodeId])
+  @@index([timestamp])
+}
+
+model QRCodeActivity {
+  id            String   @id @default(cuid())
+  qrCodeId      String
+  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  action        String   // created, updated, deleted, etc.
+  details       Json?
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  timestamp     DateTime @default(now())
+
+  @@index([qrCodeId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+// Form and Survey Models
+model Form {
+  id             String          @id @default(cuid())
+  title          String
+  description    String?
+  slug           String          @unique // For public URL
+  elements       Json            // Stores form elements configuration
+  settings       Json            // Stores form settings
+  status         Status          @default(Active)
+  submissions    Int             @default(0)
+  categoryId     String?
+  category       FormCategory?   @relation(fields: [categoryId], references: [id])
+  companyId      String
+  company        Company         @relation(fields: [companyId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  formSubmissions FormSubmission[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+}
+
+model FormCategory {
+  id          String   @id @default(cuid())
+  name        String
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  forms       Form[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  data      Json     // Submitted form data
+  metadata  Json?    // Additional metadata (browser, IP, etc.)
+  createdAt DateTime @default(now())
+
+  @@index([formId])
+  @@index([createdAt])
+}
+
+model Survey {
+  id             String           @id @default(cuid())
+  title          String
+  description    String?
+  slug           String           @unique // For public URL
+  sections       Json             // Stores survey sections and questions
+  settings       Json             // Stores survey settings
+  status         Status           @default(Active)
+  responses      Int              @default(0)
+  categoryId     String?
+  category       SurveyCategory?  @relation(fields: [categoryId], references: [id])
+  companyId      String
+  company        Company          @relation(fields: [companyId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  surveyResponses SurveyResponse[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+}
+
+model SurveyCategory {
+  id          String   @id @default(cuid())
+  name        String
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  surveys     Survey[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model SurveyResponse {
+  id        String   @id @default(cuid())
+  surveyId  String
+  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  data      Json     // Submitted survey responses
+  metadata  Json?    // Additional metadata (browser, IP, etc.)
+  createdAt DateTime @default(now())
+
+  @@index([surveyId])
+  @@index([createdAt])
 }
 
 // Enums

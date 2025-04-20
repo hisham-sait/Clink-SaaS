@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-type SectionType = 'crm' | 'products' | 'links' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 interface Section {
@@ -44,7 +44,8 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
   const topSections: Section[] = [
     { id: 'crm', title: 'CRM', icon: 'bi bi-people', route: '/crm/contacts' },
     { id: 'products', title: 'Products', icon: 'bi bi-box', route: '/products/dashboard' },
-    { id: 'links', title: 'Links', icon: 'bi bi-link-45deg', route: '/links/dashboard' }
+    { id: 'links', title: 'Links', icon: 'bi bi-link-45deg', route: '/links/dashboard' },
+    { id: 'engage', title: 'Engage', icon: 'bi bi-chat-dots', route: '/engage/clone' }
   ];
 
   const bottomSections: Section[] = [
@@ -97,6 +98,9 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
         break;
       case 'links':
         navigate('/links/dashboard');
+        break;
+      case 'engage':
+        navigate('/engage/clone');
         break;
     }
   };

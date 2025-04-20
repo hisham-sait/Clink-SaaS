@@ -1,0 +1,199 @@
+/**
+ * Custom CSS for Superset to match Clink SaaS React application style
+ */
+
+/* Global font and color variables to match React app */
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --info-color: #0dcaf0;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --body-bg: #fff;
+  --body-color: #212529;
+  --font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  --font-family-monospace: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* Dark theme support */
+.dashboard--dark {
+  --body-bg: #111213;
+  --body-color: #f8f9fa;
+  --light-color: #212529;
+}
+
+/* Global styles */
+body {
+  font-family: var(--font-family-sans-serif);
+  background-color: var(--body-bg);
+  color: var(--body-color);
+}
+
+/* Header styling */
+.navbar {
+  background-color: white !important;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.navbar-brand {
+  font-weight: 600;
+  color: var(--primary-color) !important;
+}
+
+/* Sidebar styling */
+.sidebar {
+  background-color: white;
+  border-right: 1px solid #dee2e6;
+}
+
+.sidebar .nav-item .nav-link {
+  color: var(--secondary-color);
+  transition: all 0.2s;
+}
+
+.sidebar .nav-item .nav-link:hover,
+.sidebar .nav-item .nav-link.active {
+  color: var(--primary-color);
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Dashboard styling */
+.dashboard .chart-header {
+  font-family: var(--font-family-sans-serif);
+}
+
+.dashboard .dashboard-header {
+  font-family: var(--font-family-sans-serif);
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  padding: 16px;
+}
+
+.dashboard .dashboard-header .dashboard-component-header {
+  font-weight: 600;
+}
+
+/* Chart container styling */
+.dashboard .chart-container {
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: none;
+}
+
+.dashboard .chart-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Button styling */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+.btn-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.btn-info {
+  background-color: var(--info-color);
+  border-color: var(--info-color);
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+/* Form controls */
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Filter bar styling */
+.filter-bar {
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  padding: 8px 16px;
+}
+
+/* Dashboard grid layout */
+.grid-container .dashboard-component-tabs {
+  font-family: var(--font-family-sans-serif);
+}
+
+.grid-container .dashboard-component-tabs .nav-tabs .nav-item .nav-link {
+  color: var(--secondary-color);
+}
+
+.grid-container .dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Loading indicator */
+.loading-spinner {
+  border-top-color: var(--primary-color);
+}
+
+/* Dark mode adjustments */
+.dashboard--dark .navbar,
+.dashboard--dark .sidebar,
+.dashboard--dark .dashboard .dashboard-header,
+.dashboard--dark .dashboard .chart-container {
+  background-color: #1e1f20;
+  border-color: #343a40;
+}
+
+.dashboard--dark .sidebar .nav-item .nav-link {
+  color: #adb5bd;
+}
+
+.dashboard--dark .sidebar .nav-item .nav-link:hover,
+.dashboard--dark .sidebar .nav-item .nav-link.active {
+  color: var(--primary-color);
+  background-color: rgba(13, 110, 253, 0.2);
+}
+
+/* Custom logo styling */
+.navbar-brand img {
+  height: 30px;
+  margin-right: 8px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--secondary-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-color);
+}

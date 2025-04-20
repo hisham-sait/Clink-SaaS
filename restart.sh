@@ -18,10 +18,11 @@ print_success() {
 }
 
 print_section "Stopping Application"
-# Kill any existing processes on ports 3000 and 5173
+# Kill any existing processes on ports 3000, 5173, and 8088
 echo "Cleaning up existing processes..."
 lsof -ti:3000 | xargs kill -9 2>/dev/null
 lsof -ti:5173 | xargs kill -9 2>/dev/null
+lsof -ti:8088 | xargs kill -9 2>/dev/null
 print_success "Existing processes stopped"
 
 print_section "Restarting Application"
@@ -40,7 +41,22 @@ cd ../app
 npm run dev &
 print_success "Frontend server started"
 
+# Start Apache Superset dashboard
+echo "Starting Apache Superset dashboard..."
+cd ../dash
+# Check if Superset is already set up
+if [ ! -f "superset.db" ]; then
+    echo "Superset is not set up yet. Running setup script..."
+    ./scripts/setup_superset.sh
+fi
+./scripts/start_superset.sh &
+print_success "Apache Superset dashboard started"
+
 # Keep script running
 print_section "Application Restarted"
 echo "All services restarted successfully. Press Ctrl+C to stop all servers."
+echo "Access the services at:"
+echo "  - Backend API: http://localhost:3000"
+echo "  - Frontend: http://localhost:5173"
+echo "  - Apache Superset: http://localhost:8088 (admin/admin)"
 wait

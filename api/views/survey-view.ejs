@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= survey.title %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .survey-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+    .survey-header {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .survey-footer {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .thank-you-message {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    .section-title {
+      margin-top: 30px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .progress {
+      height: 8px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="survey-container">
+      <div class="survey-header">
+        <h1><%= survey.title %></h1>
+        <% if (survey.description) { %>
+          <p class="text-muted"><%= survey.description %></p>
+        <% } %>
+      </div>
+      
+      <% if (survey.settings.showProgressBar) { %>
+        <div class="progress" id="surveyProgress">
+          <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+      <% } %>
+      
+      <form id="publicSurvey" action="/api/engage/public/surveys/submit/<%= survey.slug %>" method="POST" enctype="application/x-www-form-urlencoded">
+        <div id="surveyContent"></div>
+        
+        <div class="survey-footer">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+      
+      <div id="thankYouMessage" class="thank-you-message">
+        <div class="alert alert-success">
+          <h4 class="alert-heading">Thank you!</h4>
+          <p><%= survey.settings.thankYouMessage || 'Thank you for completing the survey!' %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Survey data from server
+    const surveyData = <%- JSON.stringify(survey) %>;
+    
+    // Function to render survey sections and questions
+    function renderSurvey() {
+      const container = document.getElementById('surveyContent');
+      const sections = surveyData.sections || [];
+      
+      sections.forEach((section, sectionIndex) => {
+        // Create section header
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'survey-section';
+        sectionDiv.innerHTML = `
+          <h3 class="section-title">${section.title}</h3>
+          ${section.description ? `<p class="text-muted mb-4">${section.description}</p>` : ''}
+        `;
+        
+        // Create questions
+        section.questions.forEach((question, questionIndex) => {
+          const questionDiv = document.createElement('div');
+          questionDiv.className = 'mb-4';
+          
+          let html = '';
+          
+          switch(question.type) {
+            case 'text':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+                <input type="text" class="form-control" name="section${sectionIndex}_question${questionIndex}" ${question.required ? 'required' : ''}>
+              `;
+              break;
+              
+            case 'textarea':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+                <textarea class="form-control" name="section${sectionIndex}_question${questionIndex}" rows="3" ${question.required ? 'required' : ''}></textarea>
+              `;
+              break;
+              
+            case 'checkbox':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+              `;
+              
+              if (question.options && question.options.length) {
+                question.options.forEach((option, index) => {
+                  html += `
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="section${sectionIndex}_question${questionIndex}" value="${option}" id="section${sectionIndex}_question${questionIndex}_option${index}">
+                      <label class="form-check-label" for="section${sectionIndex}_question${questionIndex}_option${index}">${option}</label>
+                    </div>
+                  `;
+                });
+              }
+              break;
+              
+            case 'radio':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+              `;
+              
+              if (question.options && question.options.length) {
+                question.options.forEach((option, index) => {
+                  html += `
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="section${sectionIndex}_question${questionIndex}" value="${option}" id="section${sectionIndex}_question${questionIndex}_option${index}" ${question.required ? 'required' : ''}>
+                      <label class="form-check-label" for="section${sectionIndex}_question${questionIndex}_option${index}">${option}</label>
+                    </div>
+                  `;
+                });
+              }
+              break;
+              
+            case 'select':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+                <select class="form-select" name="section${sectionIndex}_question${questionIndex}" ${question.required ? 'required' : ''}>
+                  <option value="">Select an option</option>
+              `;
+              
+              if (question.options && question.options.length) {
+                question.options.forEach(option => {
+                  html += `<option value="${option}">${option}</option>`;
+                });
+              }
+              
+              html += `</select>`;
+              break;
+              
+            case 'scale':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="text-muted">${question.scale?.minLabel || question.scale?.min}</span>
+                  <span class="text-muted">${question.scale?.maxLabel || question.scale?.max}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+              `;
+              
+              const min = question.scale?.min || 1;
+              const max = question.scale?.max || 5;
+              
+              for (let i = min; i <= max; i++) {
+                html += `
+                  <div class="text-center" style="width: 40px">
+                    <input class="form-check-input" type="radio" name="section${sectionIndex}_question${questionIndex}" value="${i}" id="section${sectionIndex}_question${questionIndex}_scale${i}" ${question.required ? 'required' : ''}>
+                    <div class="mt-1">${i}</div>
+                  </div>
+                `;
+              }
+              
+              html += `</div>`;
+              break;
+              
+            case 'likert':
+              html = `
+                <label class="form-label">${question.question}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+                ${question.description ? `<div class="form-text mb-1">${question.description}</div>` : ''}
+                <table class="table table-bordered mt-2">
+                  <thead>
+                    <tr>
+                      <th style="width: 40%"></th>
+              `;
+              
+              if (question.options && question.options.length) {
+                question.options.forEach(option => {
+                  html += `<th class="text-center">${option}</th>`;
+                });
+              }
+              
+              html += `
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Your response</td>
+              `;
+              
+              if (question.options && question.options.length) {
+                question.options.forEach((option, index) => {
+                  html += `
+                    <td class="text-center">
+                      <input class="form-check-input" type="radio" name="section${sectionIndex}_question${questionIndex}" value="${option}" ${question.required ? 'required' : ''}>
+                    </td>
+                  `;
+                });
+              }
+              
+              html += `
+                    </tr>
+                  </tbody>
+                </table>
+              `;
+              break;
+          }
+          
+          questionDiv.innerHTML = html;
+          sectionDiv.appendChild(questionDiv);
+        });
+        
+        container.appendChild(sectionDiv);
+      });
+    }
+    
+    // Handle form submission success
+    document.getElementById('publicSurvey').addEventListener('submit', function() {
+      // Show thank you message after a short delay
+      setTimeout(() => {
+        document.getElementById('publicSurvey').style.display = 'none';
+        document.getElementById('thankYouMessage').style.display = 'block';
+      }, 100);
+    });
+    
+    // Initialize survey
+    renderSurvey();
+  </script>
+</body>
+</html>
