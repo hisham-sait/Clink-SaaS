@@ -66,6 +66,28 @@ async function seedAuth(inputPlans) {
     await prisma.productSection.deleteMany();
     await prisma.productActivity.deleteMany();
     
+    // Delete engage related models
+    await prisma.pageView.deleteMany();
+    await prisma.page.deleteMany();
+    await prisma.pageCategory.deleteMany();
+    
+    await prisma.formSubmission.deleteMany();
+    await prisma.formView.deleteMany();
+    await prisma.form.deleteMany();
+    await prisma.formCategory.deleteMany();
+    
+    await prisma.surveyResponse.deleteMany();
+    await prisma.surveyView.deleteMany();
+    await prisma.survey.deleteMany();
+    await prisma.surveyCategory.deleteMany();
+    
+    await prisma.linkAnalytics.deleteMany();
+    await prisma.link.deleteMany();
+    await prisma.digitalLinkEvent.deleteMany();
+    await prisma.digitalLinkActivity.deleteMany();
+    await prisma.digitalLink.deleteMany();
+    await prisma.linkCategory.deleteMany();
+    
     await prisma.company.deleteMany();
 
     // Delete user related models
@@ -147,7 +169,7 @@ async function seedAuth(inputPlans) {
       {
         name: 'Super Admin',
         description: 'Full platform access with all permissions',
-        scope: RoleScope.Global,
+        scope: RoleScope.System,
         isSystem: true,
         isCustom: false,
         metadata: {
@@ -169,7 +191,7 @@ async function seedAuth(inputPlans) {
       {
         name: 'Platform Admin',
         description: 'Platform administration',
-        scope: RoleScope.Global,
+        scope: RoleScope.System,
         isSystem: true,
         isCustom: false,
         metadata: {

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Table, Badge, Row, Col, Form, InputGroup, Dropdown, Alert, Spinner } from 'react-bootstrap';
 import { SurveysService, EngageTypes } from '../../../../services/engage';
-import { FaClipboardList, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaEdit, FaTrash, FaEye, FaShareAlt, FaPencilAlt } from 'react-icons/fa';
+import * as CategoriesService from '../../../../services/engage/categories';
+import { FaClipboardList, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaEdit, FaTrash, FaEye, FaShareAlt, FaPencilAlt, FaChartBar } from 'react-icons/fa';
 
 // Import modal components
 import AddSurveyModal from './AddSurveyModal';
@@ -48,22 +49,18 @@ const Survey: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [surveysData, categoriesData] = await Promise.all([
+        const [surveysData, categoriesResponse] = await Promise.all([
           SurveysService.getAllSurveys(),
-          // Temporarily use mock categories until API endpoint is available
-          // SurveysService.getSurveyCategories()
-          Promise.resolve([
-            { id: '1', name: 'Customer' },
-            { id: '2', name: 'Events' },
-            { id: '3', name: 'Website' },
-            { id: '4', name: 'Products' },
-            { id: '5', name: 'Internal' },
-            { id: '6', name: 'Marketing' }
-          ])
+          CategoriesService.getCategories()
         ]);
         
+        // Filter categories to only include survey categories
+        const surveyCategories = categoriesResponse.categories.filter(
+          category => category.type === 'survey'
+        );
+        
         setSurveys(surveysData);
-        setCategories(categoriesData);
+        setCategories(surveyCategories);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch surveys');
       } finally {
@@ -187,7 +184,8 @@ const Survey: React.FC = () => {
       title: survey.title,
       description: survey.description || '',
       categoryId: survey.category ? survey.category.id : '',
-      status: survey.status
+      status: survey.status === 'Draft' ? 'Inactive' : survey.status, // Map 'Draft' to 'Inactive'
+      sections: survey.sections || [] // Ensure sections are included
     } as any); // Use type assertion to avoid TypeScript errors
     setShowEditModal(true);
   };
@@ -421,6 +419,14 @@ const Survey: React.FC = () => {
                         onClick={() => handleDesignSurvey(survey)}
                       >
                         <FaPencilAlt />
+                      </Button>
+                      <Button 
+                        variant="link" 
+                        className="p-0 me-2 text-success" 
+                        title="Analytics"
+                        onClick={() => navigate(`/engage/surveys/analytics/${survey.id}`)}
+                      >
+                        <FaChartBar />
                       </Button>
                       <Button 
                         variant="link" 

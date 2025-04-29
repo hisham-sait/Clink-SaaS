@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Table, Badge, Row, Col, Form, InputGroup, Dropdown, Alert, Spinner } from 'react-bootstrap';
 import { FormsService, EngageTypes } from '../../../../services/engage';
-import { FaClipboardList, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaEdit, FaTrash, FaEye, FaShareAlt, FaPencilAlt } from 'react-icons/fa';
+import * as CategoriesService from '../../../../services/engage/categories';
+import { FaClipboardList, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaEdit, FaTrash, FaEye, FaShareAlt, FaPencilAlt, FaChartBar } from 'react-icons/fa';
 
 // Import modal components
 import AddFormModal from './AddFormModal';
@@ -30,21 +31,18 @@ const Forms: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [formsData, categoriesData] = await Promise.all([
+        const [formsData, categoriesResponse] = await Promise.all([
           FormsService.getAllForms(),
-          // Temporarily use mock categories until API endpoint is available
-          // FormsService.getFormCategories()
-          Promise.resolve([
-            { id: '1', name: 'Contact' },
-            { id: '2', name: 'Events' },
-            { id: '3', name: 'Marketing' },
-            { id: '4', name: 'Support' },
-            { id: '5', name: 'Other' }
-          ])
+          CategoriesService.getCategories()
         ]);
         
+        // Filter categories to only include form categories
+        const formCategories = categoriesResponse.categories.filter(
+          category => category.type === 'form'
+        );
+        
         setForms(formsData);
-        setCategories(categoriesData);
+        setCategories(formCategories);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch forms');
       } finally {
@@ -188,9 +186,9 @@ const Forms: React.FC = () => {
     setSelectedForm(form);
     setEditedForm({
       title: form.title,
-      description: form.description,
+      description: form.description || '',
       categoryId: form.category ? form.category.id : '',
-      status: form.status,
+      status: form.status === 'Draft' ? 'Inactive' : form.status, // Map 'Draft' to 'Inactive'
       type: form.type || ''
     });
     setShowEditModal(true);
@@ -425,6 +423,14 @@ const Forms: React.FC = () => {
                         onClick={() => handleDesignForm(form)}
                       >
                         <FaPencilAlt />
+                      </Button>
+                      <Button 
+                        variant="link" 
+                        className="p-0 me-2 text-success" 
+                        title="Analytics"
+                        onClick={() => navigate(`/engage/forms/analytics/${form.id}`)}
+                      >
+                        <FaChartBar />
                       </Button>
                       <Button 
                         variant="link" 

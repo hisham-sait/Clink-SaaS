@@ -1,33 +1,12 @@
 import React from 'react';
 import { Modal, Button, Badge } from 'react-bootstrap';
 import { FaCopy, FaEdit } from 'react-icons/fa';
+import { LinksTypes } from '../../../../services/links';
 
 interface ViewDigitalLinkModalProps {
   show: boolean;
   onHide: () => void;
-  digitalLink: {
-    id: string;
-    title: string;
-    gs1KeyType: string;
-    gs1Key: string;
-    gs1Url: string;
-    productId: string | null;
-    product?: {
-      id: string;
-      name: string;
-    };
-    status: string;
-    expiresAt: string | null;
-    password: string | null;
-    categoryId: string | null;
-    category?: {
-      id: string;
-      name: string;
-    };
-    clicks: number;
-    createdAt: string;
-    updatedAt: string;
-  } | null;
+  digitalLink: LinksTypes.DigitalLink | null;
   copiedLink: string | null;
   handleCopyLink: (gs1Key: string, gs1KeyType: string) => void;
   handleEdit: () => void;
@@ -61,6 +40,9 @@ const ViewDigitalLinkModal: React.FC<ViewDigitalLinkModalProps> = ({
   // Get the application identifier for the given key type
   const ai = gs1KeyTypeToAI[digitalLink.gs1KeyType] || digitalLink.gs1KeyType;
 
+  // Ensure gs1Url is a string
+  const gs1Url = digitalLink.gs1Url || `${ai}/${digitalLink.gs1Key}`;
+
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
@@ -71,7 +53,7 @@ const ViewDigitalLinkModal: React.FC<ViewDigitalLinkModalProps> = ({
           <div className="mb-3">
             <h5>GS1 Digital Link URL</h5>
             <div className="d-flex align-items-center">
-              <code className="me-2">{window.location.origin}/d/{digitalLink.gs1Url}</code>
+              <code className="me-2">{window.location.origin}/d/{gs1Url}</code>
               <Button 
                 variant="outline-primary" 
                 size="sm"
@@ -119,7 +101,7 @@ const ViewDigitalLinkModal: React.FC<ViewDigitalLinkModalProps> = ({
           
           <div className="mb-3">
             <h5>Product</h5>
-            <p>{digitalLink.product ? digitalLink.product.name : 'No Product'}</p>
+            <p>{digitalLink.productId ? 'Product ID: ' + digitalLink.productId : 'No Product'}</p>
           </div>
           
           <div className="mb-3">

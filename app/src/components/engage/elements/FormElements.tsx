@@ -1,5 +1,5 @@
 import React from 'react';
-import { Accordion, ListGroup } from 'react-bootstrap';
+import { Accordion, Row, Col } from 'react-bootstrap';
 import { FaPuzzlePiece } from 'react-icons/fa';
 import TextFieldElement from './TextFieldElement';
 import TextAreaElement from './TextAreaElement';
@@ -8,6 +8,7 @@ import RadioElement from './RadioElement';
 import SelectElement from './SelectElement';
 import DatePickerElement from './DatePickerElement';
 import FileUploadElement from './FileUploadElement';
+import './elements.css';
 
 interface FormElementsProps {
   onAddElement: (type: string) => void;
@@ -23,16 +24,30 @@ const FormElements: React.FC<FormElementsProps> = ({ onAddElement }) => {
             <span>Elements</span>
           </div>
         </Accordion.Header>
-        <Accordion.Body className="p-0">
-          <ListGroup variant="flush">
-            <TextFieldElement onAdd={onAddElement} />
-            <TextAreaElement onAdd={onAddElement} />
-            <CheckboxElement onAdd={onAddElement} />
-            <RadioElement onAdd={onAddElement} />
-            <SelectElement onAdd={onAddElement} />
-            <DatePickerElement onAdd={onAddElement} />
-            <FileUploadElement onAdd={onAddElement} />
-          </ListGroup>
+        <Accordion.Body className="p-2">
+          <Row className="g-2 elements-grid">
+            <Col xs={4}>
+              <TextFieldElement onAdd={onAddElement} size="tiny" />
+            </Col>
+            <Col xs={4}>
+              <TextAreaElement onAdd={onAddElement} size="tiny" />
+            </Col>
+            <Col xs={4}>
+              <CheckboxElement onAdd={onAddElement} size="tiny" />
+            </Col>
+            <Col xs={4}>
+              <RadioElement onAdd={onAddElement} size="tiny" />
+            </Col>
+            <Col xs={4}>
+              <SelectElement onAdd={onAddElement} size="tiny" />
+            </Col>
+            <Col xs={4}>
+              <DatePickerElement onAdd={onAddElement} size="tiny" />
+            </Col>
+            <Col xs={4}>
+              <FileUploadElement onAdd={onAddElement} size="tiny" />
+            </Col>
+          </Row>
         </Accordion.Body>
       </Accordion.Item>
     </Accordion>

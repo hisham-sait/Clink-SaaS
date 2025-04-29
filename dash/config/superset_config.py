@@ -2,34 +2,34 @@ import os
 from flask_appbuilder.security.manager import AUTH_DB
 
 # Branding and UI customization
-APP_NAME = 'Clink Dashboards'
-APP_ICON = '/static/assets/images/clink_logo.png'
+APP_NAME = 'SEEGAP Dashboards'
+APP_ICON = '/static/assets/images/logo.svg'
 LOGO_TARGET_PATH = '/'
-FAVICON = '/static/assets/images/clink_favicon.ico'
+FAVICON = '/static/assets/images/logo.svg'
 
 # Custom CSS for branding
 CUSTOM_CSS = '/static/css/custom.css'
 
-# Theme overrides to match React application style
+# Theme overrides to match SEEGAP application style
 THEME_OVERRIDES = {
     'borderRadius': 6,
     'colors': {
         'primary': {
-            'base': '#0d6efd',  # Primary color from React app
-            'dark1': '#0b5ed7',
-            'dark2': '#0a58ca',
-            'light1': '#3d8bfd',
-            'light2': '#6ea8fe',
-            'light3': '#9ec5fe',
-            'light4': '#cfe2ff',
-            'light5': '#e9f2ff',
+            'base': '#cc0000',  # Primary color from SEEGAP logo (red)
+            'dark1': '#a30000',
+            'dark2': '#7a0000',
+            'light1': '#d63333',
+            'light2': '#e06666',
+            'light3': '#ea9999',
+            'light4': '#f4cccc',
+            'light5': '#fae6e6',
         },
         'secondary': {
-            'base': '#6c757d',  # Secondary color from React app
-            'dark1': '#5c636a',
-            'dark2': '#4d5154',
-            'light1': '#a7acb1',
-            'light2': '#ced4da',
+            'base': '#000000',  # Secondary color from SEEGAP logo (black)
+            'dark1': '#000000',
+            'dark2': '#000000',
+            'light1': '#333333',
+            'light2': '#666666',
         },
         'grayscale': {
             'base': '#666666',
@@ -95,9 +95,15 @@ THEME_OVERRIDES = {
 }
 
 # General configurations
-SUPERSET_WEBSERVER_PORT = 8089
+SUPERSET_WEBSERVER_PORT = 8088
 SUPERSET_WEBSERVER_TIMEOUT = 300
 SECRET_KEY = 'a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY='
+
+# JWT token for async queries - must be at least 32 bytes long
+JWT_SECRET_KEY = 'a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY=a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY='
+ASYNC_QUERIES_JWT_SECRET_KEY = 'a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY=a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY='
+SUPERSET_JWT_SECRET_KEY = 'a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY=a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY='
+JWT_TOKEN_SECRET_KEY = 'a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY=a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY='
 
 # Database connection
 SQLALCHEMY_DATABASE_URI = 'sqlite:////Users/HishamSait/Desktop/SeeGapApp/Clink-SaaS/dash/superset.db'
@@ -127,8 +133,9 @@ CACHE_CONFIG = {
     'CACHE_DEFAULT_TIMEOUT': 60 * 60 * 24,  # 1 day default (in secs)
 }
 
-# Async queries
+# Async queries - disable to avoid JWT secret requirement
 RESULTS_BACKEND = None
+GLOBAL_ASYNC_QUERIES_JWT_SECRET = 'a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY=a0TlbFi8hS8+P+u2GX7u4WqIcFQ1RzYoQ+j7yF5AbTY='
 
 # Authentication configuration - using database authentication for now
 AUTH_TYPE = AUTH_DB
@@ -144,6 +151,7 @@ ADDITIONAL_DATABASES = {
 
 # Feature flags
 FEATURE_FLAGS = {
+    # Core features
     'ENABLE_TEMPLATE_PROCESSING': True,
     'DASHBOARD_NATIVE_FILTERS': True,
     'DASHBOARD_CROSS_FILTERS': True,
@@ -151,6 +159,36 @@ FEATURE_FLAGS = {
     'DASHBOARD_RBAC': True,
     'ALLOW_CSV_UPLOAD': True,
     'ALLOW_DATA_UPLOADS': True,
+
+    # SQL & Explore
+    'ENABLE_EXPLORE_DRAG_AND_DROP': True,
+    'ENABLE_ADVANCED_DATA_TYPE': True,
+    'ENABLE_TEMPLATE_REMOVE_FILTERS': True,
+    'ENABLE_TEMPLATE_PROCESSING_IN_DASHBOARD_FILTERS': True,
+
+    # Reports & Scheduling
+    'SCHEDULED_QUERIES': True,  # Disable scheduled queries to avoid JWT requirement
+
+    # Import/Export
+    'VERSIONED_EXPORT': True,
+    'IMPORT_EXPORT_VIA_DB': True,
+
+    # UI/UX Enhancements
+    'ENABLE_REACT_CRUD_VIEWS': True,
+    'ENABLE_FAVORITES': True,
+    'DISABLE_LEGACY_DATASOURCE_EDITOR': True,
+    'ENABLE_DND_WITH_CLICK_UX': True,
+
+    # Security
+    'ROW_LEVEL_SECURITY': True,
+    'TAGGING_SYSTEM': True,
+
+    # Miscellaneous
+    'ENABLE_OMNIBAR': True,
+    'DISPLAY_MARKDOWN_HTML': True,
+    'GLOBAL_ASYNC_QUERIES': False,  # Disable global async queries
+    'EMBEDDED_SUPERSET': True,
+    'ENABLE_JAVASCRIPT_CONTROLS': False,  # Use with caution due to security risk
 }
 
 # Enable file upload for all databases by default

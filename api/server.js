@@ -63,42 +63,47 @@ app.use('/r', require('./routes/engage/resolver'));
 // Add direct form and survey resolver routes
 app.use('/', require('./routes/engage/resolver'));
 
-// Error handling middleware
+// Import response utilities
+const { errorHandler } = require('./utils/responseUtils');
+
+// Custom Prisma error handler middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  
   // Handle Prisma errors
   if (err.code) {
     switch (err.code) {
       case 'P2002': // Unique constraint violation
         return res.status(409).json({
+          success: false,
           error: 'A record with this identifier already exists'
         });
       case 'P2014': // Invalid ID
         return res.status(400).json({
+          success: false,
           error: 'Invalid ID provided'
         });
       case 'P2003': // Foreign key constraint violation
         return res.status(400).json({
+          success: false,
           error: 'Referenced record does not exist'
         });
       case 'P2025': // Record not found
         return res.status(404).json({
+          success: false,
           error: 'Record not found'
         });
       default:
-        return res.status(500).json({
-          error: 'Database error occurred',
-          details: process.env.NODE_ENV === 'development' ? err : undefined
-        });
+        // Pass to the standard error handler
+        next(err);
+        return;
     }
   }
-
-  res.status(500).json({
-    error: err.message || 'Internal server error',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+  
+  // Pass non-Prisma errors to the standard error handler
+  next(err);
 });
+
+// Standard error handling middleware
+app.use(errorHandler);
 
 // Cleanup on shutdown
 async function gracefulShutdown(signal) {

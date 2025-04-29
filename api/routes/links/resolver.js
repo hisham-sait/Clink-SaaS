@@ -3,6 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const UAParser = require('ua-parser-js');
 const geoip = require('geoip-lite');
+const { successResponse, errorResponse, ErrorTypes, asyncHandler } = require('../../utils/responseUtils');
 
 const prisma = new PrismaClient();
 
@@ -30,7 +31,7 @@ function getLocationFromIp(ip) {
 }
 
 // Resolve shortlink (for /r/s/:shortCode)
-router.get('/s/:shortCode', resolveShortlink);
+router.get('/s/:shortCode', asyncHandler(resolveShortlink));
 
 // Shortlink resolver function
 async function resolveShortlink(req, res) {
@@ -97,15 +98,16 @@ async function resolveShortlink(req, res) {
     const location = getLocationFromIp(ip);
     
     // Record the click asynchronously
-    prisma.linkClick.create({
+    prisma.linkAnalytics.create({
       data: {
         linkId: shortlink.id,
-        ipAddress: ip,
-        userAgent,
-        referrer,
-        location,
-        device,
-        browser,
+        ip: ip,
+        userAgent: userAgent,
+        referer: referrer,
+        country: location.split(', ')[1] || location,
+        city: location.split(', ')[0] || null,
+        device: device,
+        browser: browser,
         timestamp: new Date()
       }
     }).catch(err => console.error('Error recording click:', err));
@@ -116,8 +118,17 @@ async function resolveShortlink(req, res) {
       data: { clicks: { increment: 1 } }
     }).catch(err => console.error('Error updating click count:', err));
     
-    // Redirect to the original URL
-    res.redirect(shortlink.originalUrl);
+    // Check if the originalUrl is for a page or form
+    if (shortlink.originalUrl.startsWith('/p/')) {
+      // Redirect to the page URL
+      return res.redirect(shortlink.originalUrl);
+    } else if (shortlink.originalUrl.startsWith('/f/')) {
+      // Redirect to the form URL
+      return res.redirect(shortlink.originalUrl);
+    } else {
+      // Redirect to the original URL
+      res.redirect(shortlink.originalUrl);
+    }
   } catch (error) {
     console.error('Error resolving shortlink:', error);
     res.status(500).render('error', {
@@ -128,7 +139,7 @@ async function resolveShortlink(req, res) {
 }
 
 // Resolve digitallink with GS1 application identifier and key or just numeric value
-router.get('/d/:digitalLinkPath(*)', async (req, res) => {
+router.get('/d/:digitalLinkPath(*)', asyncHandler(async (req, res) => {
   try {
     const { digitalLinkPath } = req.params;
     let digitallink = null;
@@ -182,16 +193,23 @@ router.get('/d/:digitalLinkPath(*)', async (req, res) => {
     const location = getLocationFromIp(ip);
     
     // Record the click asynchronously
-    prisma.digitalLinkClick.create({
+    prisma.digitalLinkActivity.create({
       data: {
-        digitalLinkId: digitallink.id,
-        ipAddress: ip,
-        userAgent,
-        referrer,
-        location,
-        device,
-        browser,
-        timestamp: new Date()
+        action: 'click',
+        linkId: digitallink.id,
+        details: {
+          ipAddress: ip,
+          userAgent,
+          referrer,
+          location,
+          device,
+          browser
+        },
+        timestamp: new Date(),
+        companyId: digitallink.companyId,
+        itemId: digitallink.id,
+        itemName: digitallink.title || digitallink.gs1Key || 'Digital Link',
+        itemType: 'digitallink'
       }
     }).catch(err => console.error('Error recording click:', err));
     
@@ -203,8 +221,14 @@ router.get('/d/:digitalLinkPath(*)', async (req, res) => {
     
     // Determine where to redirect based on redirectType
     if (digitallink.redirectType === 'custom' && digitallink.customUrl) {
-      // Redirect to the custom URL
-      res.redirect(digitallink.customUrl);
+      // Check if the customUrl is for a page or form
+      if (digitallink.customUrl.startsWith('/p/') || digitallink.customUrl.startsWith('/f/')) {
+        // Redirect to the page or form URL
+        return res.redirect(digitallink.customUrl);
+      } else {
+        // Redirect to the custom URL
+        res.redirect(digitallink.customUrl);
+      }
     } else if (digitallink.redirectType === 'standard' && digitallink.productId) {
       // Get the product
       const product = await prisma.product.findUnique({
@@ -242,6 +266,6 @@ router.get('/d/:digitalLinkPath(*)', async (req, res) => {
       message: 'An unexpected error occurred while processing your request.'
     });
   }
-});
+}));
 
 module.exports = router;

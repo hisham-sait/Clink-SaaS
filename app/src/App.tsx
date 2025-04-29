@@ -221,12 +221,16 @@ const AppContent = () => {
             <Route path="/d/*" element={null} />
             <Route path="/f/*" element={null} />
             <Route path="/y/*" element={null} />
+            <Route path="/p/*" element={null} />
             {/* Redirect old form and survey URLs to new format */}
             <Route path="/forms/:formId" element={
               <Navigate to={`/f/${window.location.pathname.split('/').pop()}`} replace />
             } />
             <Route path="/surveys/:surveyId" element={
               <Navigate to={`/y/${window.location.pathname.split('/').pop()}`} replace />
+            } />
+            <Route path="/pages/:pageId" element={
+              <Navigate to={`/p/${window.location.pathname.split('/').pop()}`} replace />
             } />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

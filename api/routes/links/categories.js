@@ -2,68 +2,57 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../../middleware/auth');
+const { successResponse, errorResponse, ErrorTypes, asyncHandler } = require('../../utils/responseUtils');
 
 const prisma = new PrismaClient();
 
 // Get all link categories for a company
-router.get('/', auth, async (req, res) => {
-  try {
-    const { companyId } = req.user;
-    const { search } = req.query;
-    
-    // Build the where clause
-    const where = { companyId };
-    
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
-      ];
-    }
-    
-    // Get categories
-    const categories = await prisma.linkCategory.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            links: true,
-            DigitalLink: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
-    
-    // Format the response
-    const formattedCategories = categories.map(category => ({
-      id: category.id,
-      name: category.name,
-      description: category.description,
-      color: category.color,
-      linkCount: category._count.links + category._count.DigitalLink,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt
-    }));
-    
-    res.json({
-      success: true,
-      data: formattedCategories
-    });
-  } catch (error) {
-    console.error('Error fetching link categories:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch link categories',
-      error: error.message
-    });
+router.get('/', auth, asyncHandler(async (req, res) => {
+  const { companyId } = req.user;
+  const { search } = req.query;
+  
+  // Build the where clause
+  const where = { companyId };
+  
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } }
+    ];
   }
-});
+  
+  // Get categories
+  const categories = await prisma.linkCategory.findMany({
+    where,
+    include: {
+      _count: {
+        select: {
+          links: true,
+          digitalLinks: true
+        }
+      }
+    },
+    orderBy: {
+      name: 'asc'
+    }
+  });
+  
+  // Format the response
+  const formattedCategories = categories.map(category => ({
+    id: category.id,
+    name: category.name,
+    description: category.description,
+    color: category.color,
+    linkCount: category._count.links + category._count.digitalLinks,
+    createdAt: category.createdAt,
+    updatedAt: category.updatedAt
+  }));
+  
+  res.json(successResponse(formattedCategories));
+}));
 
 // Get a link category by ID
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { companyId } = req.user;
@@ -77,17 +66,15 @@ router.get('/:id', auth, async (req, res) => {
         _count: {
           select: {
             links: true,
-            DigitalLink: true
+            digitalLinks: true
           }
         }
       }
     });
     
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Link category not found'
-      });
+      const { statusCode, body } = ErrorTypes.NOT_FOUND('Link category');
+      return res.status(statusCode).json(body);
     }
     
     // Format the response
@@ -96,37 +83,29 @@ router.get('/:id', auth, async (req, res) => {
       name: category.name,
       description: category.description,
       color: category.color,
-      linkCount: category._count.links + category._count.DigitalLink,
+      linkCount: category._count.links + category._count.digitalLinks,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt
     };
     
-    res.json({
-      success: true,
-      data: formattedCategory
-    });
+    res.json(successResponse(formattedCategory));
   } catch (error) {
     console.error('Error fetching link category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch link category',
-      error: error.message
-    });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to fetch link category');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 // Create a new link category
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, asyncHandler(async (req, res) => {
   try {
     const { companyId } = req.user;
     const { name, description, color } = req.body;
     
     // Validate required fields
     if (!name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name is required'
-      });
+      const { statusCode, body } = ErrorTypes.BAD_REQUEST('Name is required');
+      return res.status(statusCode).json(body);
     }
     
     // Check if a category with the same name already exists for this company
@@ -138,10 +117,8 @@ router.post('/', auth, async (req, res) => {
     });
     
     if (existingCategory) {
-      return res.status(400).json({
-        success: false,
-        message: 'A category with this name already exists'
-      });
+      const { statusCode, body } = ErrorTypes.CONFLICT('A category with this name already exists');
+      return res.status(statusCode).json(body);
     }
     
     // Create the category
@@ -154,23 +131,16 @@ router.post('/', auth, async (req, res) => {
       }
     });
     
-    res.status(201).json({
-      success: true,
-      data: newCategory,
-      message: 'Link category created successfully'
-    });
+    res.status(201).json(successResponse(newCategory, 'Link category created successfully'));
   } catch (error) {
     console.error('Error creating link category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create link category',
-      error: error.message
-    });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to create link category');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 // Update a link category
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { companyId } = req.user;
@@ -185,10 +155,8 @@ router.put('/:id', auth, async (req, res) => {
     });
     
     if (!existingCategory) {
-      return res.status(404).json({
-        success: false,
-        message: 'Link category not found'
-      });
+      const { statusCode, body } = ErrorTypes.NOT_FOUND('Link category');
+      return res.status(statusCode).json(body);
     }
     
     // Check if a category with the same name already exists for this company (excluding this one)
@@ -202,10 +170,8 @@ router.put('/:id', auth, async (req, res) => {
       });
       
       if (duplicateCategory) {
-        return res.status(400).json({
-          success: false,
-          message: 'A category with this name already exists'
-        });
+        const { statusCode, body } = ErrorTypes.CONFLICT('A category with this name already exists');
+        return res.status(statusCode).json(body);
       }
     }
     
@@ -219,23 +185,16 @@ router.put('/:id', auth, async (req, res) => {
       }
     });
     
-    res.json({
-      success: true,
-      data: updatedCategory,
-      message: 'Link category updated successfully'
-    });
+    res.json(successResponse(updatedCategory, 'Link category updated successfully'));
   } catch (error) {
     console.error('Error updating link category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update link category',
-      error: error.message
-    });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to update link category');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 // Delete a link category
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { companyId } = req.user;
@@ -250,26 +209,22 @@ router.delete('/:id', auth, async (req, res) => {
         _count: {
           select: {
             links: true,
-            DigitalLink: true
+            digitalLinks: true
           }
         }
       }
     });
     
     if (!existingCategory) {
-      return res.status(404).json({
-        success: false,
-        message: 'Link category not found'
-      });
+      const { statusCode, body } = ErrorTypes.NOT_FOUND('Link category');
+      return res.status(statusCode).json(body);
     }
     
     // Check if the category has any links
-    const totalLinks = existingCategory._count.links + existingCategory._count.DigitalLink;
+    const totalLinks = existingCategory._count.links + existingCategory._count.digitalLinks;
     if (totalLinks > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete category with ${totalLinks} links. Please reassign or delete the links first.`
-      });
+      const { statusCode, body } = ErrorTypes.BAD_REQUEST(`Cannot delete category with ${totalLinks} links. Please reassign or delete the links first.`);
+      return res.status(statusCode).json(body);
     }
     
     // Delete the category
@@ -277,22 +232,16 @@ router.delete('/:id', auth, async (req, res) => {
       where: { id }
     });
     
-    res.json({
-      success: true,
-      message: 'Link category deleted successfully'
-    });
+    res.json(successResponse(null, 'Link category deleted successfully'));
   } catch (error) {
     console.error('Error deleting link category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete link category',
-      error: error.message
-    });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to delete link category');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 // Get links in a category
-router.get('/:id/links', auth, async (req, res) => {
+router.get('/:id/links', auth, asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { companyId } = req.user;
@@ -307,10 +256,8 @@ router.get('/:id/links', auth, async (req, res) => {
     });
     
     if (!existingCategory) {
-      return res.status(404).json({
-        success: false,
-        message: 'Link category not found'
-      });
+      const { statusCode, body } = ErrorTypes.NOT_FOUND('Link category');
+      return res.status(statusCode).json(body);
     }
     
     // Calculate pagination
@@ -325,7 +272,7 @@ router.get('/:id/links', auth, async (req, res) => {
       include: {
         _count: {
           select: {
-            linkClicks: true
+            analytics: true
           }
         }
       },
@@ -342,7 +289,7 @@ router.get('/:id/links', auth, async (req, res) => {
       include: {
         _count: {
           select: {
-            digitalLinkClicks: true
+            activities: true
           }
         }
       },
@@ -359,7 +306,7 @@ router.get('/:id/links', auth, async (req, res) => {
       title: link.title,
       description: link.description,
       tags: link.tags,
-      clicks: link._count.linkClicks,
+      clicks: link._count.analytics,
       status: link.status,
       expiresAt: link.expiresAt,
       customDomain: link.customDomain,
@@ -379,7 +326,7 @@ router.get('/:id/links', auth, async (req, res) => {
       title: link.title,
       description: link.description,
       tags: link.tags,
-      clicks: link._count.digitalLinkClicks,
+      clicks: link._count.activities,
       status: link.status,
       expiresAt: link.expiresAt,
       createdAt: link.createdAt,
@@ -408,32 +355,29 @@ router.get('/:id/links', auth, async (req, res) => {
     
     const totalCount = totalShortlinks + totalDigitallinks;
     
-    res.json({
-      success: true,
-      data: {
-        category: {
-          id: existingCategory.id,
-          name: existingCategory.name,
-          description: existingCategory.description,
-          color: existingCategory.color
-        },
-        links: allLinks,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalCount,
-          totalPages: Math.ceil(totalCount / limit)
-        }
-      }
-    });
+    const responseData = {
+      category: {
+        id: existingCategory.id,
+        name: existingCategory.name,
+        description: existingCategory.description,
+        color: existingCategory.color
+      },
+      links: allLinks
+    };
+    
+    const pagination = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit)
+    };
+    
+    res.json(successResponse(responseData, null, pagination));
   } catch (error) {
     console.error('Error fetching links in category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch links in category',
-      error: error.message
-    });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to fetch links in category');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 module.exports = router;

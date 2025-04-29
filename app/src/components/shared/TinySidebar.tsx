@@ -42,10 +42,10 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
   const { user, logout } = useAuth();
 
   const topSections: Section[] = [
-    { id: 'crm', title: 'CRM', icon: 'bi bi-people', route: '/crm/contacts' },
+    { id: 'crm', title: 'CRM', icon: 'bi bi-people', route: '/crm/dashboard' },
     { id: 'products', title: 'Products', icon: 'bi bi-box', route: '/products/dashboard' },
     { id: 'links', title: 'Links', icon: 'bi bi-link-45deg', route: '/links/dashboard' },
-    { id: 'engage', title: 'Engage', icon: 'bi bi-chat-dots', route: '/engage/clone' }
+    { id: 'engage', title: 'Engage', icon: 'bi bi-chat-dots', route: '/engage/dashboard' }
   ];
 
   const bottomSections: Section[] = [
@@ -91,16 +91,16 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
         navigate(`/${section}`);
         break;
       case 'crm':
-        navigate('/crm/contacts');
+        navigate('/crm/dashboard');
         break;
       case 'products':
-        navigate('/products/catalog');
+        navigate('/products/dashboard');
         break;
       case 'links':
         navigate('/links/dashboard');
         break;
       case 'engage':
-        navigate('/engage/clone');
+        navigate('/engage/dashboard');
         break;
     }
   };

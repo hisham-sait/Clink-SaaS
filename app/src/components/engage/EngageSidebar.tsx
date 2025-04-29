@@ -13,6 +13,11 @@ const EngageSidebar: React.FC<EngageSidebarProps> = ({ isExpanded = true }) => {
       route: '/engage/dashboard'
     },
     {
+      label: 'Pages',
+      icon: 'bi-file-earmark',
+      route: '/engage/pages'
+    },
+    {
       label: 'Forms',
       icon: 'bi-file-earmark-text',
       route: '/engage/forms'
@@ -44,6 +49,11 @@ const EngageSidebar: React.FC<EngageSidebarProps> = ({ isExpanded = true }) => {
       label: 'Data',
       icon: 'bi-database',
       route: '/engage/data'
+    },
+    {
+      label: 'Categories',
+      icon: 'bi-folder',
+      route: '/engage/categories'
     }
   ];
 

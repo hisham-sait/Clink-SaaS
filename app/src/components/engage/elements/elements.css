@@ -1,0 +1,193 @@
+.elements-grid {
+  margin: 0;
+}
+
+.element-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 100%;
+  border: 1px solid #dee2e6;
+}
+
+.element-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-color: #adb5bd;
+}
+
+.element-normal {
+  min-height: 80px;
+}
+
+.element-small {
+  min-height: 65px;
+  font-size: 0.8rem;
+}
+
+.element-tiny {
+  min-height: 50px;
+  font-size: 0.7rem;
+}
+
+.element-icon {
+  font-size: 1rem;
+}
+
+.element-small .element-icon {
+  font-size: 0.8rem;
+}
+
+.element-tiny .element-icon {
+  font-size: 0.7rem;
+  margin-bottom: 0.2rem !important;
+}
+
+.element-label {
+  font-weight: 500;
+}
+
+.element-small .element-label {
+  font-size: 0.75rem;
+}
+
+.element-tiny .element-label {
+  font-size: 0.65rem;
+}
+
+.element-card .card-body {
+  padding: 0.5rem;
+}
+
+.element-tiny .card-body {
+  padding: 0.25rem;
+}
+
+/* Layers Panel Styles */
+.layers-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.element-item, .section-item, .question-item {
+  transition: all 0.2s ease;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  font-size: 0.85rem;
+}
+
+.section-item {
+  background-color: #f8f9fa;
+  border-left: 3px solid #6c757d;
+}
+
+.section-item.active {
+  background-color: #e7f1ff;
+  border-left: 3px solid #0d6efd;
+}
+
+.question-item {
+  border-left: 3px solid #dee2e6;
+}
+
+.question-item.active {
+  background-color: #e7f1ff;
+  border-left: 3px solid #0d6efd;
+}
+
+.element-actions, .section-actions, .question-actions {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.element-item:hover .element-actions,
+.section-item:hover .section-actions,
+.question-item:hover .question-actions {
+  opacity: 1;
+}
+
+/* Fix for icons in active/selected items */
+.list-group-item.active .element-actions button,
+.list-group-item.active .section-actions button,
+.list-group-item.active .question-actions button {
+  color: #ffffff;
+}
+
+.list-group-item.active .element-actions button:hover,
+.list-group-item.active .section-actions button:hover,
+.list-group-item.active .question-actions button:hover {
+  color: #f8f9fa;
+}
+
+/* Keep the delete button red even in active items */
+.list-group-item.active .element-actions button.text-danger,
+.list-group-item.active .section-actions button.text-danger,
+.list-group-item.active .question-actions button.text-danger {
+  color: #ff8080 !important;
+}
+
+.list-group-item.active .element-actions button.text-danger:hover,
+.list-group-item.active .section-actions button.text-danger:hover,
+.list-group-item.active .question-actions button.text-danger:hover {
+  color: #ff6666 !important;
+}
+
+/* Make action buttons more compact */
+.element-actions button, 
+.section-actions button, 
+.question-actions button {
+  padding: 0 !important;
+  margin-right: 0.5rem !important;
+  font-size: 0.8rem;
+}
+
+.element-actions button:last-child, 
+.section-actions button:last-child, 
+.question-actions button:last-child {
+  margin-right: 0 !important;
+}
+
+.toggle-btn {
+  color: #6c757d;
+  min-width: 20px;
+  font-size: 0.8rem;
+}
+
+.toggle-btn:hover {
+  color: #0d6efd;
+}
+
+.element-type, .question-type {
+  font-size: 0.65rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+.element-info, .section-info, .question-info {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80%;
+  line-height: 1.2;
+  margin-right: 0.5rem;
+}
+
+.element-label, .section-title, .question-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-title {
+  margin-bottom: 0.1rem;
+}
+
+.section-info .small, .question-info .small {
+  font-size: 0.65rem !important;
+  line-height: 1;
+}

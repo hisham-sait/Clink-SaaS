@@ -186,7 +186,7 @@ async function createSettingsData() {
             companyId: company.id,
             amount: 1000.00,
             currency: company.billingDetails.currency,
-            status: 'Pending',
+            status: 'Draft',
             dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
             items: {
               "items": [

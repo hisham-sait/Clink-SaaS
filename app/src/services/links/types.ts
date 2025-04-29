@@ -1,8 +1,7 @@
 // Common Types
 export type LinkStatus = 'Active' | 'Inactive' | 'Expired' | 'Archived';
-export type LinkType = 'ShortLink' | 'DigitalLink' | 'QRCode';
+export type LinkType = 'ShortLink' | 'DigitalLink';
 export type DigitalLinkType = 'ProductInfo' | 'Marketing' | 'Support' | 'Warranty' | 'Instructions' | 'Other';
-export type QRCodeContentType = 'url' | 'text' | 'vcard' | 'email' | 'sms' | 'wifi' | 'location' | 'phone';
 
 // Base Entity Interface
 export interface BaseEntity {
@@ -49,50 +48,6 @@ export interface DigitalLink extends BaseEntity {
   clicks: number;
 }
 
-// QR Code Interfaces
-export interface QRCode extends BaseEntity {
-  title: string;
-  content: string;
-  contentType: QRCodeContentType;
-  config: QRCodeConfig;
-  status: LinkStatus;
-  expiresAt: string | null;
-  categoryId: string | null;
-  category?: Category;
-  clicks: number;
-}
-
-export interface QRCodeConfig {
-  foreground?: string;
-  background?: string;
-  margin?: number;
-  size?: number;
-  errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
-  logo?: string | null;
-  logoSize?: number;
-  // dotsOptions
-  body?: 'square' | 'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | 'square' | 
-         'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded';
-  // cornersSquareOptions
-  eye?: 'square' | 'dot' | 'extra-rounded' | 'square' | 'dot' | 'extra-rounded';
-  // cornersDotOptions
-  eyeBall?: 'square' | 'dot' | 'square' | 'dot';
-  cornerSquareColor?: string;
-  cornerDotColor?: string;
-  gradient?: boolean;
-  gradientColors?: string[];
-  gradientType?: 'linear' | 'radial';
-  // Border options
-  borderWidth?: number;
-  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'double';
-  borderColor?: string;
-  borderRadius?: number;
-  borderMargin?: number;
-  borderGradient?: boolean;
-  borderGradientColors?: string[];
-  borderGradientType?: 'linear' | 'radial';
-  dataUrl?: string;
-}
 
 export interface Category extends BaseEntity {
   name: string;
@@ -149,15 +104,6 @@ export interface CategoriesResponse {
   categories: Category[];
   total: number;
 }
-
-export interface QRCodesResponse {
-  qrCodes: QRCode[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 
 export interface QRCodeOptions {
   size?: number;

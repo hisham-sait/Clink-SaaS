@@ -1,5 +1,6 @@
 import api from '../api';
 import { DatasetData, DataRecord, PaginationResponse } from './types';
+import { getCurrentCompanyId } from './index';
 
 const API_URL = '/engage';
 
@@ -9,8 +10,12 @@ const API_URL = '/engage';
  */
 export const getAllDatasets = async (): Promise<DatasetData[]> => {
   try {
-    const response = await api.get(`${API_URL}/data`);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`${API_URL}/data/${companyId}`);
+    
+    // Standardized response handling
+    const datasets = response.data.data || response.data;
+    return datasets;
   } catch (error) {
     console.error('Error fetching datasets:', error);
     return [];
@@ -24,8 +29,12 @@ export const getAllDatasets = async (): Promise<DatasetData[]> => {
  */
 export const getDatasetById = async (id: string): Promise<DatasetData> => {
   try {
-    const response = await api.get(`${API_URL}/data/${id}`);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`${API_URL}/data/${companyId}/${id}`);
+    
+    // Standardized response handling
+    const dataset = response.data.data || response.data;
+    return dataset;
   } catch (error) {
     console.error(`Error fetching dataset ${id}:`, error);
     throw error;
@@ -39,8 +48,12 @@ export const getDatasetById = async (id: string): Promise<DatasetData> => {
  */
 export const createDataset = async (data: Partial<DatasetData>): Promise<DatasetData> => {
   try {
-    const response = await api.post(`${API_URL}/data`, data);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.post(`${API_URL}/data/${companyId}`, data);
+    
+    // Standardized response handling
+    const createdDataset = response.data.data || response.data;
+    return createdDataset;
   } catch (error) {
     console.error('Error creating dataset:', error);
     throw error;
@@ -55,8 +68,12 @@ export const createDataset = async (data: Partial<DatasetData>): Promise<Dataset
  */
 export const updateDataset = async (id: string, data: Partial<DatasetData>): Promise<DatasetData> => {
   try {
-    const response = await api.put(`${API_URL}/data/${id}`, data);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.put(`${API_URL}/data/${companyId}/${id}`, data);
+    
+    // Standardized response handling
+    const updatedDataset = response.data.data || response.data;
+    return updatedDataset;
   } catch (error) {
     console.error(`Error updating dataset ${id}:`, error);
     throw error;
@@ -70,7 +87,8 @@ export const updateDataset = async (id: string, data: Partial<DatasetData>): Pro
  */
 export const deleteDataset = async (id: string): Promise<void> => {
   try {
-    await api.delete(`${API_URL}/data/${id}`);
+    const companyId = getCurrentCompanyId();
+    await api.delete(`${API_URL}/data/${companyId}/${id}`);
   } catch (error) {
     console.error(`Error deleting dataset ${id}:`, error);
     throw error;
@@ -84,8 +102,12 @@ export const deleteDataset = async (id: string): Promise<void> => {
  */
 export const regenerateWebhookSecret = async (id: string): Promise<DatasetData> => {
   try {
-    const response = await api.post(`${API_URL}/data/${id}/regenerate-webhook-secret`);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.post(`${API_URL}/data/${companyId}/${id}/regenerate-webhook-secret`);
+    
+    // Standardized response handling
+    const dataset = response.data.data || response.data;
+    return dataset;
   } catch (error) {
     console.error(`Error regenerating webhook secret for dataset ${id}:`, error);
     throw error;
@@ -108,10 +130,14 @@ export const getDatasetRecords = async (
   } = {}
 ): Promise<PaginationResponse<DataRecord>> => {
   try {
-    const response = await api.get(`${API_URL}/data/${datasetId}/records`, {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`${API_URL}/data/${companyId}/${datasetId}/records`, {
       params: options
     });
-    return response.data;
+    
+    // Standardized response handling
+    const paginatedResponse = response.data.data || response.data;
+    return paginatedResponse;
   } catch (error) {
     console.error(`Error fetching records for dataset ${datasetId}:`, error);
     throw error;
@@ -126,8 +152,12 @@ export const getDatasetRecords = async (
  */
 export const addRecord = async (datasetId: string, data: any): Promise<DataRecord> => {
   try {
-    const response = await api.post(`${API_URL}/data/${datasetId}/records`, data);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.post(`${API_URL}/data/${companyId}/${datasetId}/records`, data);
+    
+    // Standardized response handling
+    const record = response.data.data || response.data;
+    return record;
   } catch (error) {
     console.error(`Error adding record to dataset ${datasetId}:`, error);
     throw error;
@@ -149,6 +179,7 @@ export const importData = async (
   } = {}
 ): Promise<any> => {
   try {
+    const companyId = getCurrentCompanyId();
     const formData = new FormData();
     formData.append('file', file);
     
@@ -164,13 +195,15 @@ export const importData = async (
       formData.append('description', options.description);
     }
     
-    const response = await api.post(`${API_URL}/data/import`, formData, {
+    const response = await api.post(`${API_URL}/data/${companyId}/import`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
     
-    return response.data;
+    // Standardized response handling
+    const result = response.data.data || response.data;
+    return result;
   } catch (error) {
     console.error('Error importing data:', error);
     throw error;

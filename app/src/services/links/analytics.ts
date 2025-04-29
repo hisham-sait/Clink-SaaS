@@ -1,25 +1,15 @@
-import axios from 'axios';
+import api from '../api';
 import { handleApiError } from '.';
 
-const API_URL = 'http://localhost:3000/api/links/analytics';
+const API_URL = '/links/analytics';
 
 /**
  * Get summary analytics for dashboard
  */
 export const getSummaryAnalytics = async (): Promise<any> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication token not found');
-    }
-
-    const response = await axios.get(`${API_URL}/summary`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
+    const response = await api.get(`${API_URL}/summary`);
+    
     if (response.data.success) {
       return response.data;
     } else {
@@ -35,18 +25,7 @@ export const getSummaryAnalytics = async (): Promise<any> => {
  */
 export const getRecentActivity = async (limit: number = 5): Promise<any> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication token not found');
-    }
-
-    const response = await axios.get(`${API_URL}/activity?limit=${limit}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
+    const response = await api.get(`${API_URL}/activity?limit=${limit}`);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error));
@@ -58,11 +37,6 @@ export const getRecentActivity = async (limit: number = 5): Promise<any> => {
  */
 export const getDetailedAnalytics = async (params?: { startDate?: string; endDate?: string; }): Promise<any> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication token not found');
-    }
-
     // Build query string
     const queryParams = new URLSearchParams();
     if (params) {
@@ -73,12 +47,7 @@ export const getDetailedAnalytics = async (params?: { startDate?: string; endDat
       });
     }
 
-    const response = await axios.get(`${API_URL}?${queryParams.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await api.get(`${API_URL}?${queryParams.toString()}`);
 
     if (response.data.success) {
       return response.data.data;
@@ -95,17 +64,7 @@ export const getDetailedAnalytics = async (params?: { startDate?: string; endDat
  */
 export const getRecentClicks = async (page: number = 1, limit: number = 10): Promise<any> => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Authentication token not found');
-    }
-
-    const response = await axios.get(`${API_URL}/recent-clicks?page=${page}&limit=${limit}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await api.get(`${API_URL}/recent-clicks?page=${page}&limit=${limit}`);
 
     if (response.data.success) {
       return {

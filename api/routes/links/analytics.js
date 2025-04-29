@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../../middleware/auth');
+const { successResponse, errorResponse, ErrorTypes, asyncHandler } = require('../../utils/responseUtils');
 
 const prisma = new PrismaClient();
 
 // Get overall analytics for all links
-router.get('/', auth, async (req, res) => {
-  try {
+router.get('/', auth, asyncHandler(async (req, res) => {
     const { companyId } = req.user;
     const { startDate, endDate } = req.query;
     
@@ -65,8 +65,11 @@ router.get('/', auth, async (req, res) => {
       where: whereShortlinkClicks
     });
     
-    const totalDigitallinkClicks = await prisma.digitalLinkClick.count({
-      where: whereDigitallinkClicks
+    const totalDigitallinkClicks = await prisma.digitalLinkActivity.count({
+      where: {
+        ...whereDigitallinkClicks,
+        action: 'click'
+      }
     });
     
     // Get clicks by date (for charts)
@@ -87,11 +90,12 @@ router.get('/', auth, async (req, res) => {
       SELECT 
         DATE(timestamp) as date, 
         COUNT(*) as count
-      FROM "DigitalLinkClick"
-      JOIN "DigitalLink" ON "DigitalLinkClick"."digitalLinkId" = "DigitalLink"."id"
+      FROM "DigitalLinkActivity"
+      JOIN "DigitalLink" ON "DigitalLinkActivity"."linkId" = "DigitalLink"."id"
       WHERE "DigitalLink"."companyId" = ${companyId}
-      ${startDate ? `AND "DigitalLinkClick"."timestamp" >= '${startDate}'` : ''}
-      ${endDate ? `AND "DigitalLinkClick"."timestamp" <= '${endDate}'` : ''}
+      AND "DigitalLinkActivity"."action" = 'click'
+      ${startDate ? `AND "DigitalLinkActivity"."timestamp" >= '${startDate}'` : ''}
+      ${endDate ? `AND "DigitalLinkActivity"."timestamp" <= '${endDate}'` : ''}
       GROUP BY DATE(timestamp)
       ORDER BY date
     `;
@@ -137,14 +141,15 @@ router.get('/', auth, async (req, res) => {
     
     const digitallinkClicksByBrowser = await prisma.$queryRaw`
       SELECT 
-        browser, 
+        details->>'browser' as browser, 
         COUNT(*) as count
-      FROM "DigitalLinkClick"
-      JOIN "DigitalLink" ON "DigitalLinkClick"."digitalLinkId" = "DigitalLink"."id"
+      FROM "DigitalLinkActivity"
+      JOIN "DigitalLink" ON "DigitalLinkActivity"."linkId" = "DigitalLink"."id"
       WHERE "DigitalLink"."companyId" = ${companyId}
-      ${startDate ? `AND "DigitalLinkClick"."timestamp" >= '${startDate}'` : ''}
-      ${endDate ? `AND "DigitalLinkClick"."timestamp" <= '${endDate}'` : ''}
-      GROUP BY browser
+      AND "DigitalLinkActivity"."action" = 'click'
+      ${startDate ? `AND "DigitalLinkActivity"."timestamp" >= '${startDate}'` : ''}
+      ${endDate ? `AND "DigitalLinkActivity"."timestamp" <= '${endDate}'` : ''}
+      GROUP BY details->>'browser'
       ORDER BY count DESC
     `;
     
@@ -187,14 +192,15 @@ router.get('/', auth, async (req, res) => {
     
     const digitallinkClicksByDevice = await prisma.$queryRaw`
       SELECT 
-        device, 
+        details->>'device' as device, 
         COUNT(*) as count
-      FROM "DigitalLinkClick"
-      JOIN "DigitalLink" ON "DigitalLinkClick"."digitalLinkId" = "DigitalLink"."id"
+      FROM "DigitalLinkActivity"
+      JOIN "DigitalLink" ON "DigitalLinkActivity"."linkId" = "DigitalLink"."id"
       WHERE "DigitalLink"."companyId" = ${companyId}
-      ${startDate ? `AND "DigitalLinkClick"."timestamp" >= '${startDate}'` : ''}
-      ${endDate ? `AND "DigitalLinkClick"."timestamp" <= '${endDate}'` : ''}
-      GROUP BY device
+      AND "DigitalLinkActivity"."action" = 'click'
+      ${startDate ? `AND "DigitalLinkActivity"."timestamp" >= '${startDate}'` : ''}
+      ${endDate ? `AND "DigitalLinkActivity"."timestamp" <= '${endDate}'` : ''}
+      GROUP BY details->>'device'
       ORDER BY count DESC
     `;
     
@@ -237,14 +243,15 @@ router.get('/', auth, async (req, res) => {
     
     const digitallinkClicksByLocation = await prisma.$queryRaw`
       SELECT 
-        location, 
+        details->>'location' as location, 
         COUNT(*) as count
-      FROM "DigitalLinkClick"
-      JOIN "DigitalLink" ON "DigitalLinkClick"."digitalLinkId" = "DigitalLink"."id"
+      FROM "DigitalLinkActivity"
+      JOIN "DigitalLink" ON "DigitalLinkActivity"."linkId" = "DigitalLink"."id"
       WHERE "DigitalLink"."companyId" = ${companyId}
-      ${startDate ? `AND "DigitalLinkClick"."timestamp" >= '${startDate}'` : ''}
-      ${endDate ? `AND "DigitalLinkClick"."timestamp" <= '${endDate}'` : ''}
-      GROUP BY location
+      AND "DigitalLinkActivity"."action" = 'click'
+      ${startDate ? `AND "DigitalLinkActivity"."timestamp" >= '${startDate}'` : ''}
+      ${endDate ? `AND "DigitalLinkActivity"."timestamp" <= '${endDate}'` : ''}
+      GROUP BY details->>'location'
       ORDER BY count DESC
     `;
     
@@ -312,15 +319,17 @@ router.get('/', auth, async (req, res) => {
       where: { 
         companyId,
         ...(startDate && {
-          digitalLinkClicks: {
+          activities: {
             some: {
+              action: 'click',
               timestamp: { gte: new Date(startDate) }
             }
           }
         }),
         ...(endDate && {
-          digitalLinkClicks: {
+          activities: {
             some: {
+              action: 'click',
               timestamp: { lte: new Date(endDate) }
             }
           }
@@ -329,8 +338,9 @@ router.get('/', auth, async (req, res) => {
       include: {
         _count: {
           select: {
-            digitalLinkClicks: {
+            activities: {
               where: {
+                action: 'click',
                 ...(startDate && { timestamp: { gte: new Date(startDate) } }),
                 ...(endDate && { timestamp: { lte: new Date(endDate) } })
               }
@@ -363,7 +373,7 @@ router.get('/', auth, async (req, res) => {
       gs1Key: link.gs1Key,
       redirectType: link.redirectType,
       customUrl: link.customUrl,
-      clicks: link._count.digitalLinkClicks,
+      clicks: link._count.activities,
       createdAt: link.createdAt
     }));
     
@@ -390,10 +400,13 @@ router.get('/', auth, async (req, res) => {
       take: 10
     });
     
-    const recentDigitallinkClicks = await prisma.digitalLinkClick.findMany({
-      where: whereDigitallinkClicks,
+    const recentDigitallinkClicks = await prisma.digitalLinkActivity.findMany({
+      where: {
+        ...whereDigitallinkClicks,
+        action: 'click'
+      },
       include: {
-        digitalLink: {
+        link: {
           select: {
             gs1Url: true,
             title: true,
@@ -428,17 +441,17 @@ router.get('/', auth, async (req, res) => {
     const formattedRecentDigitallinkClicks = recentDigitallinkClicks.map(click => ({
       id: click.id,
       type: 'digitallink',
-      linkId: click.digitalLinkId,
-      linkTitle: click.digitalLink.title,
-      linkUrl: click.digitalLink.gs1Url,
-      gs1Key: click.digitalLink.gs1Key,
-      customUrl: click.digitalLink.customUrl,
-      ipAddress: click.ipAddress,
-      userAgent: click.userAgent,
-      referrer: click.referrer,
-      location: click.location,
-      device: click.device,
-      browser: click.browser,
+      linkId: click.linkId,
+      linkTitle: click.link.title,
+      linkUrl: click.link.gs1Url,
+      gs1Key: click.link.gs1Key,
+      customUrl: click.link.customUrl,
+      ipAddress: click.details?.ipAddress,
+      userAgent: click.details?.userAgent,
+      referrer: click.details?.referrer,
+      location: click.details?.location,
+      device: click.details?.device,
+      browser: click.details?.browser,
       timestamp: click.timestamp
     }));
     
@@ -447,40 +460,30 @@ router.get('/', auth, async (req, res) => {
       new Date(b.timestamp) - new Date(a.timestamp)
     ).slice(0, 10);
     
-    res.json({
-      success: true,
-      data: {
-        summary: {
-          totalLinks: totalShortlinks + totalDigitallinks,
-          totalShortlinks,
-          totalDigitallinks,
-          totalClicks: totalShortlinkClicks + totalDigitallinkClicks,
-          totalShortlinkClicks,
-          totalDigitallinkClicks
-        },
-        charts: {
-          clicksByDate: combinedClicksByDate,
-          clicksByBrowser: combinedClicksByBrowser,
-          clicksByDevice: combinedClicksByDevice,
-          clicksByLocation: combinedClicksByLocation
-        },
-        topLinks,
-        recentClicks
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch analytics',
-      error: error.message
-    });
-  }
-});
+    const analyticsData = {
+      summary: {
+        totalLinks: totalShortlinks + totalDigitallinks,
+        totalShortlinks,
+        totalDigitallinks,
+        totalClicks: totalShortlinkClicks + totalDigitallinkClicks,
+        totalShortlinkClicks,
+        totalDigitallinkClicks
+      },
+      charts: {
+        clicksByDate: combinedClicksByDate,
+        clicksByBrowser: combinedClicksByBrowser,
+        clicksByDevice: combinedClicksByDevice,
+        clicksByLocation: combinedClicksByLocation
+      },
+      topLinks,
+      recentClicks
+    };
+    
+    res.json(successResponse(analyticsData));
+}));
 
 // Get recent clicks for all links
-router.get('/recent-clicks', auth, async (req, res) => {
-  try {
+router.get('/recent-clicks', auth, asyncHandler(async (req, res) => {
     const { companyId } = req.user;
     const { page = 1, limit = 10 } = req.query;
     
@@ -513,14 +516,13 @@ router.get('/recent-clicks', auth, async (req, res) => {
     });
     
     // Get recent digitallink clicks
-    const digitallinkClicks = await prisma.digitalLinkClick.findMany({
+    const digitallinkClicks = await prisma.digitalLinkActivity.findMany({
       where: {
-        digitalLink: {
-          companyId
-        }
+        action: 'click',
+        companyId
       },
       include: {
-        digitalLink: {
+        link: {
           select: {
             id: true,
             gs1Url: true,
@@ -557,17 +559,17 @@ router.get('/recent-clicks', auth, async (req, res) => {
     const formattedDigitallinkClicks = digitallinkClicks.map(click => ({
       id: click.id,
       type: 'digitallink',
-      linkId: click.digitalLinkId,
-      linkTitle: click.digitalLink.title,
-      linkUrl: click.digitalLink.gs1Url,
-      gs1Key: click.digitalLink.gs1Key,
-      customUrl: click.digitalLink.customUrl,
-      ipAddress: click.ipAddress,
-      userAgent: click.userAgent,
-      referrer: click.referrer,
-      location: click.location,
-      device: click.device,
-      browser: click.browser,
+      linkId: click.linkId,
+      linkTitle: click.link.title,
+      linkUrl: click.link.gs1Url,
+      gs1Key: click.link.gs1Key,
+      customUrl: click.link.customUrl,
+      ipAddress: click.details?.ipAddress,
+      userAgent: click.details?.userAgent,
+      referrer: click.details?.referrer,
+      location: click.details?.location,
+      device: click.details?.device,
+      browser: click.details?.browser,
       timestamp: click.timestamp
     }));
     
@@ -585,39 +587,25 @@ router.get('/recent-clicks', auth, async (req, res) => {
       }
     });
     
-    const totalDigitallinkClicks = await prisma.digitalLinkClick.count({
+    const totalDigitallinkClicks = await prisma.digitalLinkActivity.count({
       where: {
-        digitalLink: {
-          companyId
-        }
+        action: 'click',
+        companyId
       }
     });
     
     const totalCount = totalShortlinkClicks + totalDigitallinkClicks;
     
-    res.json({
-      success: true,
-      data: allClicks,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching recent clicks:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch recent clicks',
-      error: error.message
-    });
-  }
-});
+    res.json(successResponse(allClicks, null, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit)
+    }));
+}));
 
 // Get summary analytics for dashboard
-router.get('/summary', auth, async (req, res) => {
-  try {
+router.get('/summary', auth, asyncHandler(async (req, res) => {
     const { companyId } = req.user;
     
     // Get total counts
@@ -637,38 +625,29 @@ router.get('/summary', auth, async (req, res) => {
       }
     });
     
-    const totalDigitallinkClicks = await prisma.digitalLinkClick.count({
+    const totalDigitallinkClicks = await prisma.digitalLinkActivity.count({
       where: {
-        digitalLink: {
-          companyId
-        }
+        action: 'click',
+        companyId
       }
     });
     
     const totalClicks = totalShortlinkClicks + totalDigitallinkClicks;
     
-    res.json({
-      success: true,
+    const summaryData = {
       totalLinks: totalShortlinks + totalDigitallinks,
       totalShortlinks,
       totalDigitallinks,
       totalClicks,
       totalShortlinkClicks,
       totalDigitallinkClicks
-    });
-  } catch (error) {
-    console.error('Error fetching analytics summary:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch analytics summary',
-      error: error.message
-    });
-  }
-});
+    };
+    
+    res.json(successResponse(summaryData));
+}));
 
 // Get recent activity for dashboard
-router.get('/activity', auth, async (req, res) => {
-  try {
+router.get('/activity', auth, asyncHandler(async (req, res) => {
     const { companyId } = req.user;
     const { limit = 5 } = req.query;
     
@@ -752,15 +731,7 @@ router.get('/activity', auth, async (req, res) => {
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, parseInt(limit));
     
-    res.json(allActivities);
-  } catch (error) {
-    console.error('Error fetching activity:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch activity',
-      error: error.message
-    });
-  }
-});
+    res.json(successResponse(allActivities));
+}));
 
 module.exports = router;

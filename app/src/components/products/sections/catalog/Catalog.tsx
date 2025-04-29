@@ -3,6 +3,7 @@ import { Card, Button, Table, Badge, Row, Col, Form, InputGroup, Dropdown, Modal
 import { FaBox, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaSave, FaEdit, FaTrash, FaEye, FaDownload } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { ProductsService, CategoriesService, FamiliesService, ImportExportService } from '../../../../services/products';
+import { ProductType, ProductStatus } from '../../../../services/products/types';
 
 // Import modal components
 import AddProductModal from './AddProductModal';
@@ -35,8 +36,8 @@ const Catalog: React.FC = () => {
     description: '',
     type: 'PHYSICAL',
     status: 'Active',
-    categoryId: '',
-    familyId: ''
+    categoryId: null,
+    familyId: null
   });
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -44,14 +45,22 @@ const Catalog: React.FC = () => {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState<any | null>(null);
-  const [newProduct, setNewProduct] = useState({
+  const [newProduct, setNewProduct] = useState<{
+    name: string;
+    sku: string;
+    description: string;
+    type: ProductType;
+    status: ProductStatus;
+    categoryId: string | null;
+    familyId: string | null;
+  }>({
     name: '',
     sku: '',
     description: '',
     type: 'PHYSICAL',
     status: 'Active',
-    categoryId: '',
-    familyId: ''
+    categoryId: null,
+    familyId: null
   });
   
   // Fetch products, categories, and families on component mount
@@ -98,8 +107,9 @@ const Catalog: React.FC = () => {
   // Function to fetch families using the service layer
   const fetchFamilies = async () => {
     try {
-      const families = await FamiliesService.getFamilies();
-      setFamilies(families || []);
+      const response = await FamiliesService.getFamilies();
+      // The API returns the families array directly, not wrapped in a families property
+      setFamilies(Array.isArray(response) ? response : response.families || []);
     } catch (err: any) {
       console.error('Error fetching families:', err);
       // Don't set error state here to avoid blocking the UI
@@ -130,8 +140,8 @@ const Catalog: React.FC = () => {
       description: '',
       type: 'PHYSICAL',
       status: 'Active',
-      categoryId: '',
-      familyId: ''
+      categoryId: null,
+      familyId: null
     });
     setImportFile(null);
     setImportResult(null);
@@ -158,14 +168,17 @@ const Catalog: React.FC = () => {
   // Set up edited product when selectedProduct changes
   useEffect(() => {
     if (selectedProduct && showEditModal) {
+      const categoryId = selectedProduct.categoryId || selectedProduct.category?.id || null;
+      const familyId = selectedProduct.familyId || selectedProduct.family?.id || null;
+      
       setEditedProduct({
         name: selectedProduct.name || '',
         sku: selectedProduct.sku || '',
         description: selectedProduct.description || '',
         type: selectedProduct.type || 'PHYSICAL',
         status: selectedProduct.status || 'Active',
-        categoryId: selectedProduct.categoryId || selectedProduct.category?.id || '',
-        familyId: selectedProduct.familyId || selectedProduct.family?.id || ''
+        categoryId,
+        familyId
       });
     }
   }, [selectedProduct, showEditModal]);
@@ -194,8 +207,20 @@ const Catalog: React.FC = () => {
         throw new Error('No product selected');
       }
       
+      // Create a copy of the product data for submission
+      const productToUpdate = { ...editedProduct };
+      
+      // Handle empty categoryId and familyId to prevent foreign key constraint violations
+      if (!productToUpdate.categoryId || productToUpdate.categoryId.trim() === '') {
+        productToUpdate.categoryId = null;
+      }
+      
+      if (!productToUpdate.familyId || productToUpdate.familyId.trim() === '') {
+        productToUpdate.familyId = null;
+      }
+      
       // Use the service layer to update the product
-      await ProductsService.updateProduct(selectedProduct.id, editedProduct);
+      await ProductsService.updateProduct(selectedProduct.id, productToUpdate);
       
       // Refresh the products list
       await fetchProducts();
@@ -214,8 +239,38 @@ const Catalog: React.FC = () => {
     try {
       setLoading(true);
       
+      // Create a copy of the product data for submission
+      const productToSubmit = { ...newProduct };
+      
+      // Generate SKU if empty
+      if (!productToSubmit.sku.trim()) {
+        // Create a normalized version of the product name (uppercase, no spaces, alphanumeric only)
+        const normalizedName = productToSubmit.name
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .substring(0, 8); // Limit to 8 chars
+        
+        // Add a prefix based on product type
+        const typePrefix = productToSubmit.type.charAt(0); // First letter of type (P, D, or S)
+        
+        // Add a unique timestamp suffix (last 4 digits)
+        const timestamp = Date.now().toString().slice(-4);
+        
+        // Combine to create the SKU
+        productToSubmit.sku = `${typePrefix}-${normalizedName}-${timestamp}`;
+      }
+      
+      // Handle empty categoryId and familyId to prevent foreign key constraint violations
+      if (!productToSubmit.categoryId || productToSubmit.categoryId.trim() === '') {
+        productToSubmit.categoryId = null;
+      }
+      
+      if (!productToSubmit.familyId || productToSubmit.familyId.trim() === '') {
+        productToSubmit.familyId = null;
+      }
+      
       // Use the service layer to create the product
-      await ProductsService.createProduct(newProduct);
+      await ProductsService.createProduct(productToSubmit);
       
       // Refresh the products list
       await fetchProducts();
@@ -230,8 +285,8 @@ const Catalog: React.FC = () => {
         description: '',
         type: 'PHYSICAL',
         status: 'Active',
-        categoryId: '',
-        familyId: ''
+        categoryId: null,  // Use null for the initial state
+        familyId: null     // Use null for the initial state
       });
     } catch (err: any) {
       console.error('Error saving product:', err);
@@ -282,7 +337,7 @@ const Catalog: React.FC = () => {
   const handleDownloadTemplate = async () => {
     try {
       // Use the service layer to download the template
-      const templateBlob = await ImportExportService.downloadTemplate();
+      const templateBlob = await ImportExportService.downloadImportTemplate();
       
       // Create a URL for the blob
       const url = URL.createObjectURL(templateBlob);
@@ -701,11 +756,23 @@ const Catalog: React.FC = () => {
             // Create update data object, only including fields that have values
             const updateData: any = {};
             if (editedProduct.status) updateData.status = editedProduct.status;
-            if (editedProduct.categoryId) updateData.categoryId = editedProduct.categoryId;
-            if (editedProduct.familyId) updateData.familyId = editedProduct.familyId;
             
-            // Use the service layer to bulk update products
-            await ProductsService.bulkUpdateProducts(selectedProducts, updateData);
+            // Handle categoryId - explicitly set to null if empty string
+            if (editedProduct.categoryId !== undefined) {
+              updateData.categoryId = (!editedProduct.categoryId || editedProduct.categoryId.trim() === '') 
+                ? null 
+                : editedProduct.categoryId;
+            }
+            
+            // Handle familyId - explicitly set to null if empty string
+            if (editedProduct.familyId !== undefined) {
+              updateData.familyId = (!editedProduct.familyId || editedProduct.familyId.trim() === '') 
+                ? null 
+                : editedProduct.familyId;
+            }
+            
+            // Use the service layer to bulk edit products
+            await ProductsService.bulkEditProducts(selectedProducts, updateData);
             
             // Refresh the products list
             await fetchProducts();

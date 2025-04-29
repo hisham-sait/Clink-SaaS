@@ -1,21 +1,23 @@
 import React from 'react';
-import { ListGroup } from 'react-bootstrap';
-import { FaThumbsUp } from 'react-icons/fa';
+import { Card } from 'react-bootstrap';
+import { FaThList } from 'react-icons/fa';
 
 interface LikertElementProps {
   onAdd: (type: string) => void;
+  size?: 'normal' | 'small' | 'tiny';
 }
 
-const LikertElement: React.FC<LikertElementProps> = ({ onAdd }) => {
+const LikertElement: React.FC<LikertElementProps> = ({ onAdd, size = 'normal' }) => {
   return (
-    <ListGroup.Item 
-      action
+    <Card 
       onClick={() => onAdd('likert')}
-      className="d-flex align-items-center"
+      className={`element-card element-${size} d-flex align-items-center justify-content-center`}
     >
-      <div className="me-2"><FaThumbsUp /></div>
-      Likert Scale
-    </ListGroup.Item>
+      <Card.Body className="text-center p-2">
+        <div className="element-icon"><FaThList /></div>
+        <div className="element-label">Likert</div>
+      </Card.Body>
+    </Card>
   );
 };
 

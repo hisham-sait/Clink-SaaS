@@ -23,11 +23,6 @@ const LinksSidebar: React.FC<LinksSidebarProps> = ({ isExpanded = true }) => {
       route: '/links/digitallinks'
     },
     {
-      label: 'QR Codes',
-      icon: 'bi-qr-code',
-      route: '/links/qrcodes'
-    },
-    {
       label: 'Categories',
       icon: 'bi-folder',
       route: '/links/categories'

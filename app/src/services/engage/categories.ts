@@ -1,15 +1,76 @@
 import api from '../api';
-import { FormCategory, SurveyCategory } from './types';
-
-const API_URL = '/engage';
+import { FormCategory, SurveyCategory, PageCategory, FormCategoriesResponse, SurveyCategoriesResponse, PageCategoriesResponse } from './types';
+import { getCurrentCompanyId } from './index';
 
 /**
- * Get form categories
+ * Get all categories (form, survey, and page)
  */
-export const getFormCategories = async () => {
+export const getCategories = async (): Promise<{ categories: any[] }> => {
   try {
-    const response = await api.get(`${API_URL}/forms/categories`);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    
+    // Get all categories
+    const response = await api.get(`/engage/categories/${companyId}`);
+    
+    // Standardized response handling
+    const data = response.data.data || response.data;
+    
+    // Ensure we return an object with a categories property that's an array
+    if (data && Array.isArray(data)) {
+      return { categories: data };
+    } else if (data && data.categories && Array.isArray(data.categories)) {
+      return data;
+    } else {
+      console.warn('Unexpected response format from categories API:', data);
+      return { categories: [] };
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new category (form, survey, or page)
+ */
+export const createCategory = async (category: { name: string, type: string }): Promise<any> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    
+    // Create the category based on type
+    const response = await api.post(`/engage/categories/${companyId}`, category);
+    
+    // Standardized response handling
+    const createdCategory = response.data.data || response.data;
+    return createdCategory;
+  } catch (error) {
+    console.error('Error creating category:', error);
+    throw error;
+  }
+};
+
+// Form Categories
+
+/**
+ * Get all form categories
+ */
+export const getFormCategories = async (): Promise<FormCategoriesResponse> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/forms/categories/${companyId}`);
+    
+    // Standardized response handling
+    const data = response.data.data || response.data;
+    
+    // Ensure we return an object with a categories property that's an array
+    if (data && Array.isArray(data)) {
+      return { categories: data, total: data.length };
+    } else if (data && data.categories && Array.isArray(data.categories)) {
+      return data;
+    } else {
+      console.warn('Unexpected response format from form categories API:', data);
+      return { categories: [], total: 0 };
+    }
   } catch (error) {
     console.error('Error fetching form categories:', error);
     throw error;
@@ -17,25 +78,33 @@ export const getFormCategories = async () => {
 };
 
 /**
- * Get survey categories
+ * Get a single form category by ID
  */
-export const getSurveyCategories = async () => {
+export const getFormCategory = async (id: string): Promise<FormCategory> => {
   try {
-    const response = await api.get(`${API_URL}/surveys/categories`);
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/forms/categories/${companyId}/${id}`);
+    
+    // Standardized response handling
+    const category = response.data.data || response.data;
+    return category;
   } catch (error) {
-    console.error('Error fetching survey categories:', error);
+    console.error(`Error fetching form category with ID ${id}:`, error);
     throw error;
   }
 };
 
 /**
- * Create form category
+ * Create a new form category
  */
-export const createFormCategory = async (name: string) => {
+export const createFormCategory = async (category: Omit<FormCategory, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>): Promise<FormCategory> => {
   try {
-    const response = await api.post(`${API_URL}/forms/categories`, { name });
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.post(`/engage/forms/categories/${companyId}`, category);
+    
+    // Standardized response handling
+    const createdCategory = response.data.data || response.data;
+    return createdCategory;
   } catch (error) {
     console.error('Error creating form category:', error);
     throw error;
@@ -43,12 +112,168 @@ export const createFormCategory = async (name: string) => {
 };
 
 /**
- * Create survey category
+ * Update an existing form category
  */
-export const createSurveyCategory = async (name: string) => {
+export const updateFormCategory = async (id: string, category: Partial<FormCategory>): Promise<FormCategory> => {
   try {
-    const response = await api.post(`${API_URL}/surveys/categories`, { name });
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.put(`/engage/forms/categories/${companyId}/${id}`, category);
+    
+    // Standardized response handling
+    const updatedCategory = response.data.data || response.data;
+    return updatedCategory;
+  } catch (error) {
+    console.error(`Error updating form category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a form category
+ */
+export const deleteFormCategory = async (id: string): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.delete(`/engage/forms/categories/${companyId}/${id}`);
+  } catch (error) {
+    console.error(`Error deleting form category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get forms in a category
+ */
+export const getFormCategoryItems = async (categoryId: string): Promise<any[]> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/forms/categories/${companyId}/${categoryId}/forms`);
+    
+    // Standardized response handling that ensures we return an array
+    const forms = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(forms) ? forms : [];
+  } catch (error) {
+    console.error(`Error fetching forms for category ${categoryId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Reorder form categories
+ */
+export const reorderFormCategories = async (categoryIds: string[]): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.post(`/engage/forms/categories/${companyId}/reorder`, { categoryIds });
+  } catch (error) {
+    console.error('Error reordering form categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get form category tree (hierarchical structure)
+ */
+export const getFormCategoryTree = async (): Promise<FormCategory[]> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/forms/categories/${companyId}/tree`);
+    
+    // Standardized response handling that ensures we return an array
+    const categories = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(categories) ? categories : [];
+  } catch (error) {
+    console.error('Error fetching form category tree:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk update form categories
+ */
+export const bulkUpdateFormCategories = async (categories: Array<{ id: string } & Partial<FormCategory>>): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.post(`/engage/forms/categories/${companyId}/bulk-update`, { categories });
+  } catch (error) {
+    console.error('Error bulk updating form categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk delete form categories
+ */
+export const bulkDeleteFormCategories = async (categoryIds: string[]): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.post(`/engage/forms/categories/${companyId}/bulk-delete`, { categoryIds });
+  } catch (error) {
+    console.error('Error bulk deleting form categories:', error);
+    throw error;
+  }
+};
+
+// Survey Categories
+
+/**
+ * Get all survey categories
+ */
+export const getSurveyCategories = async (): Promise<SurveyCategoriesResponse> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/surveys/categories/${companyId}`);
+    
+    // Standardized response handling
+    const data = response.data.data || response.data;
+    
+    // Ensure we return an object with a categories property that's an array
+    if (data && Array.isArray(data)) {
+      return { categories: data, total: data.length };
+    } else if (data && data.categories && Array.isArray(data.categories)) {
+      return data;
+    } else {
+      console.warn('Unexpected response format from survey categories API:', data);
+      return { categories: [], total: 0 };
+    }
+  } catch (error) {
+    console.error('Error fetching survey categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a single survey category by ID
+ */
+export const getSurveyCategory = async (id: string): Promise<SurveyCategory> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/surveys/categories/${companyId}/${id}`);
+    
+    // Standardized response handling
+    const category = response.data.data || response.data;
+    return category;
+  } catch (error) {
+    console.error(`Error fetching survey category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new survey category
+ */
+export const createSurveyCategory = async (category: Omit<SurveyCategory, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>): Promise<SurveyCategory> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.post(`/engage/surveys/categories/${companyId}`, category);
+    
+    // Standardized response handling
+    const createdCategory = response.data.data || response.data;
+    return createdCategory;
   } catch (error) {
     console.error('Error creating survey category:', error);
     throw error;
@@ -56,51 +281,259 @@ export const createSurveyCategory = async (name: string) => {
 };
 
 /**
- * Update form category
+ * Update an existing survey category
  */
-export const updateFormCategory = async (id: string, name: string) => {
+export const updateSurveyCategory = async (id: string, category: Partial<SurveyCategory>): Promise<SurveyCategory> => {
   try {
-    const response = await api.put(`${API_URL}/forms/categories/${id}`, { name });
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    const response = await api.put(`/engage/surveys/categories/${companyId}/${id}`, category);
+    
+    // Standardized response handling
+    const updatedCategory = response.data.data || response.data;
+    return updatedCategory;
   } catch (error) {
-    console.error(`Error updating form category ${id}:`, error);
+    console.error(`Error updating survey category with ID ${id}:`, error);
     throw error;
   }
 };
 
 /**
- * Update survey category
+ * Delete a survey category
  */
-export const updateSurveyCategory = async (id: string, name: string) => {
+export const deleteSurveyCategory = async (id: string): Promise<void> => {
   try {
-    const response = await api.put(`${API_URL}/surveys/categories/${id}`, { name });
-    return response.data;
+    const companyId = getCurrentCompanyId();
+    await api.delete(`/engage/surveys/categories/${companyId}/${id}`);
   } catch (error) {
-    console.error(`Error updating survey category ${id}:`, error);
+    console.error(`Error deleting survey category with ID ${id}:`, error);
     throw error;
   }
 };
 
 /**
- * Delete form category
+ * Get surveys in a category
  */
-export const deleteFormCategory = async (id: string) => {
+export const getSurveyCategoryItems = async (categoryId: string): Promise<any[]> => {
   try {
-    await api.delete(`${API_URL}/forms/categories/${id}`);
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/surveys/categories/${companyId}/${categoryId}/surveys`);
+    
+    // Standardized response handling that ensures we return an array
+    const surveys = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(surveys) ? surveys : [];
   } catch (error) {
-    console.error(`Error deleting form category ${id}:`, error);
+    console.error(`Error fetching surveys for category ${categoryId}:`, error);
     throw error;
   }
 };
 
 /**
- * Delete survey category
+ * Reorder survey categories
  */
-export const deleteSurveyCategory = async (id: string) => {
+export const reorderSurveyCategories = async (categoryIds: string[]): Promise<void> => {
   try {
-    await api.delete(`${API_URL}/surveys/categories/${id}`);
+    const companyId = getCurrentCompanyId();
+    await api.post(`/engage/surveys/categories/${companyId}/reorder`, { categoryIds });
   } catch (error) {
-    console.error(`Error deleting survey category ${id}:`, error);
+    console.error('Error reordering survey categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get survey category tree (hierarchical structure)
+ */
+export const getSurveyCategoryTree = async (): Promise<SurveyCategory[]> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/surveys/categories/${companyId}/tree`);
+    
+    // Standardized response handling that ensures we return an array
+    const categories = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(categories) ? categories : [];
+  } catch (error) {
+    console.error('Error fetching survey category tree:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk update survey categories
+ */
+export const bulkUpdateSurveyCategories = async (categories: Array<{ id: string } & Partial<SurveyCategory>>): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.post(`/engage/surveys/categories/${companyId}/bulk-update`, { categories });
+  } catch (error) {
+    console.error('Error bulk updating survey categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk delete survey categories
+ */
+export const bulkDeleteSurveyCategories = async (categoryIds: string[]): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.post(`/engage/surveys/categories/${companyId}/bulk-delete`, { categoryIds });
+  } catch (error) {
+    console.error('Error bulk deleting survey categories:', error);
+    throw error;
+  }
+};
+
+// Page Categories
+
+/**
+ * Get all page categories
+ */
+export const getPageCategories = async (): Promise<PageCategoriesResponse> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/pages/categories/${companyId}`);
+    
+    // Standardized response handling
+    const data = response.data.data || response.data;
+    
+    // Ensure we return an object with a categories property that's an array
+    if (data && Array.isArray(data)) {
+      return { categories: data, total: data.length };
+    } else if (data && data.categories && Array.isArray(data.categories)) {
+      return data;
+    } else {
+      console.warn('Unexpected response format from page categories API:', data);
+      return { categories: [], total: 0 };
+    }
+  } catch (error) {
+    console.error('Error fetching page categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a single page category by ID
+ */
+export const getPageCategory = async (id: string): Promise<PageCategory> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/pages/categories/${companyId}/${id}`);
+    
+    // Standardized response handling
+    const category = response.data.data || response.data;
+    return category;
+  } catch (error) {
+    console.error(`Error fetching page category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new page category
+ */
+export const createPageCategory = async (category: Omit<PageCategory, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>): Promise<PageCategory> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.post(`/engage/pages/categories/${companyId}`, category);
+    
+    // Standardized response handling
+    const createdCategory = response.data.data || response.data;
+    return createdCategory;
+  } catch (error) {
+    console.error('Error creating page category:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing page category
+ */
+export const updatePageCategory = async (id: string, category: Partial<PageCategory>): Promise<PageCategory> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.put(`/engage/pages/categories/${companyId}/${id}`, category);
+    
+    // Standardized response handling
+    const updatedCategory = response.data.data || response.data;
+    return updatedCategory;
+  } catch (error) {
+    console.error(`Error updating page category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a page category
+ */
+export const deletePageCategory = async (id: string): Promise<void> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    await api.delete(`/engage/pages/categories/${companyId}/${id}`);
+  } catch (error) {
+    console.error(`Error deleting page category with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get pages in a category
+ */
+export const getPageCategoryItems = async (categoryId: string): Promise<any[]> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/pages/${companyId}?categoryId=${categoryId}`);
+    
+    // Standardized response handling that ensures we return an array
+    const pages = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(pages) ? pages : [];
+  } catch (error) {
+    console.error(`Error fetching pages for category ${categoryId}:`, error);
+    throw error;
+  }
+};
+
+// Form Types
+
+/**
+ * Get all form types
+ */
+export const getFormTypes = async (): Promise<string[]> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/forms/types/${companyId}`);
+    
+    // Standardized response handling that ensures we return an array
+    const types = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(types) ? types : [];
+  } catch (error) {
+    console.error('Error fetching form types:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get forms by type
+ */
+export const getFormsByType = async (type: string): Promise<any[]> => {
+  try {
+    const companyId = getCurrentCompanyId();
+    const response = await api.get(`/engage/forms/types/${companyId}/${type}`);
+    
+    // Standardized response handling that ensures we return an array
+    const forms = response.data.data || response.data;
+    
+    // Ensure we return an array even if the response is not an array
+    return Array.isArray(forms) ? forms : [];
+  } catch (error) {
+    console.error(`Error fetching forms for type ${type}:`, error);
     throw error;
   }
 };

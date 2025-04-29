@@ -10,12 +10,14 @@ interface EditSurveyModalProps {
     description?: string;
     status: string;
     categoryId: string;
+    sections?: any[];
   } | null;
   editedSurvey: {
     title: string;
     description?: string;
     status: string;
     categoryId: string;
+    sections?: any[];
   };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   handleUpdateSurvey: () => void;
@@ -92,7 +94,7 @@ const EditSurveyModal: React.FC<EditSurveyModalProps> = ({
                   required
                 >
                   <option value="Active">Active</option>
-                  <option value="Draft">Draft</option>
+                  <option value="Inactive">Draft</option>
                   <option value="Archived">Archived</option>
                 </Form.Select>
               </Form.Group>

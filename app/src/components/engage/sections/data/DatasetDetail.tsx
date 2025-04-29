@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Card, Button, Table, Badge, Spinner, Row, Col, Form } from 'react-bootstrap';
-import { FaArrowLeft, FaDownload, FaLink } from 'react-icons/fa';
+import { Card, Button, Table, Badge, Spinner, Row, Col, Form, Modal } from 'react-bootstrap';
+import { FaArrowLeft, FaDownload, FaLink, FaCode, FaCopy } from 'react-icons/fa';
 import { DatasetData, DataRecord } from '../../../../services/engage/types';
 import { getDatasetById, getDatasetRecords } from '../../../../services/engage/data';
 
@@ -23,6 +23,12 @@ const DatasetDetail: React.FC = () => {
   const [limit, setLimit] = useState<number>(20);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
+  
+  // State for SQL modal
+  const [showSqlModal, setShowSqlModal] = useState<boolean>(false);
+  const [sqlQuery, setSqlQuery] = useState<string>('');
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const sqlTextAreaRef = useRef<HTMLTextAreaElement>(null);
   
   // Fetch dataset and records on component mount
   useEffect(() => {
@@ -104,6 +110,216 @@ const DatasetDetail: React.FC = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+  
+  // Generate SQL query for Superset
+  const generateSqlQuery = () => {
+    if (!records.length) return '';
+    
+    // Get current date for the query header
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Get all unique keys from all records
+    const allKeys = new Set<string>();
+    records.forEach(record => {
+      Object.keys(record.data).forEach(key => allKeys.add(key));
+    });
+    
+    const keys = Array.from(allKeys);
+    
+    // Determine data types for each field
+    const fieldTypes = new Map<string, string>();
+    const fieldDescriptions = new Map<string, string>();
+    
+    keys.forEach(key => {
+      // Default to text
+      let type = 'text';
+      let isConsistentType = true;
+      let detectedType = '';
+      
+      // Check all records to ensure consistent type
+      for (let i = 0; i < Math.min(records.length, 20); i++) {
+        const value = records[i].data[key];
+        
+        if (value !== null && value !== undefined) {
+          let currentType = '';
+          
+          if (typeof value === 'number') {
+            currentType = Number.isInteger(value) ? 'int' : 'float';
+          } else if (typeof value === 'boolean') {
+            currentType = 'boolean';
+          } else if (typeof value === 'string') {
+            // Try to parse as number first
+            if (/^-?\d+$/.test(value)) {
+              currentType = 'int';
+            } else if (/^-?\d+(\.\d+)?$/.test(value)) {
+              currentType = 'float';
+            } else {
+              // Check if it's a date
+              const datePattern = /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}:\d{2}/;
+              if (datePattern.test(value)) {
+                currentType = 'timestamp';
+              } else {
+                // Check if it's a boolean
+                if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+                  currentType = 'boolean';
+                } else {
+                  currentType = 'text';
+                }
+              }
+            }
+          } else if (typeof value === 'object') {
+            currentType = 'json';
+          }
+          
+          // If this is the first value we're checking
+          if (detectedType === '') {
+            detectedType = currentType;
+          } 
+          // If the type is inconsistent with previous values
+          else if (detectedType !== currentType) {
+            isConsistentType = false;
+            break;
+          }
+        }
+      }
+      
+      // If we have a consistent type, use it
+      if (isConsistentType && detectedType !== '') {
+        type = detectedType;
+      } 
+      // Otherwise, use some heuristics based on field name
+      else {
+        // Check field name for hints about type
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.includes('id') && !lowerKey.includes('idea') && !lowerKey.includes('hide')) {
+          type = 'int';
+        } else if (lowerKey.includes('count') || lowerKey.includes('number') || lowerKey.includes('qty') || lowerKey.includes('quantity')) {
+          type = 'int';
+        } else if (lowerKey.includes('price') || lowerKey.includes('amount') || lowerKey.includes('cost') || lowerKey.includes('fee')) {
+          type = 'float';
+        } else if (lowerKey.includes('date') || lowerKey.includes('time')) {
+          type = 'timestamp';
+        } else if (lowerKey.startsWith('is') || lowerKey.startsWith('has') || lowerKey.includes('flag') || lowerKey.includes('enabled') || lowerKey.includes('active')) {
+          type = 'boolean';
+        }
+      }
+      
+      fieldTypes.set(key, type);
+      
+      // Generate field descriptions based on field name and type
+      let description = key;
+      if (key.toLowerCase().includes('date') || key.toLowerCase().includes('time')) {
+        description = type === 'timestamp' ? 'Date/time value' : 'Date/time as text';
+      } else if (key.toLowerCase().includes('price') || key.toLowerCase().includes('amount') || key.toLowerCase().includes('cost')) {
+        description = 'Monetary value';
+      } else if (key.toLowerCase().includes('email')) {
+        description = 'Email address';
+      } else if (key.toLowerCase().includes('phone')) {
+        description = 'Phone number';
+      } else if (key.toLowerCase().includes('name')) {
+        description = 'Name value';
+      } else if (key.toLowerCase().includes('id')) {
+        description = 'Identifier';
+      } else if (key.toLowerCase().includes('count') || key.toLowerCase().includes('number')) {
+        description = 'Numeric count';
+      } else if (key.toLowerCase().includes('is') || key.toLowerCase().includes('has')) {
+        description = 'Boolean flag';
+      } else if (key.toLowerCase().includes('address')) {
+        description = 'Address information';
+      }
+      
+      fieldDescriptions.set(key, description);
+    });
+    
+    // Generate SQL query
+    let sql = `/* 
+DATASET QUERY FOR SUPERSET SQL LAB
+Table: DataRecord
+Dataset ID: ${datasetId}
+Dataset Name: ${dataset?.name || 'Unknown'}
+Generated: ${currentDate}
+*/\n\n`;
+    
+    sql += `SELECT\n`;
+    
+    // Add field extractions with type information as text comments
+    keys.forEach((key, index) => {
+      const type = fieldTypes.get(key) || 'text';
+      const description = fieldDescriptions.get(key) || key;
+      let fieldExtraction = '';
+      
+      // Add type information as a comment
+      sql += `  /* ${type.toUpperCase()}: ${description} */\n`;
+      
+      switch (type) {
+        case 'int':
+          fieldExtraction = `  CAST(dr.data->>'${key}' AS INTEGER) AS "${key}"`;
+          break;
+        case 'float':
+          fieldExtraction = `  CAST(dr.data->>'${key}' AS NUMERIC) AS "${key}"`;
+          break;
+        case 'boolean':
+          fieldExtraction = `  CAST(dr.data->>'${key}' AS BOOLEAN) AS "${key}"`;
+          break;
+        case 'timestamp':
+          fieldExtraction = `  CAST(dr.data->>'${key}' AS TIMESTAMP) AS "${key}"`;
+          break;
+        case 'json':
+          fieldExtraction = `  dr.data->'${key}' AS "${key}"`;
+          break;
+        default:
+          fieldExtraction = `  dr.data->>'${key}' AS "${key}"`;
+      }
+      
+      // Add comma if not the last field
+      if (index < keys.length - 1) {
+        fieldExtraction += ',';
+      }
+      
+      sql += fieldExtraction + '\n';
+      
+      // Add a blank line between fields for readability
+      if (index < keys.length - 1) {
+        sql += '\n';
+      }
+    });
+    
+    // Add system field for record creation date
+    if (keys.length > 0) {
+      sql += `,\n\n  /* TIMESTAMP: Record creation date */\n  dr."createdAt"\n`;
+    } else {
+      sql += `  /* TIMESTAMP: Record creation date */\n  dr."createdAt"\n`;
+    }
+    
+    sql += `FROM "DataRecord" dr\n`;
+    sql += `WHERE dr."datasetId" = '${datasetId}'\n`;
+    sql += `ORDER BY dr."createdAt" DESC\n`;
+    sql += `LIMIT 1000;`;
+    
+    return sql;
+  };
+  
+  // Show SQL modal with generated query
+  const showSqlQueryModal = () => {
+    const query = generateSqlQuery();
+    setSqlQuery(query);
+    setShowSqlModal(true);
+    setCopySuccess(false);
+  };
+  
+  // Copy SQL query to clipboard
+  const copySqlToClipboard = () => {
+    if (sqlTextAreaRef.current) {
+      sqlTextAreaRef.current.select();
+      document.execCommand('copy');
+      setCopySuccess(true);
+      
+      // Reset copy success message after 3 seconds
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 3000);
+    }
   };
   
   // Format date for display
@@ -190,6 +406,15 @@ const DatasetDetail: React.FC = () => {
               Webhook Details
             </Button>
           )}
+          <Button 
+            variant="outline-primary" 
+            className="me-2"
+            onClick={showSqlQueryModal}
+            disabled={!records.length}
+          >
+            <FaCode className="me-2" />
+            SQL Query
+          </Button>
           <Button 
             variant="primary" 
             onClick={exportAsCSV}
@@ -339,6 +564,59 @@ const DatasetDetail: React.FC = () => {
           </Row>
         </Card.Body>
       </Card>
+      
+      {/* SQL Query Modal */}
+      <Modal 
+        show={showSqlModal} 
+        onHide={() => setShowSqlModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>SQL Query for Superset</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Use this PostgreSQL query in Superset's SQL Lab to extract fields from your JSON data.
+            This query is configured to work with the DataRecord table in your database.
+          </p>
+          <div className="position-relative">
+            <Form.Control
+              as="textarea"
+              ref={sqlTextAreaRef}
+              value={sqlQuery}
+              readOnly
+              rows={15}
+              className="font-monospace"
+              style={{ 
+                backgroundColor: '#f8f9fa',
+                color: '#212529',
+                fontSize: '0.875rem'
+              }}
+            />
+            <Button
+              variant="outline-primary"
+              size="sm"
+              className="position-absolute"
+              style={{ top: '10px', right: '10px' }}
+              onClick={copySqlToClipboard}
+            >
+              <FaCopy className="me-1" />
+              {copySuccess ? 'Copied!' : 'Copy'}
+            </Button>
+          </div>
+          {copySuccess && (
+            <div className="alert alert-success mt-3 mb-0" role="alert">
+              SQL query copied to clipboard!
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSqlModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

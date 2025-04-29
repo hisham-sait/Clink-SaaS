@@ -20,7 +20,7 @@ const Products: React.FC = () => {
       <Route path="families" element={<Families />} />
       <Route path="import-export" element={<ImportExport />} />
       <Route path="view/:id" element={<ProductView />} />
-      <Route path="" element={<Navigate to="catalog" replace />} />
+      <Route path="" element={<Navigate to="dashboard" replace />} />
     </Routes>
   );
 };

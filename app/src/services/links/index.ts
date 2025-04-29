@@ -2,7 +2,6 @@
 export * as ShortLinksService from './shortlinks';
 export * as DigitalLinksService from './digitallinks';
 export * as CategoriesService from './categories';
-export * as QRCodesService from './qrcodes';
 export * as AnalyticsService from './analytics';
 
 // Re-export types with namespaces to avoid conflicts

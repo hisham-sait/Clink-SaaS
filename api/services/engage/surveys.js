@@ -100,7 +100,7 @@ const surveyService = {
    */
   async createSurvey(surveyData, companyId) {
     try {
-      const { title, description, categoryId, sections, settings, status } = surveyData;
+      const { title, description, categoryId, sections, questions, settings, status, appearance } = surveyData;
       
       // Generate random alphanumeric slug
       let slug = Math.random().toString(36).substring(2, 10);
@@ -122,17 +122,42 @@ const surveyService = {
         });
       }
       
+      // Process sections to ensure titles and descriptions are set
+      const processedSections = sections ? sections.map(section => ({
+        ...section,
+        title: section.title || 'Untitled Section',
+        description: section.description || '',
+        questions: section.questions ? section.questions.map(q => ({
+          ...q,
+          question: q.question || 'Untitled Question',
+          description: q.description || ''
+        })) : []
+      })) : [];
+      
+      // Store sections and questions in settings
+      const updatedSettings = {
+        ...settings,
+        sections: processedSections,
+        questions: questions || []
+      };
+      
+      // Log the data for debugging
+      console.log('Creating survey with data:', JSON.stringify({
+        settings: updatedSettings
+      }, null, 2));
+      
       // Create the new survey
       const newSurvey = await prisma.survey.create({
         data: {
           title,
           description: description || '',
           slug,
-          sections: sections || [],
-          settings: settings || {},
+          settings: updatedSettings || {},
+          appearance: appearance || {},
           status: status || 'Active',
           companyId,
-          categoryId: categoryId || null
+          categoryId: categoryId || null,
+          sections: processedSections || []
         }
       });
       
@@ -155,10 +180,86 @@ const surveyService = {
       // Check if survey exists and user has access
       const existingSurvey = await this.getSurveyById(id, companyId);
       
-      const { title, description, categoryId, sections, settings, status } = surveyData;
+      const { title, description, categoryId, sections, questions, settings, status, appearance } = surveyData;
       
       // Keep the existing slug - we don't change slugs on update
       let slug = existingSurvey.slug;
+      
+      // Process sections to ensure titles and descriptions are set
+      const processedSections = sections ? sections.map(section => ({
+        ...section,
+        title: section.title || 'Untitled Section',
+        description: section.description || '',
+        questions: section.questions ? section.questions.map(q => ({
+          ...q,
+          question: q.question || 'Untitled Question',
+          description: q.description || ''
+        })) : []
+      })) : (existingSurvey.settings?.sections || []);
+      
+      // Store sections and questions in settings
+      const updatedSettings = {
+        ...(settings || existingSurvey.settings || {}),
+        sections: processedSections,
+        questions: questions || []
+      };
+      
+      // Log the incoming data for debugging
+      console.log('Updating survey with data:', JSON.stringify({
+        title,
+        description,
+        categoryId,
+        status,
+        settings: updatedSettings
+      }, null, 2));
+      
+      // Handle categoryId properly to avoid foreign key constraint violations
+      let finalCategoryId = existingSurvey.categoryId;
+      
+      // Only update categoryId if it's explicitly provided
+      if (categoryId !== undefined) {
+        // If null, empty string, or invalid ID is provided, set to null
+        // This allows clearing the category
+        finalCategoryId = null;
+        
+        // Only try to set a non-null categoryId if it's a non-empty string
+        if (categoryId && typeof categoryId === 'string' && categoryId.trim() !== '') {
+          try {
+            // Log the category ID we're looking for
+            console.log(`Looking for survey category with ID: "${categoryId}"`);
+            
+            // Try to find the category
+            const categoryExists = await prisma.surveyCategory.findUnique({
+              where: { id: categoryId }
+            });
+            
+            if (categoryExists) {
+              finalCategoryId = categoryId;
+              console.log(`Survey category found: ${categoryExists.name}`);
+            } else {
+              console.warn(`Survey category ID ${categoryId} does not exist. Setting category to null.`);
+            }
+          } catch (categoryError) {
+            console.warn(`Error verifying survey category ID ${categoryId}:`, categoryError);
+            // Set to null on error
+          }
+        } else {
+          console.log(`Setting survey categoryId to null (received: ${categoryId})`);
+        }
+      }
+      
+      // Ensure status is a valid enum value
+      let finalStatus = existingSurvey.status;
+      if (status) {
+        // Map 'Draft' to 'Inactive' if needed
+        if (status === 'Draft') {
+          finalStatus = 'Inactive';
+        } else if (['Active', 'Inactive', 'Archived'].includes(status)) {
+          finalStatus = status;
+        } else {
+          console.warn(`Invalid status value: ${status}. Using existing status.`);
+        }
+      }
       
       // Update the survey
       const updatedSurvey = await prisma.survey.update({
@@ -169,10 +270,10 @@ const surveyService = {
           title: title || existingSurvey.title,
           description: description !== undefined ? description : existingSurvey.description,
           slug: slug,
-          sections: sections !== undefined ? sections : existingSurvey.sections,
-          settings: settings !== undefined ? settings : existingSurvey.settings,
-          status: status || existingSurvey.status,
-          categoryId: categoryId !== undefined ? categoryId : existingSurvey.categoryId
+          settings: updatedSettings,
+          appearance: appearance !== undefined ? appearance : existingSurvey.appearance,
+          status: finalStatus,
+          categoryId: finalCategoryId
         }
       });
       

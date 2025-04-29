@@ -101,7 +101,7 @@ const formService = {
    */
   async createForm(formData, companyId) {
     try {
-      const { title, description, categoryId, elements, settings, status } = formData;
+      const { title, description, categoryId, elements, sections, settings, status, appearance } = formData;
       
       // Generate random alphanumeric slug
       let slug = Math.random().toString(36).substring(2, 10);
@@ -123,6 +123,30 @@ const formService = {
         });
       }
       
+      // Process sections to ensure titles and descriptions are set
+      const processedSections = sections ? sections.map(section => ({
+        ...section,
+        title: section.title || 'Untitled Section',
+        description: section.description || '',
+        elements: section.elements ? section.elements.map(el => ({
+          ...el,
+          label: el.label || 'Untitled Element',
+          description: el.description || ''
+        })) : []
+      })) : [];
+      
+      // Store sections in settings
+      const updatedSettings = {
+        ...settings,
+        sections: processedSections
+      };
+      
+      // Log the data for debugging
+      console.log('Creating form with data:', JSON.stringify({
+        settings: updatedSettings,
+        elements
+      }, null, 2));
+      
       // Create the new form
       const newForm = await prisma.form.create({
         data: {
@@ -130,7 +154,8 @@ const formService = {
           description: description || '',
           slug,
           elements: elements || [],
-          settings: settings || {},
+          settings: updatedSettings || {},
+          appearance: appearance || {},
           status: status || 'Active',
           companyId,
           categoryId: categoryId || null
@@ -156,10 +181,86 @@ const formService = {
       // Check if form exists and user has access
       const existingForm = await this.getFormById(id, companyId);
       
-      const { title, description, categoryId, elements, settings, status } = formData;
+      const { title, description, categoryId, elements, sections, settings, status, type, appearance } = formData;
       
       // Keep the existing slug - we don't change slugs on update
       let slug = existingForm.slug;
+      
+      // Process sections to ensure titles and descriptions are set
+      const processedSections = sections ? sections.map(section => ({
+        ...section,
+        title: section.title || 'Untitled Section',
+        description: section.description || '',
+        elements: section.elements ? section.elements.map(el => ({
+          ...el,
+          label: el.label || 'Untitled Element',
+          description: el.description || ''
+        })) : []
+      })) : [];
+      
+      // Store sections in settings
+      const updatedSettings = {
+        ...settings,
+        sections: processedSections
+      };
+      
+      // Log the incoming data for debugging
+      console.log('Updating form with data:', JSON.stringify({
+        title,
+        description,
+        categoryId,
+        type,
+        status,
+        settings: updatedSettings
+      }, null, 2));
+      
+      // Handle categoryId properly to avoid foreign key constraint violations
+      let finalCategoryId = existingForm.categoryId;
+      
+      // Only update categoryId if it's explicitly provided
+      if (categoryId !== undefined) {
+        // If null, empty string, or invalid ID is provided, set to null
+        // This allows clearing the category
+        finalCategoryId = null;
+        
+        // Only try to set a non-null categoryId if it's a non-empty string
+        if (categoryId && typeof categoryId === 'string' && categoryId.trim() !== '') {
+          try {
+            // Log the category ID we're looking for
+            console.log(`Looking for category with ID: "${categoryId}"`);
+            
+            // Try to find the category
+            const categoryExists = await prisma.formCategory.findUnique({
+              where: { id: categoryId }
+            });
+            
+            if (categoryExists) {
+              finalCategoryId = categoryId;
+              console.log(`Category found: ${categoryExists.name}`);
+            } else {
+              console.warn(`Category ID ${categoryId} does not exist. Setting category to null.`);
+            }
+          } catch (categoryError) {
+            console.warn(`Error verifying category ID ${categoryId}:`, categoryError);
+            // Set to null on error
+          }
+        } else {
+          console.log(`Setting categoryId to null (received: ${categoryId})`);
+        }
+      }
+      
+      // Ensure status is a valid enum value
+      let finalStatus = existingForm.status;
+      if (status) {
+        // Map 'Draft' to 'Inactive' if needed
+        if (status === 'Draft') {
+          finalStatus = 'Inactive';
+        } else if (['Active', 'Inactive', 'Archived'].includes(status)) {
+          finalStatus = status;
+        } else {
+          console.warn(`Invalid status value: ${status}. Using existing status.`);
+        }
+      }
       
       // Update the form
       const updatedForm = await prisma.form.update({
@@ -171,9 +272,11 @@ const formService = {
           description: description !== undefined ? description : existingForm.description,
           slug: slug,
           elements: elements !== undefined ? elements : existingForm.elements,
-          settings: settings !== undefined ? settings : existingForm.settings,
-          status: status || existingForm.status,
-          categoryId: categoryId !== undefined ? categoryId : existingForm.categoryId
+          settings: updatedSettings,
+          appearance: appearance !== undefined ? appearance : existingForm.appearance,
+          status: finalStatus,
+          categoryId: finalCategoryId,
+          type: type || existingForm.type
         }
       });
       

@@ -1,5 +1,5 @@
 /**
- * Clink Theme CSS Template for Superset
+ * SEEGAP Theme CSS Template for Superset
  * 
  * This CSS template can be loaded through the Superset UI to further customize the appearance
  * of dashboards. To use this template:
@@ -7,7 +7,7 @@
  * 1. Log in to Superset as an admin
  * 2. Go to "Settings" > "CSS Templates"
  * 3. Click "+" to add a new template
- * 4. Name it "Clink Theme"
+ * 4. Name it "SEEGAP Theme"
  * 5. Copy and paste the CSS below
  * 6. Save the template
  * 7. When creating or editing a dashboard, you can select this template in the dashboard properties
@@ -52,29 +52,29 @@
 
 /* Filter indicators */
 .filter-indicator {
-  background-color: #0d6efd;
+  background-color: #cc0000;
   color: white;
 }
 
 /* Dashboard tabs */
 .dashboard-component-tabs .nav-tabs .nav-item .nav-link {
-  color: #6c757d;
+  color: #000000;
 }
 
 .dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
-  color: #0d6efd;
-  border-bottom-color: #0d6efd;
+  color: #cc0000;
+  border-bottom-color: #cc0000;
 }
 
 /* Buttons */
 .btn-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background-color: #cc0000;
+  border-color: #cc0000;
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
+  background-color: #000000;
+  border-color: #000000;
 }
 
 /* Dark theme support */
@@ -93,6 +93,6 @@
 }
 
 .dashboard--dark .dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
-  color: #0d6efd;
-  border-bottom-color: #0d6efd;
+  color: #cc0000;
+  border-bottom-color: #cc0000;
 }

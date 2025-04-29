@@ -91,7 +91,7 @@ const dataService = {
    */
   async createDataset(datasetData, companyId) {
     try {
-      const { name, description, type, sourceId, sourceName } = datasetData;
+      const { name, description, type } = datasetData;
       
       let webhookId = null;
       let webhookSecret = null;
@@ -108,11 +108,14 @@ const dataService = {
           name,
           description: description || '',
           type,
-          sourceId: sourceId || null,
-          sourceName: sourceName || null,
           webhookId,
           webhookSecret,
-          companyId
+          data: {}, // Initialize with empty data
+          company: {
+            connect: {
+              id: companyId
+            }
+          }
         }
       });
       
@@ -310,7 +313,8 @@ const dataService = {
         data: {
           datasetId,
           data: recordData,
-          metadata
+          metadata,
+          updatedAt: new Date()
         }
       });
       
@@ -352,7 +356,8 @@ const dataService = {
         data: {
           datasetId: dataset.id,
           data: recordData,
-          metadata
+          metadata,
+          updatedAt: new Date()
         }
       });
       

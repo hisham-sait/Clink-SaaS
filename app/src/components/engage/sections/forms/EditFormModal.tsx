@@ -102,7 +102,7 @@ const EditFormModal: React.FC<EditFormModalProps> = ({
                   required
                 >
                   <option value="Active">Active</option>
-                  <option value="Draft">Draft</option>
+                  <option value="Inactive">Draft</option>
                   <option value="Archived">Archived</option>
                 </Form.Select>
               </Form.Group>

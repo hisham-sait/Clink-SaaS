@@ -12,8 +12,8 @@ interface EditProductModalProps {
     description: string;
     type: string;
     status: string;
-    categoryId: string;
-    familyId: string;
+    categoryId: string | null;
+    familyId: string | null;
   };
   categories: any[];
   families: any[];
@@ -111,7 +111,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                 <Form.Label>Category</Form.Label>
                 <Form.Select 
                   name="categoryId"
-                  value={editedProduct.categoryId}
+                  value={editedProduct.categoryId || ''}
                   onChange={handleInputChange}
                 >
                   <option value="">Select Category</option>
@@ -126,7 +126,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                 <Form.Label>Family</Form.Label>
                 <Form.Select 
                   name="familyId"
-                  value={editedProduct.familyId}
+                  value={editedProduct.familyId || ''}
                   onChange={handleInputChange}
                 >
                   <option value="">Select Family</option>

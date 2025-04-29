@@ -1,21 +1,23 @@
 import React from 'react';
-import { ListGroup } from 'react-bootstrap';
-import { FaRegStar } from 'react-icons/fa';
+import { Card } from 'react-bootstrap';
+import { FaSlidersH } from 'react-icons/fa';
 
 interface ScaleElementProps {
   onAdd: (type: string) => void;
+  size?: 'normal' | 'small' | 'tiny';
 }
 
-const ScaleElement: React.FC<ScaleElementProps> = ({ onAdd }) => {
+const ScaleElement: React.FC<ScaleElementProps> = ({ onAdd, size = 'normal' }) => {
   return (
-    <ListGroup.Item 
-      action
+    <Card 
       onClick={() => onAdd('scale')}
-      className="d-flex align-items-center"
+      className={`element-card element-${size} d-flex align-items-center justify-content-center`}
     >
-      <div className="me-2"><FaRegStar /></div>
-      Rating Scale
-    </ListGroup.Item>
+      <Card.Body className="text-center p-2">
+        <div className="element-icon"><FaSlidersH /></div>
+        <div className="element-label">Scale</div>
+      </Card.Body>
+    </Card>
   );
 };
 

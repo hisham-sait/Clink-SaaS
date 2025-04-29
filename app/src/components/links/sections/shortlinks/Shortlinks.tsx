@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Table, Badge, Row, Col, Form, InputGroup, Dropdown, Alert, Spinner } from 'react-bootstrap';
 import { FaLink, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaEdit, FaTrash, FaEye, FaCopy, FaQrcode } from 'react-icons/fa';
-import { ShortLinksService, CategoriesService, LinksTypes } from '../../../../services/links';
+import { ShortLinksService, CategoriesService, LinksTypes, buildShortLinkUrl, generateQRCodeUrl } from '../../../../services/links';
+import { PagesService, FormsService } from '../../../../services/engage';
 
 // Import modal components
 import AddShortLinkModal from './AddShortLinkModal';
@@ -23,11 +24,16 @@ const Shortlinks: React.FC = () => {
   const [selectedShortLink, setSelectedShortLink] = useState<LinksTypes.ShortLink | null>(null);
   const [shortLinks, setShortLinks] = useState<LinksTypes.ShortLink[]>([]);
   const [categories, setCategories] = useState<LinksTypes.Category[]>([]);
+  const [pages, setPages] = useState<any[]>([]);
+  const [forms, setForms] = useState<any[]>([]);
   const [newShortLink, setNewShortLink] = useState({
     title: '',
     shortCode: '',
     originalUrl: '',
-    status: 'Active',
+    linkType: 'url',
+    pageId: '',
+    formId: '',
+    status: 'Active' as LinksTypes.LinkStatus,
     expiresAt: '',
     password: '',
     categoryId: ''
@@ -36,7 +42,10 @@ const Shortlinks: React.FC = () => {
     title: '',
     shortCode: '',
     originalUrl: '',
-    status: 'Active',
+    linkType: 'url',
+    pageId: '',
+    formId: '',
+    status: 'Active' as LinksTypes.LinkStatus,
     expiresAt: '',
     password: '',
     categoryId: ''
@@ -45,10 +54,12 @@ const Shortlinks: React.FC = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
 
-  // Fetch shortlinks and categories on component mount
+  // Fetch shortlinks, categories, pages, and forms on component mount
   useEffect(() => {
     fetchShortLinks();
     fetchCategories();
+    fetchPages();
+    fetchForms();
   }, []);
 
   // Refetch shortlinks when filters change
@@ -89,6 +100,28 @@ const Shortlinks: React.FC = () => {
     }
   };
 
+  // Function to fetch pages using the service layer
+  const fetchPages = async () => {
+    try {
+      const pagesData = await PagesService.getAllPages();
+      setPages(pagesData || []);
+    } catch (err: any) {
+      console.error('Error fetching pages:', err);
+      // Don't set error state here to avoid blocking the UI
+    }
+  };
+
+  // Function to fetch forms using the service layer
+  const fetchForms = async () => {
+    try {
+      const formsData = await FormsService.getAllForms();
+      setForms(formsData || []);
+    } catch (err: any) {
+      console.error('Error fetching forms:', err);
+      // Don't set error state here to avoid blocking the UI
+    }
+  };
+
   const handleAddShortLink = () => {
     setShowAddModal(true);
   };
@@ -104,7 +137,10 @@ const Shortlinks: React.FC = () => {
       title: '',
       shortCode: '',
       originalUrl: '',
-      status: 'Active',
+      linkType: 'url',
+      pageId: '',
+      formId: '',
+      status: 'Active' as LinksTypes.LinkStatus,
       expiresAt: '',
       password: '',
       categoryId: ''
@@ -116,7 +152,7 @@ const Shortlinks: React.FC = () => {
     const { name, value } = e.target;
     setNewShortLink({
       ...newShortLink,
-      [name]: value
+      [name]: name === 'status' ? value as LinksTypes.LinkStatus : value
     });
   };
 
@@ -124,31 +160,79 @@ const Shortlinks: React.FC = () => {
     const { name, value } = e.target;
     setEditedShortLink({
       ...editedShortLink,
-      [name]: value
+      [name]: name === 'status' ? value as LinksTypes.LinkStatus : value
     });
   };
 
   // Set up edited shortlink when selectedShortLink changes
   useEffect(() => {
     if (selectedShortLink && showEditModal) {
+      // Determine link type and ID based on originalUrl
+      let linkType = 'url';
+      let pageId = '';
+      let formId = '';
+      const originalUrl = selectedShortLink.originalUrl || '';
+      
+      if (originalUrl.startsWith('/p/')) {
+        linkType = 'page';
+        const pageSlug = originalUrl.substring(3);
+        const page = pages.find(p => p.slug === pageSlug);
+        if (page) {
+          pageId = page.id;
+        }
+      } else if (originalUrl.startsWith('/f/')) {
+        linkType = 'form';
+        const formSlug = originalUrl.substring(3);
+        const form = forms.find(f => f.slug === formSlug);
+        if (form) {
+          formId = form.id;
+        }
+      }
+      
       setEditedShortLink({
         title: selectedShortLink.title || '',
         shortCode: selectedShortLink.shortCode || '',
-        originalUrl: selectedShortLink.originalUrl || '',
-        status: selectedShortLink.status || 'Active',
+        originalUrl: originalUrl,
+        linkType: linkType,
+        pageId: pageId,
+        formId: formId,
+        status: selectedShortLink.status || 'Active' as LinksTypes.LinkStatus,
         expiresAt: selectedShortLink.expiresAt ? new Date(selectedShortLink.expiresAt).toISOString().split('T')[0] : '',
         password: selectedShortLink.password || '',
         categoryId: selectedShortLink.categoryId || ''
       });
     }
-  }, [selectedShortLink, showEditModal]);
+  }, [selectedShortLink, showEditModal, pages, forms]);
 
   const handleSaveShortLink = async () => {
     try {
       setLoading(true);
       
+      // Prepare the payload based on the link type
+      let originalUrl = newShortLink.originalUrl;
+      
+      if (newShortLink.linkType === 'page') {
+        const selectedPage = pages.find(p => p.id === newShortLink.pageId);
+        if (selectedPage) {
+          originalUrl = `/p/${selectedPage.slug}`;
+        }
+      } else if (newShortLink.linkType === 'form') {
+        const selectedForm = forms.find(f => f.id === newShortLink.formId);
+        if (selectedForm) {
+          originalUrl = `/f/${selectedForm.slug}`;
+        }
+      }
+      
       // Use the service layer to create the shortlink
-      await ShortLinksService.createShortLink(newShortLink);
+      await ShortLinksService.createShortLink({
+        title: newShortLink.title,
+        shortCode: newShortLink.shortCode,
+        originalUrl,
+        status: newShortLink.status,
+        expiresAt: newShortLink.expiresAt,
+        password: newShortLink.password,
+        categoryId: newShortLink.categoryId
+      });
       
       // Refresh the shortlinks list
       await fetchShortLinks();
@@ -161,7 +245,10 @@ const Shortlinks: React.FC = () => {
         title: '',
         shortCode: '',
         originalUrl: '',
-        status: 'Active',
+        linkType: 'url',
+        pageId: '',
+        formId: '',
+        status: 'Active' as LinksTypes.LinkStatus,
         expiresAt: '',
         password: '',
         categoryId: ''
@@ -182,8 +269,31 @@ const Shortlinks: React.FC = () => {
         throw new Error('No shortlink selected');
       }
       
+      // Prepare the payload based on the link type
+      let originalUrl = editedShortLink.originalUrl;
+      
+      if (editedShortLink.linkType === 'page') {
+        const selectedPage = pages.find(p => p.id === editedShortLink.pageId);
+        if (selectedPage) {
+          originalUrl = `/p/${selectedPage.slug}`;
+        }
+      } else if (editedShortLink.linkType === 'form') {
+        const selectedForm = forms.find(f => f.id === editedShortLink.formId);
+        if (selectedForm) {
+          originalUrl = `/f/${selectedForm.slug}`;
+        }
+      }
+      
       // Use the service layer to update the shortlink
-      await ShortLinksService.updateShortLink(selectedShortLink.id, editedShortLink);
+      await ShortLinksService.updateShortLink(selectedShortLink.id, {
+        title: editedShortLink.title,
+        shortCode: editedShortLink.shortCode,
+        originalUrl,
+        status: editedShortLink.status,
+        expiresAt: editedShortLink.expiresAt,
+        password: editedShortLink.password,
+        categoryId: editedShortLink.categoryId
+      });
       
       // Refresh the shortlinks list
       await fetchShortLinks();
@@ -223,7 +333,7 @@ const Shortlinks: React.FC = () => {
   };
 
   const handleCopyLink = (shortCode: string) => {
-    const shortUrl = ShortLinksService.buildShortLinkUrl(shortCode);
+    const shortUrl = buildShortLinkUrl(shortCode);
     
     navigator.clipboard.writeText(shortUrl)
       .then(() => {
@@ -236,8 +346,8 @@ const Shortlinks: React.FC = () => {
   };
 
   const handleShowQRCode = (shortCode: string) => {
-    const shortUrl = ShortLinksService.buildShortLinkUrl(shortCode);
-    setQrCodeUrl(ShortLinksService.generateQRCodeUrl(shortUrl));
+    const shortUrl = buildShortLinkUrl(shortCode);
+    setQrCodeUrl(generateQRCodeUrl(shortUrl));
     setShowQRCode(true);
   };
 
@@ -511,6 +621,8 @@ const Shortlinks: React.FC = () => {
         handleInputChange={handleInputChange}
         handleSaveShortLink={handleSaveShortLink}
         categories={categories}
+        pages={pages}
+        forms={forms}
       />
 
       <ViewShortLinkModal
@@ -531,6 +643,8 @@ const Shortlinks: React.FC = () => {
         handleInputChange={handleEditInputChange}
         handleUpdateShortLink={handleUpdateShortLink}
         categories={categories}
+        pages={pages}
+        forms={forms}
       />
 
       <DeleteShortLinkModal

@@ -1,11 +1,11 @@
 /**
- * Custom CSS for Superset to match Clink SaaS React application style
+ * Custom CSS for Superset to match SEEGAP React application style
  */
 
-/* Global font and color variables to match React app */
+/* Global font and color variables to match SEEGAP app */
 :root {
-  --primary-color: #0d6efd;
-  --secondary-color: #6c757d;
+  --primary-color: #cc0000;
+  --secondary-color: #000000;
   --success-color: #198754;
   --info-color: #0dcaf0;
   --warning-color: #ffc107;
@@ -58,7 +58,7 @@ body {
 .sidebar .nav-item .nav-link:hover,
 .sidebar .nav-item .nav-link.active {
   color: var(--primary-color);
-  background-color: rgba(13, 110, 253, 0.1);
+  background-color: rgba(204, 0, 0, 0.1);
 }
 
 /* Dashboard styling */
@@ -125,7 +125,7 @@ body {
 /* Form controls */
 .form-control:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  box-shadow: 0 0 0 0.25rem rgba(204, 0, 0, 0.25);
 }
 
 /* Filter bar styling */
@@ -170,7 +170,7 @@ body {
 .dashboard--dark .sidebar .nav-item .nav-link:hover,
 .dashboard--dark .sidebar .nav-item .nav-link.active {
   color: var(--primary-color);
-  background-color: rgba(13, 110, 253, 0.2);
+  background-color: rgba(204, 0, 0, 0.2);
 }
 
 /* Custom logo styling */
@@ -196,4 +196,117 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--dark-color);
+}
+
+/* Login page styling to match main app */
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-gray-100);
+  padding: 1rem;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--body-bg);
+  color: var(--body-color);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.login-header h2 {
+  color: var(--body-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.login-form .form-label {
+  font-weight: 500;
+  color: var(--secondary-color);
+  margin-bottom: 0.25rem;
+  font-size: 0.813rem;
+}
+
+.login-form .form-control {
+  padding: 0.438rem 0.75rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 4px;
+  font-size: 0.813rem;
+  transition: all 0.2s ease;
+  background-color: var(--bs-gray-100, #f8f9fa);
+  color: var(--body-color);
+  height: 32px;
+}
+
+.login-form .form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(204, 0, 0, 0.25);
+}
+
+.login-form .btn-primary {
+  padding: 0.438rem 1rem;
+  font-weight: 500;
+  border-radius: 4px;
+  font-size: 0.813rem;
+  transition: all 0.2s ease;
+  background-color: var(--primary-color);
+  border: none;
+  height: 32px;
+  line-height: 1;
+}
+
+.login-form .btn-primary:hover {
+  filter: brightness(0.9);
+}
+
+/* Override Flask-AppBuilder login styles */
+.fab-container.container {
+  max-width: 100%;
+  padding: 0;
+}
+
+.fab-container .col-md-4.col-md-offset-4 {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.fab-container .panel {
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.fab-container .panel-heading {
+  display: none;
+}
+
+.fab-container .panel-body {
+  padding: 1.25rem;
+}
+
+.fab-container h3 {
+  color: var(--body-color);
+  font-size: 1.125rem;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-align: center;
+}
+
+.fab-container .help-block {
+  font-size: 0.813rem;
+  color: var(--secondary-color);
 }

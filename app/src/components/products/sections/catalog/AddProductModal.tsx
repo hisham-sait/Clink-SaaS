@@ -11,8 +11,8 @@ interface AddProductModalProps {
     description: string;
     type: string;
     status: string;
-    categoryId: string;
-    familyId: string;
+    categoryId: string | null;
+    familyId: string | null;
   };
   categories: any[];
   families: any[];
@@ -58,6 +58,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   value={newProduct.sku}
                   onChange={handleInputChange}
                 />
+                <Form.Text className="text-muted">
+                  Will be automatically generated if left empty
+                </Form.Text>
               </Form.Group>
             </Col>
           </Row>
@@ -107,7 +110,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 <Form.Label>Category</Form.Label>
                 <Form.Select 
                   name="categoryId"
-                  value={newProduct.categoryId}
+                  value={newProduct.categoryId || ''}
                   onChange={handleInputChange}
                 >
                   <option value="">Select Category</option>
@@ -122,7 +125,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                 <Form.Label>Family</Form.Label>
                 <Form.Select 
                   name="familyId"
-                  value={newProduct.familyId}
+                  value={newProduct.familyId || ''}
                   onChange={handleInputChange}
                 >
                   <option value="">Select Family</option>

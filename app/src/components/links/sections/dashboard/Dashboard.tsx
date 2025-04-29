@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Spinner, Alert, Table, Badge } from 'react-bootstrap';
-import { FaLink, FaQrcode, FaFolder, FaPlus, FaChartLine, FaEye, FaEdit, FaGlobe, FaMobile } from 'react-icons/fa';
+import { FaLink, FaFolder, FaPlus, FaChartLine, FaEye, FaEdit, FaGlobe, FaMobile } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { getShortLinks } from '../../../../services/links/shortlinks';
 import { getDigitalLinks } from '../../../../services/links/digitallinks';
 import { getCategories } from '../../../../services/links/categories';
-import { getQRCodes } from '../../../../services/links/qrcodes';
 import { AnalyticsService } from '../../../../services/links';
 import { formatTimeAgo } from '../../../../services/links';
 
 interface DashboardStats {
   totalShortLinks: number;
   totalDigitalLinks: number;
-  totalQRCodes: number;
   totalCategories: number;
   totalClicks: number;
 }
@@ -32,14 +30,12 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalShortLinks: 0,
     totalDigitalLinks: 0,
-    totalQRCodes: 0,
     totalCategories: 0,
     totalClicks: 0
   });
   const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummary | null>(null);
   const [recentShortLinks, setRecentShortLinks] = useState<any[]>([]);
   const [recentDigitalLinks, setRecentDigitalLinks] = useState<any[]>([]);
-  const [recentQRCodes, setRecentQRCodes] = useState<any[]>([]);
   const [recentClicks, setRecentClicks] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
@@ -79,17 +75,6 @@ const Dashboard: React.FC = () => {
         setRecentDigitalLinks(digitallinks.slice(0, 5)); // Get the 5 most recent digitallinks
       } catch (err) {
         console.error('Error fetching digitallinks:', err);
-        // Don't set error state to avoid blocking the UI
-      }
-      
-      // Fetch QR codes using the service layer
-      try {
-        const qrCodesResponse = await getQRCodes();
-        const qrCodes = qrCodesResponse.qrCodes || [];
-        setStats(prev => ({ ...prev, totalQRCodes: qrCodes.length }));
-        setRecentQRCodes(qrCodes.slice(0, 5)); // Get the 5 most recent QR codes
-      } catch (err) {
-        console.error('Error fetching QR codes:', err);
         // Don't set error state to avoid blocking the UI
       }
       
@@ -151,30 +136,6 @@ const Dashboard: React.FC = () => {
     return url.substring(0, maxLength) + '...';
   };
 
-  // Function to get content type label
-  const getContentTypeLabel = (contentType: string) => {
-    switch (contentType) {
-      case 'url':
-        return 'URL';
-      case 'text':
-        return 'Text';
-      case 'vcard':
-        return 'Contact Card';
-      case 'email':
-        return 'Email';
-      case 'sms':
-        return 'SMS';
-      case 'wifi':
-        return 'WiFi';
-      case 'location':
-        return 'Location';
-      case 'phone':
-        return 'Phone';
-      default:
-        return contentType;
-    }
-  };
-
   return (
     <div className="container-fluid py-4">
       {/* Header */}
@@ -195,7 +156,7 @@ const Dashboard: React.FC = () => {
 
       {/* Summary Cards */}
       <Row className="mb-4">
-        <Col md={3}>
+        <Col md={4}>
           <Card className="h-100">
             <Card.Body>
               {loading ? (
@@ -216,7 +177,7 @@ const Dashboard: React.FC = () => {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col md={4}>
           <Card className="h-100">
             <Card.Body>
               {loading ? (
@@ -237,28 +198,7 @@ const Dashboard: React.FC = () => {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
-          <Card className="h-100">
-            <Card.Body>
-              {loading ? (
-                <div className="text-center py-3">
-                  <Spinner animation="border" size="sm" className="text-warning" />
-                </div>
-              ) : (
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div className="text-muted mb-1">QR Codes</div>
-                    <h3 className="mb-0">{stats.totalQRCodes}</h3>
-                  </div>
-                  <div className="bg-warning bg-opacity-10 p-3 rounded">
-                    <FaQrcode className="text-warning" size={24} />
-                  </div>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={3}>
+        <Col md={4}>
           <Card className="h-100">
             <Card.Body>
               {loading ? (
@@ -281,65 +221,12 @@ const Dashboard: React.FC = () => {
         </Col>
       </Row>
 
-      {/* QR Codes and Recent Clicks */}
+      {/* Recent Clicks */}
       <Row className="mb-4">
-        <Col md={6}>
+        <Col md={12}>
           <Card className="h-100">
             <Card.Header>
-              <h5 className="mb-0">Recent QR Codes</h5>
-            </Card.Header>
-            <Card.Body>
-              {loading ? (
-                <div className="text-center py-3">
-                  <Spinner animation="border" className="text-warning" />
-                  <p className="mt-2 text-muted">Loading QR codes...</p>
-                </div>
-              ) : recentQRCodes.length > 0 ? (
-                <div className="list-group">
-                  {recentQRCodes.map((qrCode) => (
-                    <div key={qrCode.id} className="list-group-item list-group-item-action">
-                      <div className="d-flex w-100 justify-content-between">
-                        <h6 className="mb-1">{qrCode.title || 'Untitled QR Code'}</h6>
-                        <small className="text-muted">{qrCode.createdAt ? formatTimestamp(qrCode.createdAt) : 'N/A'}</small>
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <div className="me-3" style={{ width: '60px', height: '60px' }}>
-                          <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCode.content)}&size=60x60`} 
-                            alt="QR Code" 
-                            className="img-fluid" 
-                          />
-                        </div>
-                        <div>
-                          <p className="mb-1 small">
-                            <Badge bg="secondary" className="me-2">{getContentTypeLabel(qrCode.contentType)}</Badge>
-                            <span className="text-truncate d-inline-block" style={{ maxWidth: '200px' }}>
-                              {truncateUrl(qrCode.content)}
-                            </span>
-                          </p>
-                          <small className="text-muted">Scans: {qrCode.clicks || 0}</small>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <FaQrcode className="text-muted mb-3" size={32} />
-                  <p className="mb-0">No QR codes created yet</p>
-                  <Link to="/links/qrcodes" className="btn btn-sm btn-primary mt-3">
-                    <FaPlus className="me-2" />
-                    Create QR Code
-                  </Link>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6}>
-          <Card className="h-100">
-            <Card.Header>
-              <h5 className="mb-0">Recent Scans & Clicks</h5>
+              <h5 className="mb-0">Recent Clicks & Activity</h5>
             </Card.Header>
             <Card.Body>
               {loading ? (
@@ -366,11 +253,9 @@ const Dashboard: React.FC = () => {
                         </td>
                         <td>
                           <Badge bg={
-                            click.type === 'shortlink' ? 'primary' : 
-                            click.type === 'digitallink' ? 'success' : 'warning'
+                            click.type === 'shortlink' ? 'primary' : 'success'
                           }>
-                            {click.type === 'shortlink' ? 'Short' : 
-                             click.type === 'digitallink' ? 'Digital' : 'QR'}
+                            {click.type === 'shortlink' ? 'Short' : 'Digital'}
                           </Badge>
                         </td>
                         <td>
@@ -387,7 +272,7 @@ const Dashboard: React.FC = () => {
               ) : (
                 <div className="text-center py-4">
                   <FaChartLine className="text-muted mb-3" size={32} />
-                  <p className="mb-0">No clicks or scans recorded yet</p>
+                  <p className="mb-0">No clicks recorded yet</p>
                   <p className="text-muted small">Activity will appear here when your links are used</p>
                 </div>
               )}
@@ -485,7 +370,7 @@ const Dashboard: React.FC = () => {
         </Card.Header>
         <Card.Body>
           <Row>
-            <Col md={3} className="mb-3 mb-md-0">
+            <Col md={4} className="mb-3 mb-md-0">
               <Link to="/links/shortlinks" style={{ textDecoration: 'none' }}>
                 <Card className="h-100 border-0 shadow-sm">
                   <Card.Body className="text-center">
@@ -496,7 +381,7 @@ const Dashboard: React.FC = () => {
                 </Card>
               </Link>
             </Col>
-            <Col md={3} className="mb-3 mb-md-0">
+            <Col md={4} className="mb-3 mb-md-0">
               <Link to="/links/digitallinks" style={{ textDecoration: 'none' }}>
                 <Card className="h-100 border-0 shadow-sm">
                   <Card.Body className="text-center">
@@ -507,18 +392,7 @@ const Dashboard: React.FC = () => {
                 </Card>
               </Link>
             </Col>
-            <Col md={3} className="mb-3 mb-md-0">
-              <Link to="/links/qrcodes" style={{ textDecoration: 'none' }}>
-                <Card className="h-100 border-0 shadow-sm">
-                  <Card.Body className="text-center">
-                    <FaQrcode className="text-warning mb-3" size={32} />
-                    <h5>Create QR Code</h5>
-                    <p className="small text-muted">Generate a custom QR code</p>
-                  </Card.Body>
-                </Card>
-              </Link>
-            </Col>
-            <Col md={3}>
+            <Col md={4}>
               <Link to="/links/categories" style={{ textDecoration: 'none' }}>
                 <Card className="h-100 border-0 shadow-sm">
                   <Card.Body className="text-center">

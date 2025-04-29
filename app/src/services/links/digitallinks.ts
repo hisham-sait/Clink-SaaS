@@ -19,8 +19,9 @@ export const getDigitalLinks = async (params?: LinkQueryParams): Promise<Digital
     
     const response = await api.get(`/links/digitallinks?${queryParams.toString()}`);
     
-    // Transform the response to match the expected format
+    // Standardized response handling
     if (response.data && response.data.data) {
+      // Backend returns { data: [...], total: number, page: number, ... }
       return {
         digitalLinks: response.data.data,
         total: response.data.total || response.data.data.length,
@@ -28,15 +29,26 @@ export const getDigitalLinks = async (params?: LinkQueryParams): Promise<Digital
         limit: response.data.limit || 10,
         totalPages: response.data.totalPages || Math.ceil((response.data.total || response.data.data.length) / (response.data.limit || 10))
       };
+    } else if (response.data && Array.isArray(response.data)) {
+      // Backend returns array directly
+      return {
+        digitalLinks: response.data,
+        total: response.data.length,
+        page: 1,
+        limit: response.data.length,
+        totalPages: 1
+      };
+    } else {
+      // Fallback for unexpected response format
+      console.warn('Unexpected response format from digital links API:', response.data);
+      return {
+        digitalLinks: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0
+      };
     }
-    
-    return {
-      digitalLinks: [],
-      total: 0,
-      page: 1,
-      limit: 10,
-      totalPages: 0
-    };
   } catch (error) {
     console.error('Error fetching digital links:', error);
     throw error;
@@ -49,7 +61,9 @@ export const getDigitalLinks = async (params?: LinkQueryParams): Promise<Digital
 export const getDigitalLink = async (id: string): Promise<DigitalLink> => {
   try {
     const response = await api.get(`/links/digitallinks/${id}`);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const digitalLink = response.data.data || response.data;
+    return digitalLink;
   } catch (error) {
     console.error(`Error fetching digital link with ID ${id}:`, error);
     throw error;
@@ -59,26 +73,33 @@ export const getDigitalLink = async (id: string): Promise<DigitalLink> => {
 /**
  * Create a new digital link
  */
-export const createDigitalLink = async (digitalLink: Omit<DigitalLink, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'clicks'>): Promise<DigitalLink> => {
+export const createDigitalLink = async (digitalLink: Partial<Omit<DigitalLink, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'clicks'>>): Promise<DigitalLink> => {
   try {
+    // Generate a random link code if not provided
+    const linkCode = digitalLink.linkCode || Math.random().toString(36).substring(2, 10);
+    
     // Map frontend fields to backend expected fields if needed
     const payload = {
-      gs1Key: digitalLink.gs1Key,
-      gs1KeyType: digitalLink.gs1KeyType,
-      redirectType: digitalLink.redirectType,
+      gs1Key: digitalLink.gs1Key || '',
+      gs1KeyType: digitalLink.gs1KeyType || '',
+      redirectType: digitalLink.redirectType || 'custom',
       customUrl: digitalLink.redirectType === 'custom' ? digitalLink.customUrl : undefined,
       productId: digitalLink.redirectType === 'standard' ? digitalLink.productId : undefined,
-      title: digitalLink.title,
+      title: digitalLink.title || 'Untitled',
       description: digitalLink.description,
-      tags: digitalLink.tags,
-      status: digitalLink.status,
-      expiresAt: digitalLink.expiresAt,
-      password: digitalLink.password,
-      categoryId: digitalLink.categoryId || undefined
+      tags: digitalLink.tags || [],
+      status: digitalLink.status || 'Active',
+      expiresAt: digitalLink.expiresAt || null,
+      password: digitalLink.password || null,
+      categoryId: digitalLink.categoryId || undefined,
+      linkCode: linkCode,
+      type: digitalLink.type || 'Other'
     };
     
     const response = await api.post('/links/digitallinks', payload);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const createdLink = response.data.data || response.data;
+    return createdLink;
   } catch (error) {
     console.error('Error creating digital link:', error);
     throw error;
@@ -91,7 +112,9 @@ export const createDigitalLink = async (digitalLink: Omit<DigitalLink, 'id' | 'c
 export const updateDigitalLink = async (id: string, digitalLink: Partial<DigitalLink>): Promise<DigitalLink> => {
   try {
     const response = await api.put(`/links/digitallinks/${id}`, digitalLink);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const updatedLink = response.data.data || response.data;
+    return updatedLink;
   } catch (error) {
     console.error(`Error updating digital link with ID ${id}:`, error);
     throw error;
@@ -154,7 +177,9 @@ export const bulkCreateDigitalLinks = async (
 ): Promise<DigitalLink[]> => {
   try {
     const response = await api.post('/links/digitallinks/bulk-create', { digitalLinks });
-    return response.data.data || response.data;
+    // Standardized response handling
+    const links = response.data.data || response.data;
+    return links;
   } catch (error) {
     console.error('Error bulk creating digital links:', error);
     throw error;
@@ -239,7 +264,9 @@ export const importDigitalLinks = async (file: File): Promise<any> => {
 export const getDigitalLinkByCode = async (linkCode: string): Promise<DigitalLink> => {
   try {
     const response = await api.get(`/links/resolver/d/${linkCode}/info`);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const link = response.data.data || response.data;
+    return link;
   } catch (error) {
     console.error(`Error fetching digital link with code ${linkCode}:`, error);
     throw error;
@@ -252,7 +279,9 @@ export const getDigitalLinkByCode = async (linkCode: string): Promise<DigitalLin
 export const getDigitalLinksForProduct = async (productId: string): Promise<DigitalLink[]> => {
   try {
     const response = await api.get(`/links/digitallinks/product/${productId}`);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const links = response.data.data || response.data;
+    return links;
   } catch (error) {
     console.error(`Error fetching digital links for product ${productId}:`, error);
     throw error;
@@ -273,7 +302,9 @@ export const generateBatchDigitalLinks = async (
       type,
       categoryId
     });
-    return response.data.data || response.data;
+    // Standardized response handling
+    const links = response.data.data || response.data;
+    return links;
   } catch (error) {
     console.error('Error generating batch digital links:', error);
     throw error;

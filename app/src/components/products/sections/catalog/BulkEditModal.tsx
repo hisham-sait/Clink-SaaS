@@ -8,9 +8,9 @@ interface BulkEditModalProps {
   selectedProducts: string[];
   editedProduct: {
     status: string;
-    categoryId: string;
-    familyId: string;
-    [key: string]: string;
+    categoryId: string | null;
+    familyId: string | null;
+    [key: string]: string | null;
   };
   categories: any[];
   families: any[];
@@ -57,7 +57,7 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({
             <Form.Label>Category</Form.Label>
             <Form.Select 
               name="categoryId"
-              value={editedProduct.categoryId}
+              value={editedProduct.categoryId || ''}
               onChange={handleInputChange}
             >
               <option value="">No Change</option>
@@ -74,7 +74,7 @@ const BulkEditModal: React.FC<BulkEditModalProps> = ({
             <Form.Label>Family</Form.Label>
             <Form.Select 
               name="familyId"
-              value={editedProduct.familyId}
+              value={editedProduct.familyId || ''}
               onChange={handleInputChange}
             >
               <option value="">No Change</option>

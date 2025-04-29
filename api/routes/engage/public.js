@@ -2,37 +2,83 @@ const express = require('express');
 const router = express.Router();
 const formService = require('../../services/engage/forms');
 const surveyService = require('../../services/engage/surveys');
+const pageService = require('../../services/engage/pages');
+const { successResponse, errorResponse, ErrorTypes, asyncHandler } = require('../../utils/responseUtils');
+
+// Public endpoint to view a page by slug
+router.get('/pages/:slug', asyncHandler(async (req, res) => {
+  try {
+    const page = await pageService.getPageBySlug(req.params.slug);
+    
+    // Check if page is active
+    if (page.status !== 'Published') {
+      return res.status(403).render('error', { 
+        message: 'This page is currently not available',
+        error: { status: 403, stack: '' }
+      });
+    }
+    
+    // Record the page view
+    const metadata = {
+      userAgent: req.headers['user-agent'],
+      ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+      referrer: req.headers.referer || req.headers.referrer || 'Direct',
+      viewedAt: new Date()
+    };
+    
+    await pageService.recordPageView(page.id, metadata);
+    
+    // Render the page
+    res.render('page-view', { page });
+  } catch (error) {
+    console.error('Error viewing page:', error);
+    if (error.message === 'Page not found') {
+      return res.status(404).render('error', { 
+        message: 'Page not found',
+        error: { status: 404, stack: '' }
+      });
+    }
+    res.status(500).render('error', { 
+      message: 'Error loading page',
+      error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
+    });
+  }
+}));
 
 // Public endpoint to get form by slug
-router.get('/forms/:slug', async (req, res) => {
+router.get('/forms/:slug', asyncHandler(async (req, res) => {
   try {
     const form = await formService.getFormBySlug(req.params.slug);
-    res.json(form);
+    res.json(successResponse(form));
   } catch (error) {
     console.error('Error fetching form by slug:', error);
     if (error.message === 'Form not found') {
-      return res.status(404).json({ error: 'Form not found' });
+      const { statusCode, body } = ErrorTypes.NOT_FOUND('Form');
+      return res.status(statusCode).json(body);
     }
-    res.status(500).json({ error: 'Failed to fetch form' });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to fetch form');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 // Public endpoint to get survey by slug
-router.get('/surveys/:slug', async (req, res) => {
+router.get('/surveys/:slug', asyncHandler(async (req, res) => {
   try {
     const survey = await surveyService.getSurveyBySlug(req.params.slug);
-    res.json(survey);
+    res.json(successResponse(survey));
   } catch (error) {
     console.error('Error fetching survey by slug:', error);
     if (error.message === 'Survey not found') {
-      return res.status(404).json({ error: 'Survey not found' });
+      const { statusCode, body } = ErrorTypes.NOT_FOUND('Survey');
+      return res.status(statusCode).json(body);
     }
-    res.status(500).json({ error: 'Failed to fetch survey' });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to fetch survey');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 // Submit a form (public endpoint)
-router.post('/forms/submit/:slug', async (req, res) => {
+router.post('/forms/submit/:slug', asyncHandler(async (req, res) => {
   try {
     const { slug } = req.params;
     const formData = req.body;
@@ -80,10 +126,10 @@ router.post('/forms/submit/:slug', async (req, res) => {
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
   }
-});
+}));
 
 // Submit a survey response (public endpoint)
-router.post('/surveys/submit/:slug', async (req, res) => {
+router.post('/surveys/submit/:slug', asyncHandler(async (req, res) => {
   try {
     const { slug } = req.params;
     const responseData = req.body;
@@ -131,6 +177,6 @@ router.post('/surveys/submit/:slug', async (req, res) => {
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
   }
-});
+}));
 
 module.exports = router;

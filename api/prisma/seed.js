@@ -5,6 +5,7 @@ const seedPlans = require('./seeds/plans');
 const { seedBilling } = require('./seeds/billing');
 const seedSections = require('./seeds/sections');
 const seedFMCGProducts = require('./seeds/fmcg-products');
+const seedEngage = require('./seeds/engage');
 
 const prisma = new PrismaClient();
 
@@ -42,6 +43,11 @@ async function main() {
     console.log('Creating FMCG products...');
     await seedFMCGProducts();
     console.log('✓ FMCG products created');
+    
+    // Create engage data (pages, forms, surveys, links)
+    console.log('Creating engage data...');
+    await seedEngage();
+    console.log('✓ Engage data created');
     
     console.log('Seed completed successfully');
     

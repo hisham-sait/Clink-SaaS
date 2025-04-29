@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const formService = require('../../services/engage/forms');
 const surveyService = require('../../services/engage/surveys');
+const pageService = require('../../services/engage/pages');
 const { PrismaClient } = require('@prisma/client');
 const UAParser = require('ua-parser-js');
 const geoip = require('geoip-lite');
+const { successResponse, errorResponse, ErrorTypes, asyncHandler } = require('../../utils/responseUtils');
 
 const prisma = new PrismaClient();
 
@@ -37,7 +39,7 @@ function getLocationFromIp(ip) {
 }
 
 // Form resolver - /f/:slug
-router.get('/f/:slug', async (req, res) => {
+router.get('/f/:slug', asyncHandler(async (req, res) => {
   console.log('Form resolver hit with slug:', req.params.slug);
   try {
     const { slug } = req.params;
@@ -48,6 +50,7 @@ router.get('/f/:slug', async (req, res) => {
     // Check if form is active
     if (form.status !== 'Active') {
       return res.status(403).render('error', { 
+        title: 'Form Not Available',
         message: 'This form is currently not active',
         error: { status: 403, stack: '' }
       });
@@ -88,10 +91,10 @@ router.get('/f/:slug', async (req, res) => {
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
   }
-});
+}));
 
 // Survey resolver - /y/:slug
-router.get('/y/:slug', async (req, res) => {
+router.get('/y/:slug', asyncHandler(async (req, res) => {
   try {
     const { slug } = req.params;
     
@@ -101,6 +104,7 @@ router.get('/y/:slug', async (req, res) => {
     // Check if survey is active
     if (survey.status !== 'Active') {
       return res.status(403).render('error', { 
+        title: 'Survey Not Available',
         message: 'This survey is currently not active',
         error: { status: 403, stack: '' }
       });
@@ -141,15 +145,85 @@ router.get('/y/:slug', async (req, res) => {
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
   }
-});
+}));
+
+// Page resolver - /p/:slug
+router.get('/p/:slug', asyncHandler(async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    console.log('Page resolver hit with slug:', slug);
+    
+    // Find the page by slug
+    const page = await pageService.getPageBySlug(slug);
+    
+    console.log('Page found:', page ? 'Yes' : 'No');
+    if (page) {
+      console.log('Page status:', page.status);
+    }
+    
+    if (!page) {
+      return res.status(404).render('error', { 
+        title: 'Page Not Found',
+        message: 'Page not found',
+        error: { status: 404, stack: '' }
+      });
+    }
+    
+    // Check if page is published, active, or draft
+    if (page.status !== 'Published' && page.status !== 'Active' && page.status !== 'Draft') {
+      return res.status(403).render('error', { 
+        title: 'Page Not Available',
+        message: 'This page is currently not available',
+        error: { status: 403, stack: '' }
+      });
+    }
+    
+    // Get user agent and IP
+    const userAgent = req.headers['user-agent'];
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const referrer = req.headers.referer || req.headers.referrer || 'Direct';
+    
+    // Parse user agent
+    const { browser, device } = parseUserAgent(userAgent);
+    
+    // Get location from IP
+    const location = getLocationFromIp(ip);
+    
+    // Record the view
+    const metadata = {
+      browser,
+      device,
+      location,
+      referrer,
+      viewedAt: new Date()
+    };
+    
+    // Record page view asynchronously
+    pageService.recordPageView(page.id, { metadata, ipAddress: ip, userAgent })
+      .catch(err => console.error('Error recording page view:', err));
+    
+    // Render the page view
+    res.render('page-view', { page });
+    
+  } catch (error) {
+    console.error('Error resolving page:', error);
+    res.status(500).render('error', { 
+      title: 'Server Error',
+      message: 'Error loading page',
+      error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
+    });
+  }
+}));
 
 // Analytics tracking for form/survey views
-router.post('/analytics', async (req, res) => {
+router.post('/analytics', asyncHandler(async (req, res) => {
   try {
     const { type, slug, event } = req.body;
     
     if (!type || !slug || !event) {
-      return res.status(400).json({ error: 'Missing required parameters' });
+      const { statusCode, body } = ErrorTypes.BAD_REQUEST('Missing required parameters');
+      return res.status(statusCode).json(body);
     }
     
     // Get metadata
@@ -181,7 +255,8 @@ router.post('/analytics', async (req, res) => {
         });
       } catch (error) {
         if (error.message === 'Form not found') {
-          return res.status(404).json({ error: 'Form not found' });
+          const { statusCode, body } = ErrorTypes.NOT_FOUND('Form');
+          return res.status(statusCode).json(body);
         }
         throw error;
       }
@@ -205,19 +280,22 @@ router.post('/analytics', async (req, res) => {
         });
       } catch (error) {
         if (error.message === 'Survey not found') {
-          return res.status(404).json({ error: 'Survey not found' });
+          const { statusCode, body } = ErrorTypes.NOT_FOUND('Survey');
+          return res.status(statusCode).json(body);
         }
         throw error;
       }
     } else {
-      return res.status(400).json({ error: 'Invalid type' });
+      const { statusCode, body } = ErrorTypes.BAD_REQUEST('Invalid type');
+      return res.status(statusCode).json(body);
     }
     
-    res.status(201).json({ success: true });
+    res.status(201).json(successResponse(null, 'Analytics tracked successfully'));
   } catch (error) {
     console.error('Error tracking analytics:', error);
-    res.status(500).json({ error: 'Failed to track analytics' });
+    const { statusCode, body } = ErrorTypes.INTERNAL('Failed to track analytics');
+    res.status(statusCode).json(body);
   }
-});
+}));
 
 module.exports = router;

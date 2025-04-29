@@ -1,5 +1,46 @@
 // Type definitions for engage services
 
+// Page Types
+export interface PageData {
+  id?: string;
+  title: string;
+  description?: string;
+  categoryId?: string;
+  sections?: any[];
+  settings?: any;
+  appearance?: any;
+  status?: string;
+  slug?: string;
+  views?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PageCategory {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  companyId?: string;
+  pagesCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PageCategoriesResponse {
+  categories: PageCategory[];
+  total?: number;
+}
+
+export interface PageView {
+  id: string;
+  pageId: string;
+  metadata?: any;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
 // Form Types
 export interface FormData {
   id?: string;
@@ -7,7 +48,9 @@ export interface FormData {
   description?: string;
   categoryId?: string;
   elements?: any[];
+  sections?: any[];
   settings?: any;
+  appearance?: any;
   status?: string;
   type?: string;
   submissions?: number;
@@ -18,6 +61,15 @@ export interface FormData {
 export interface FormCategory {
   id: string;
   name: string;
+  companyId?: string;
+  formsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FormCategoriesResponse {
+  categories: FormCategory[];
+  total?: number;
 }
 
 export interface FormSubmission {
@@ -36,6 +88,7 @@ export interface SurveyData {
   categoryId?: string;
   sections?: any[];
   settings?: any;
+  appearance?: any;
   status?: string;
   responses?: number;
   createdAt?: string;
@@ -45,6 +98,15 @@ export interface SurveyData {
 export interface SurveyCategory {
   id: string;
   name: string;
+  companyId?: string;
+  surveysCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SurveyCategoriesResponse {
+  categories: SurveyCategory[];
+  total?: number;
 }
 
 export interface SurveyResponse {

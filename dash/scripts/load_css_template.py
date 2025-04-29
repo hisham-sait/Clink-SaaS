@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to load the Clink Theme CSS template into Superset.
+Script to load the SEEGAP Theme CSS template into Superset.
 This script should be run after Superset is installed and initialized.
 
 Usage:
@@ -25,8 +25,8 @@ except ImportError:
     sys.exit(1)
 
 def load_css_template():
-    """Load the Clink Theme CSS template into Superset."""
-    print("Loading Clink Theme CSS template...")
+    """Load the SEEGAP Theme CSS template into Superset."""
+    print("Loading SEEGAP Theme CSS template...")
     
     # Path to the CSS template file
     css_file_path = Path(__file__).parent.parent / "css_templates" / "clink_theme.css"
@@ -40,7 +40,7 @@ def load_css_template():
         css_content = f.read()
     
     # Check if the template already exists
-    template_name = "Clink Theme"
+    template_name = "SEEGAP Theme"
     existing_template = db.session.query(CssTemplate).filter_by(template_name=template_name).first()
     
     if existing_template:
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         print("1. Log in to Superset as an admin")
         print("2. Go to 'Settings' > 'CSS Templates'")
         print("3. Click '+' to add a new template")
-        print("4. Name it 'Clink Theme'")
+        print("4. Name it 'SEEGAP Theme'")
         print("5. Copy and paste the CSS from css_templates/clink_theme.css")
         print("6. Save the template")
         sys.exit(1)

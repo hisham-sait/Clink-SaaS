@@ -9,10 +9,9 @@ export const getCategories = async (): Promise<CategoriesResponse> => {
   try {
     const response = await api.get('/links/categories');
     
-    // Transform the response to match the expected format
-    // The backend returns { success: true, data: [...] }
-    // But the frontend expects { categories: [...], total: number }
-    if (response.data && response.data.success && response.data.data) {
+    // Standardized response handling
+    if (response.data && response.data.data) {
+      // Backend returns { success: true, data: [...] }
       const categories = response.data.data.map((category: any) => ({
         ...category,
         status: category.status || 'Active'
@@ -22,24 +21,25 @@ export const getCategories = async (): Promise<CategoriesResponse> => {
         categories,
         total: categories.length
       };
-    }
-    
-    // Fallback in case the response format is different
-    if (response.data && response.data.categories) {
-      response.data.categories = response.data.categories.map((category: any) => ({
+    } else if (response.data && response.data.categories) {
+      // Backend returns { categories: [...], total: number }
+      const categories = response.data.categories.map((category: any) => ({
         ...category,
         status: category.status || 'Active'
       }));
       
-      return response.data;
+      return {
+        categories,
+        total: response.data.total || categories.length
+      };
+    } else {
+      // Fallback for unexpected response format
+      console.warn('Unexpected response format from categories API:', response.data);
+      return {
+        categories: [],
+        total: 0
+      };
     }
-    
-    // If we can't find categories in the expected places, return an empty result
-    console.warn('Unexpected response format from categories API:', response.data);
-    return {
-      categories: [],
-      total: 0
-    };
   } catch (error) {
     console.error('Error fetching categories:', error);
     throw error;
@@ -53,12 +53,15 @@ export const getCategory = async (id: string): Promise<Category> => {
   try {
     const response = await api.get(`/links/categories/${id}`);
     
+    // Standardized response handling
+    const category = response.data.data || response.data;
+    
     // Add status field if it doesn't exist
-    if (response.data && response.data.data) {
-      response.data.data.status = response.data.data.status || 'Active';
+    if (category) {
+      category.status = category.status || 'Active';
     }
     
-    return response.data.data;
+    return category;
   } catch (error) {
     console.error(`Error fetching category with ID ${id}:`, error);
     throw error;
@@ -75,12 +78,15 @@ export const createCategory = async (category: Omit<Category, 'id' | 'createdAt'
     
     const response = await api.post('/links/categories', categoryData);
     
-    // Add status field to the response
-    if (response.data && response.data.data) {
-      response.data.data.status = 'Active';
+    // Standardized response handling
+    const createdCategory = response.data.data || response.data;
+    
+    // Add status field
+    if (createdCategory) {
+      createdCategory.status = 'Active';
     }
     
-    return response.data.data;
+    return createdCategory;
   } catch (error) {
     console.error('Error creating category:', error);
     throw error;
@@ -97,12 +103,15 @@ export const updateCategory = async (id: string, category: Partial<Category>): P
     
     const response = await api.put(`/links/categories/${id}`, categoryData);
     
-    // Add status field to the response
-    if (response.data && response.data.data) {
-      response.data.data.status = 'Active';
+    // Standardized response handling
+    const updatedCategory = response.data.data || response.data;
+    
+    // Add status field
+    if (updatedCategory) {
+      updatedCategory.status = 'Active';
     }
     
-    return response.data.data;
+    return updatedCategory;
   } catch (error) {
     console.error(`Error updating category with ID ${id}:`, error);
     throw error;
@@ -159,12 +168,15 @@ export const moveCategory = async (categoryId: string, newParentId: string | nul
       parentId: newParentId 
     });
     
-    // Add status field to the response
-    if (response.data && response.data.data) {
-      response.data.data.status = 'Active';
+    // Standardized response handling
+    const movedCategory = response.data.data || response.data;
+    
+    // Add status field
+    if (movedCategory) {
+      movedCategory.status = 'Active';
     }
     
-    return response.data.data;
+    return movedCategory;
   } catch (error) {
     console.error(`Error moving category ${categoryId}:`, error);
     throw error;
@@ -178,20 +190,23 @@ export const getCategoryTree = async (): Promise<Category[]> => {
   try {
     const response = await api.get('/links/categories/tree');
     
-    // Add status field to each category
-    if (response.data) {
-      const addStatusToTree = (categories: any[]): any[] => {
-        return categories.map(category => ({
+    // Standardized response handling
+    const categories = response.data.data || response.data;
+    
+    // Add status field to each category in the tree
+    if (categories) {
+      const addStatusToTree = (items: any[]): any[] => {
+        return items.map(category => ({
           ...category,
           status: category.status || 'Active',
           children: category.children ? addStatusToTree(category.children) : []
         }));
       };
       
-      response.data = addStatusToTree(response.data);
+      return addStatusToTree(categories);
     }
     
-    return response.data;
+    return [];
   } catch (error) {
     console.error('Error fetching category tree:', error);
     throw error;

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, Button, Row, Col, Form, Accordion, Table, Alert, Spinner } from 'react-bootstrap';
-import { 
-  FaSave, FaPlus, FaTrash, FaArrowUp, FaArrowDown, FaCog, FaEye, FaCode,
-  FaArrowLeft, FaSlidersH
-} from 'react-icons/fa';
-import SurveyElements from '../../elements/SurveyElements';
+import { Row, Alert, Button, Spinner } from 'react-bootstrap';
+import { FaSave, FaEye, FaArrowLeft } from 'react-icons/fa';
 import { SurveysService } from '../../../../services/engage';
+
+// Import panel components
+import SurveyElementsPanel from './panels/SurveyElementsPanel';
+import SurveyCanvas from './panels/SurveyCanvas';
+import SurveyPropertiesPanel from './panels/SurveyPropertiesPanel';
+import SurveyPreview from './panels/SurveyPreview';
 
 interface SurveyQuestion {
   id: string;
@@ -53,7 +55,33 @@ const SurveyDesigner: React.FC = () => {
     requireAllQuestions: false,
     allowMultipleResponses: false,
     showThankYouPage: true,
-    thankYouMessage: 'Thank you for completing the survey!'
+    thankYouMessage: 'Thank you for completing the survey!',
+    // Add missing properties required by SurveySettings interface
+    showResetButton: false,
+    resetButtonText: 'Reset',
+    showSubmitButton: true,
+    submitButtonText: 'Submit',
+    redirectAfterSubmit: false,
+    redirectUrl: '',
+    allowSave: false
+  });
+  
+  // Survey appearance state
+  const [surveyAppearance, setSurveyAppearance] = useState({
+    backgroundColor: '#ffffff',
+    backgroundImage: '',
+    fontFamily: 'Arial, sans-serif',
+    primaryColor: '#007bff',
+    secondaryColor: '#6c757d',
+    textColor: '#212529',
+    borderRadius: '10px',
+    boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)',
+    headerAlignment: 'center',
+    buttonStyle: 'default',
+    sectionTitleColor: '#343a40',
+    sectionDividerColor: '#dee2e6',
+    questionSpacing: '20px',
+    width: '800px'
   });
 
   // Load survey data if editing an existing survey
@@ -66,15 +94,36 @@ const SurveyDesigner: React.FC = () => {
           
           const survey = await SurveysService.getSurveyById(surveyId);
           
+          console.log('Loaded survey data:', JSON.stringify(survey, null, 2));
+          
           setSurveyTitle(survey.title);
-          setSections(survey.sections || [
-            {
-              id: 'section-1',
-              title: 'Default Section',
-              description: 'This is the default section of your survey.',
-              questions: []
-            }
-          ]);
+          
+          // Handle sections if they exist in settings, otherwise use default
+          if (survey.settings && survey.settings.sections) {
+            console.log('Using sections from settings:', survey.settings.sections);
+            setSections(survey.settings.sections);
+          } else if (survey.settings && survey.settings.questions) {
+            // If there are questions but no sections, create a default section with those questions
+            console.log('Creating default section with questions from settings:', survey.settings.questions);
+            setSections([
+              {
+                id: 'section-1',
+                title: 'Default Section',
+                description: 'This is the default section of your survey.',
+                questions: survey.settings.questions || []
+              }
+            ]);
+          } else {
+            console.log('Using empty default section');
+            setSections([
+              {
+                id: 'section-1',
+                title: 'Default Section',
+                description: 'This is the default section of your survey.',
+                questions: []
+              }
+            ]);
+          }
           setSurveySettings(survey.settings || {
             showProgressBar: true,
             allowAnonymousResponses: true,
@@ -84,9 +133,22 @@ const SurveyDesigner: React.FC = () => {
             thankYouMessage: 'Thank you for completing the survey!'
           });
           
+          // Load appearance settings if they exist
+          if (survey.appearance) {
+            // Ensure width has default value if not present
+            const appearance = {
+              ...surveyAppearance,
+              ...survey.appearance,
+              width: survey.appearance.width || '800px'
+            };
+            setSurveyAppearance(appearance);
+          }
+          
           // Set the selected section to the first section
-          if (survey.sections && survey.sections.length > 0) {
-            setSelectedSection(survey.sections[0]);
+          if (survey.settings && survey.settings.sections && survey.settings.sections.length > 0) {
+            setSelectedSection(survey.settings.sections[0]);
+          } else if (sections.length > 0) {
+            setSelectedSection(sections[0]);
           }
           
           setLoading(false);
@@ -264,12 +326,14 @@ const SurveyDesigner: React.FC = () => {
     setSelectedSection(updatedSection);
   };
 
-  const handleScaleChange = (field: string, value: string) => {
+  const handleScaleChange = (field: string, value: string | number) => {
     if (!selectedQuestion || !selectedQuestion.scale) return;
 
     const updatedScale = {
       ...selectedQuestion.scale,
-      [field]: field === 'min' || field === 'max' ? parseInt(value) : value
+      [field]: field === 'min' || field === 'max' ? 
+        (typeof value === 'string' ? parseInt(value) : value) : 
+        value
     };
 
     const updatedQuestion = {
@@ -362,12 +426,199 @@ const SurveyDesigner: React.FC = () => {
     setSections(newSections);
   };
 
-  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  // New function to handle question movement by ID
+  const handleMoveQuestionById = (questionId: string, direction: 'up' | 'down') => {
+    // Find the section that contains the question
+    const sectionWithQuestion = sections.find(section => 
+      section.questions.some(q => q.id === questionId)
+    );
+    
+    if (!sectionWithQuestion) return;
+    
+    const currentIndex = sectionWithQuestion.questions.findIndex(q => q.id === questionId);
+    if (
+      (direction === 'up' && currentIndex === 0) || 
+      (direction === 'down' && currentIndex === sectionWithQuestion.questions.length - 1)
+    ) {
+      return;
+    }
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const newQuestions = [...sectionWithQuestion.questions];
+    const [removed] = newQuestions.splice(currentIndex, 1);
+    newQuestions.splice(newIndex, 0, removed);
+
+    const updatedSection = {
+      ...sectionWithQuestion,
+      questions: newQuestions
+    };
+
+    setSections(sections.map(section => 
+      section.id === sectionWithQuestion.id ? updatedSection : section
+    ));
+    
+    // Update selectedSection if it's the one being modified
+    if (selectedSection.id === sectionWithQuestion.id) {
+      setSelectedSection(updatedSection);
+    }
+  };
+
+  // New function to handle section movement by ID
+  const handleMoveSectionById = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = sections.findIndex(s => s.id === sectionId);
+    if (
+      (direction === 'up' && currentIndex === 0) || 
+      (direction === 'down' && currentIndex === sections.length - 1)
+    ) {
+      return;
+    }
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const newSections = [...sections];
+    const [removed] = newSections.splice(currentIndex, 1);
+    newSections.splice(newIndex, 0, removed);
+
+    setSections(newSections);
+    
+    // Update selectedSection if it's the one being moved
+    if (selectedSection.id === sectionId) {
+      setSelectedSection(newSections[newIndex]);
+    }
+  };
+
+  // New function to clone a question
+  const handleCloneQuestion = (questionId: string) => {
+    // Find the section that contains the question
+    const sectionWithQuestion = sections.find(section => 
+      section.questions.some(q => q.id === questionId)
+    );
+    
+    if (!sectionWithQuestion) return;
+    
+    const questionToClone = sectionWithQuestion.questions.find(q => q.id === questionId);
+    if (!questionToClone) return;
+
+    // Create a deep copy of the question
+    const clonedQuestion: SurveyQuestion = {
+      ...JSON.parse(JSON.stringify(questionToClone)),
+      id: `question-${Date.now()}`, // Generate new unique ID
+      question: `${questionToClone.question} (Copy)` // Append (Copy) to the question text
+    };
+
+    // Find the index of the original question
+    const questionIndex = sectionWithQuestion.questions.findIndex(q => q.id === questionId);
+    
+    // Insert the cloned question after the original
+    const newQuestions = [...sectionWithQuestion.questions];
+    newQuestions.splice(questionIndex + 1, 0, clonedQuestion);
+    
+    const updatedSection = {
+      ...sectionWithQuestion,
+      questions: newQuestions
+    };
+
+    setSections(sections.map(section => 
+      section.id === sectionWithQuestion.id ? updatedSection : section
+    ));
+    
+    // Update selectedSection if it's the one being modified
+    if (selectedSection.id === sectionWithQuestion.id) {
+      setSelectedSection(updatedSection);
+    }
+    
+    // Select the new question
+    setSelectedQuestion(clonedQuestion);
+  };
+
+  // New function to clone a section
+  const handleCloneSection = (sectionId: string) => {
+    const sectionToClone = sections.find(s => s.id === sectionId);
+    if (!sectionToClone) return;
+
+    // Create a deep copy of the section
+    const clonedSection: SurveySection = {
+      ...JSON.parse(JSON.stringify(sectionToClone)),
+      id: `section-${Date.now()}`, // Generate new unique ID
+      title: `${sectionToClone.title} (Copy)`, // Append (Copy) to the title
+      questions: sectionToClone.questions.map(q => ({
+        ...q,
+        id: `question-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate new unique IDs for all questions
+      }))
+    };
+
+    // Find the index of the original section
+    const sectionIndex = sections.findIndex(s => s.id === sectionId);
+    
+    // Insert the cloned section after the original
+    const newSections = [...sections];
+    newSections.splice(sectionIndex + 1, 0, clonedSection);
+    
+    setSections(newSections);
+    setSelectedSection(clonedSection); // Select the new section
+    setSelectedQuestion(null);
+  };
+
+  // New function to delete a question by ID
+  const handleDeleteQuestionById = (questionId: string) => {
+    // Find the section that contains the question
+    const sectionWithQuestion = sections.find(section => 
+      section.questions.some(q => q.id === questionId)
+    );
+    
+    if (!sectionWithQuestion) return;
+    
+    const updatedSection = {
+      ...sectionWithQuestion,
+      questions: sectionWithQuestion.questions.filter(q => q.id !== questionId)
+    };
+
+    setSections(sections.map(section => 
+      section.id === sectionWithQuestion.id ? updatedSection : section
+    ));
+    
+    // Update selectedSection if it's the one being modified
+    if (selectedSection.id === sectionWithQuestion.id) {
+      setSelectedSection(updatedSection);
+    }
+    
+    // Clear selectedQuestion if it's the one being deleted
+    if (selectedQuestion && selectedQuestion.id === questionId) {
+      setSelectedQuestion(null);
+    }
+  };
+
+  // New function to delete a section by ID
+  const handleDeleteSectionById = (sectionId: string) => {
+    if (sections.length <= 1) return; // Don't delete the last section
+
+    const sectionIndex = sections.findIndex(s => s.id === sectionId);
+    const newSections = sections.filter(s => s.id !== sectionId);
+    
+    setSections(newSections);
+    
+    // Update selectedSection if it's the one being deleted
+    if (selectedSection.id === sectionId) {
+      setSelectedSection(newSections[Math.min(sectionIndex, newSections.length - 1)]);
+      setSelectedQuestion(null);
+    }
+  };
+
+  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type, checked } = e.target as HTMLInputElement;
     
     setSurveySettings({
       ...surveySettings,
       [name]: type === 'checkbox' ? checked : value
+    });
+  };
+  
+  // Handler for appearance changes
+  const handleAppearanceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    setSurveyAppearance({
+      ...surveyAppearance,
+      [name]: value
     });
   };
 
@@ -376,11 +627,39 @@ const SurveyDesigner: React.FC = () => {
       setLoading(true);
       setError(null);
       
+      // Make sure sections data is properly structured
+      const processedSections = sections.map(section => ({
+        ...section,
+        title: section.title || 'Untitled Section',
+        description: section.description || '',
+        questions: section.questions.map(q => ({
+          ...q,
+          question: q.question || 'Untitled Question',
+          description: q.description || ''
+        }))
+      }));
+      
+      // Store sections in settings
+      const updatedSettings = {
+        ...surveySettings,
+        sections: processedSections
+      };
+      
+      // Convert sections format to questions format for backward compatibility
+      // This is needed because the backend might expect 'questions' but we're using 'sections'
+      const questions = processedSections.length === 1 
+        ? processedSections[0].questions 
+        : processedSections.flatMap(section => section.questions);
+      
       const surveyData = {
         title: surveyTitle,
-        sections: sections,
-        settings: surveySettings
+        questions: questions, // Include questions for backward compatibility
+        sections: processedSections, // Keep sections for backward compatibility
+        settings: updatedSettings,
+        appearance: surveyAppearance // Include appearance settings
       };
+      
+      console.log('Saving survey data:', JSON.stringify(surveyData, null, 2));
       
       if (surveyId && surveyId !== 'new') {
         // Update existing survey
@@ -406,143 +685,72 @@ const SurveyDesigner: React.FC = () => {
     navigate('/engage/survey');
   };
 
+  // Function to render question preview for the canvas
   const renderQuestionPreview = (question: SurveyQuestion) => {
     switch (question.type) {
       case 'text':
         return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <Form.Control type="text" placeholder="Your answer" />
-          </Form.Group>
+          <div className="mb-3">
+            <label className="form-label">{question.question}{question.required && <span className="text-danger">*</span>}</label>
+            {question.description && <div className="form-text mb-1">{question.description}</div>}
+            <input type="text" className="form-control" placeholder="Your answer" />
+          </div>
         );
       case 'textarea':
         return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <Form.Control as="textarea" rows={3} placeholder="Your answer" />
-          </Form.Group>
+          <div className="mb-3">
+            <label className="form-label">{question.question}{question.required && <span className="text-danger">*</span>}</label>
+            {question.description && <div className="form-text mb-1">{question.description}</div>}
+            <textarea className="form-control" rows={3} placeholder="Your answer"></textarea>
+          </div>
         );
       case 'checkbox':
         return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
+          <div className="mb-3">
+            <label className="form-label">{question.question}{question.required && <span className="text-danger">*</span>}</label>
+            {question.description && <div className="form-text mb-1">{question.description}</div>}
             {question.options?.map((option, index) => (
-              <Form.Check 
-                key={index}
-                type="checkbox"
-                id={`${question.id}-option-${index}`}
-                label={option}
-              />
+              <div key={index} className="form-check">
+                <input className="form-check-input" type="checkbox" id={`${question.id}-option-${index}`} />
+                <label className="form-check-label" htmlFor={`${question.id}-option-${index}`}>{option}</label>
+              </div>
             ))}
-          </Form.Group>
+          </div>
         );
       case 'radio':
         return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
+          <div className="mb-3">
+            <label className="form-label">{question.question}{question.required && <span className="text-danger">*</span>}</label>
+            {question.description && <div className="form-text mb-1">{question.description}</div>}
             {question.options?.map((option, index) => (
-              <Form.Check 
-                key={index}
-                type="radio"
-                name={question.id}
-                id={`${question.id}-option-${index}`}
-                label={option}
-              />
+              <div key={index} className="form-check">
+                <input className="form-check-input" type="radio" name={question.id} id={`${question.id}-option-${index}`} />
+                <label className="form-check-label" htmlFor={`${question.id}-option-${index}`}>{option}</label>
+              </div>
             ))}
-          </Form.Group>
+          </div>
         );
       case 'select':
         return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <Form.Select>
+          <div className="mb-3">
+            <label className="form-label">{question.question}{question.required && <span className="text-danger">*</span>}</label>
+            {question.description && <div className="form-text mb-1">{question.description}</div>}
+            <select className="form-select">
               <option value="">Select an option</option>
               {question.options?.map((option, index) => (
                 <option key={index} value={option}>{option}</option>
               ))}
-            </Form.Select>
-          </Form.Group>
-        );
-      case 'scale':
-        return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="text-muted">{question.scale?.minLabel || question.scale?.min}</span>
-              <span className="text-muted">{question.scale?.maxLabel || question.scale?.max}</span>
-            </div>
-            <div className="d-flex justify-content-between">
-              {Array.from({ length: (question.scale?.max || 5) - (question.scale?.min || 1) + 1 }).map((_, i) => (
-                <div key={i} className="text-center" style={{ width: '40px' }}>
-                  <Form.Check
-                    type="radio"
-                    name={question.id}
-                    id={`${question.id}-scale-${i}`}
-                    className="position-relative mx-auto"
-                    style={{ height: '20px' }}
-                  />
-                  <div className="mt-1">{(question.scale?.min || 1) + i}</div>
-                </div>
-              ))}
-            </div>
-          </Form.Group>
-        );
-      case 'likert':
-        return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <Table bordered hover size="sm" className="mt-2">
-              <thead>
-                <tr>
-                  <th style={{ width: '40%' }}></th>
-                  {question.options?.map((option, i) => (
-                    <th key={i} className="text-center">{option}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Your response</td>
-                  {question.options?.map((_, i) => (
-                    <td key={i} className="text-center">
-                      <Form.Check
-                        type="radio"
-                        name={question.id}
-                        id={`${question.id}-likert-${i}`}
-                        className="d-inline-block"
-                      />
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </Table>
-          </Form.Group>
-        );
-      case 'date':
-        return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <Form.Control type="date" />
-          </Form.Group>
-        );
-      case 'file':
-        return (
-          <Form.Group className="mb-3">
-            <Form.Label>{question.question}{question.required && <span className="text-danger">*</span>}</Form.Label>
-            {question.description && <Form.Text className="text-muted d-block mb-1">{question.description}</Form.Text>}
-            <Form.Control type="file" />
-          </Form.Group>
+            </select>
+          </div>
         );
       default:
-        return null;
+        return (
+          <div className="mb-3">
+            <label className="form-label">{question.question}{question.required && <span className="text-danger">*</span>}</label>
+            {question.description && <div className="form-text mb-1">{question.description}</div>}
+            <p className="text-muted">[{question.type} question]</p>
+          </div>
+        );
     }
   };
 
@@ -609,438 +817,64 @@ const SurveyDesigner: React.FC = () => {
       </div>
 
       {previewMode ? (
-        <Card className="p-4">
-          <h3>{surveyTitle}</h3>
-          <Form>
-            {sections.map((section) => (
-              <div key={section.id} className="mb-4">
-                <h4>{section.title}</h4>
-                {section.description && <p className="text-muted">{section.description}</p>}
-                <hr />
-                {section.questions.map(question => (
-                  <div key={question.id}>
-                    {renderQuestionPreview(question)}
-                  </div>
-                ))}
-              </div>
-            ))}
-            <div className="mt-4">
-              <Button variant="primary">Submit</Button>
-            </div>
-          </Form>
-        </Card>
+        <SurveyPreview 
+          surveyTitle={surveyTitle}
+          sections={sections}
+          surveySettings={surveySettings}
+          surveyAppearance={surveyAppearance}
+        />
       ) : (
         <Row>
-          {/* Left Panel - Elements Accordion */}
-          <Col md={3}>
-            <SurveyElements onAddElement={handleAddQuestion} />
-          </Col>
+          {/* Left Panel - Elements */}
+          <SurveyElementsPanel 
+            sections={sections}
+            selectedSection={selectedSection}
+            selectedQuestion={selectedQuestion}
+            onAddElement={handleAddQuestion}
+            onSectionSelect={handleSectionSelect}
+            onQuestionSelect={handleQuestionSelect}
+            onMoveSection={handleMoveSectionById}
+            onMoveQuestion={handleMoveQuestionById}
+            onCloneSection={handleCloneSection}
+            onCloneQuestion={handleCloneQuestion}
+            onDeleteSection={handleDeleteSectionById}
+            onDeleteQuestion={handleDeleteQuestionById}
+          />
 
-          {/* Main Content Area */}
-          <Col md={6}>
-            <Card className="form-canvas">
-              <Card.Header className="bg-light">
-                <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0">Survey Layout</h5>
-                  <div>
-                    <Button variant="link" className="p-0 text-decoration-none me-3">
-                      <FaCode className="me-1" /> View Code
-                    </Button>
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm"
-                      onClick={handleAddSection}
-                    >
-                      <FaPlus className="me-1" /> Add Section
-                    </Button>
-                  </div>
-                </div>
-              </Card.Header>
-              <Card.Body className="p-4">
-                {sections.length === 0 ? (
-                  <div className="text-center p-5 border rounded bg-light">
-                    <p className="mb-0">Add a section to start building your survey</p>
-                  </div>
-                ) : (
-                  <div>
-                    {sections.map((section) => (
-                      <Card 
-                        key={section.id} 
-                        className={`mb-4 ${selectedSection.id === section.id ? 'border-primary' : ''}`}
-                        onClick={() => handleSectionSelect(section)}
-                      >
-                        <Card.Header className="bg-light">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <h5 className="mb-0">{section.title}</h5>
-                            <div>
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSectionSelect(section);
-                                  handleAddQuestion('text');
-                                }}
-                              >
-                                <FaPlus className="me-1" /> Add Question
-                              </Button>
-                            </div>
-                          </div>
-                        </Card.Header>
-                        <Card.Body>
-                          {section.description && <p className="text-muted">{section.description}</p>}
-                          
-                          {section.questions.length === 0 ? (
-                            <div className="text-center p-4 border rounded bg-light">
-                              <p className="mb-0">No questions yet. Click "Add Question" to start building your survey.</p>
-                            </div>
-                          ) : (
-                            <div>
-                              {section.questions.map((question) => (
-                                <div 
-                                  key={question.id} 
-                                  className={`p-3 mb-3 border rounded ${selectedQuestion?.id === question.id ? 'border-primary' : 'border-light'}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleQuestionSelect(question);
-                                  }}
-                                >
-                                  {renderQuestionPreview(question)}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </Card.Body>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
+          {/* Main Content Area - Canvas */}
+          <SurveyCanvas 
+            sections={sections}
+            selectedSection={selectedSection}
+            selectedQuestion={selectedQuestion}
+            surveyAppearance={surveyAppearance}
+            onSectionSelect={handleSectionSelect}
+            onQuestionSelect={handleQuestionSelect}
+            onAddSection={handleAddSection}
+            onAddQuestion={handleAddQuestion}
+            renderQuestionPreview={renderQuestionPreview}
+          />
 
-          {/* Right Panel - Properties and Settings Accordions */}
-          <Col md={3}>
-            {/* Properties Accordion */}
-            <Accordion defaultActiveKey="0" className="mb-3">
-              <Accordion.Item eventKey="0">
-                <Accordion.Header>
-                  <div className="d-flex align-items-center">
-                    <FaCog className="me-2" />
-                    <span>Properties</span>
-                  </div>
-                </Accordion.Header>
-                <Accordion.Body>
-                  {selectedQuestion ? (
-                    <Form>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Question</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          name="question"
-                          value={selectedQuestion.question}
-                          onChange={handleQuestionUpdate}
-                        />
-                      </Form.Group>
-                      
-                      <Form.Group className="mb-3">
-                        <Form.Label>Description</Form.Label>
-                        <Form.Control 
-                          as="textarea"
-                          rows={2}
-                          name="description"
-                          value={selectedQuestion.description || ''}
-                          onChange={handleQuestionUpdate}
-                          placeholder="Optional description or instructions"
-                        />
-                      </Form.Group>
-                      
-                      <Form.Group className="mb-3">
-                        <Form.Check 
-                          type="checkbox"
-                          id="question-required"
-                          label="Required question"
-                          name="required"
-                          checked={selectedQuestion.required}
-                          onChange={handleQuestionUpdate}
-                        />
-                      </Form.Group>
-                      
-                      {(selectedQuestion.type === 'radio' || selectedQuestion.type === 'select' || selectedQuestion.type === 'checkbox' || selectedQuestion.type === 'likert') && (
-                        <Accordion defaultActiveKey="0" className="mb-3">
-                          <Accordion.Item eventKey="0">
-                            <Accordion.Header>Options</Accordion.Header>
-                            <Accordion.Body>
-                              {selectedQuestion.options?.map((option, index) => (
-                                <div key={index} className="d-flex mb-2">
-                                  <Form.Control 
-                                    type="text"
-                                    value={option}
-                                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                                    className="me-2"
-                                  />
-                                  <Button 
-                                    variant="outline-danger" 
-                                    size="sm"
-                                    onClick={() => handleRemoveOption(index)}
-                                    disabled={selectedQuestion.options?.length === 1}
-                                  >
-                                    <FaTrash />
-                                  </Button>
-                                </div>
-                              ))}
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm" 
-                                onClick={handleAddOption}
-                                className="mt-2"
-                              >
-                                <FaPlus className="me-1" /> Add Option
-                              </Button>
-                            </Accordion.Body>
-                          </Accordion.Item>
-                        </Accordion>
-                      )}
-                      
-                      {selectedQuestion.type === 'scale' && (
-                        <Accordion defaultActiveKey="0" className="mb-3">
-                          <Accordion.Item eventKey="0">
-                            <Accordion.Header>Scale Settings</Accordion.Header>
-                            <Accordion.Body>
-                              <Row className="mb-3">
-                                <Col>
-                                  <Form.Group>
-                                    <Form.Label>Min Value</Form.Label>
-                                    <Form.Control 
-                                      type="number"
-                                      value={selectedQuestion.scale?.min}
-                                      onChange={(e) => handleScaleChange('min', e.target.value)}
-                                    />
-                                  </Form.Group>
-                                </Col>
-                                <Col>
-                                  <Form.Group>
-                                    <Form.Label>Max Value</Form.Label>
-                                    <Form.Control 
-                                      type="number"
-                                      value={selectedQuestion.scale?.max}
-                                      onChange={(e) => handleScaleChange('max', e.target.value)}
-                                    />
-                                  </Form.Group>
-                                </Col>
-                              </Row>
-                              <Row>
-                                <Col>
-                                  <Form.Group>
-                                    <Form.Label>Min Label</Form.Label>
-                                    <Form.Control 
-                                      type="text"
-                                      value={selectedQuestion.scale?.minLabel || ''}
-                                      onChange={(e) => handleScaleChange('minLabel', e.target.value)}
-                                      placeholder="e.g., Poor"
-                                    />
-                                  </Form.Group>
-                                </Col>
-                                <Col>
-                                  <Form.Group>
-                                    <Form.Label>Max Label</Form.Label>
-                                    <Form.Control 
-                                      type="text"
-                                      value={selectedQuestion.scale?.maxLabel || ''}
-                                      onChange={(e) => handleScaleChange('maxLabel', e.target.value)}
-                                      placeholder="e.g., Excellent"
-                                    />
-                                  </Form.Group>
-                                </Col>
-                              </Row>
-                            </Accordion.Body>
-                          </Accordion.Item>
-                        </Accordion>
-                      )}
-                      
-                      <div className="d-flex justify-content-between mt-4">
-                        <div>
-                          <Button 
-                            variant="outline-danger" 
-                            onClick={handleDeleteQuestion}
-                          >
-                            <FaTrash className="me-1" /> Delete
-                          </Button>
-                        </div>
-                        <div>
-                          <Button 
-                            variant="outline-secondary" 
-                            className="me-2"
-                            onClick={() => handleMoveQuestion('up')}
-                            disabled={selectedSection.questions.indexOf(selectedQuestion) === 0}
-                          >
-                            <FaArrowUp />
-                          </Button>
-                          <Button 
-                            variant="outline-secondary"
-                            onClick={() => handleMoveQuestion('down')}
-                            disabled={selectedSection.questions.indexOf(selectedQuestion) === selectedSection.questions.length - 1}
-                          >
-                            <FaArrowDown />
-                          </Button>
-                        </div>
-                      </div>
-                    </Form>
-                  ) : selectedSection ? (
-                    <Form>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Section Title</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          name="title"
-                          value={selectedSection.title}
-                          onChange={handleSectionUpdate}
-                        />
-                      </Form.Group>
-                      
-                      <Form.Group className="mb-3">
-                        <Form.Label>Section Description</Form.Label>
-                        <Form.Control 
-                          as="textarea"
-                          rows={3}
-                          name="description"
-                          value={selectedSection.description || ''}
-                          onChange={handleSectionUpdate}
-                          placeholder="Optional section description"
-                        />
-                      </Form.Group>
-                      
-                      <div className="d-flex justify-content-between mt-4">
-                        <div>
-                          <Button 
-                            variant="outline-danger" 
-                            onClick={handleDeleteSection}
-                            disabled={sections.length <= 1}
-                          >
-                            <FaTrash className="me-1" /> Delete Section
-                          </Button>
-                        </div>
-                        <div>
-                          <Button 
-                            variant="outline-secondary" 
-                            className="me-2"
-                            onClick={() => handleMoveSection('up')}
-                            disabled={sections.indexOf(selectedSection) === 0}
-                          >
-                            <FaArrowUp />
-                          </Button>
-                          <Button 
-                            variant="outline-secondary"
-                            onClick={() => handleMoveSection('down')}
-                            disabled={sections.indexOf(selectedSection) === sections.length - 1}
-                          >
-                            <FaArrowDown />
-                          </Button>
-                        </div>
-                      </div>
-                    </Form>
-                  ) : (
-                    <div className="text-center p-4 text-muted">
-                      <p>Select a question or section to edit its properties</p>
-                    </div>
-                  )}
-                </Accordion.Body>
-              </Accordion.Item>
-            </Accordion>
-            
-            {/* Settings Accordion */}
-            <Accordion className="mb-3">
-              <Accordion.Item eventKey="0">
-                <Accordion.Header>
-                  <div className="d-flex align-items-center">
-                    <FaSlidersH className="me-2" />
-                    <span>Settings</span>
-                  </div>
-                </Accordion.Header>
-                <Accordion.Body>
-                  <Form>
-                    <Form.Group className="mb-3">
-                      <Form.Check 
-                        type="checkbox"
-                        id="showProgressBar"
-                        label="Show progress bar"
-                        name="showProgressBar"
-                        checked={surveySettings.showProgressBar}
-                        onChange={handleSettingsChange}
-                      />
-                    </Form.Group>
-                    
-                    <Form.Group className="mb-3">
-                      <Form.Check 
-                        type="checkbox"
-                        id="allowAnonymousResponses"
-                        label="Allow anonymous responses"
-                        name="allowAnonymousResponses"
-                        checked={surveySettings.allowAnonymousResponses}
-                        onChange={handleSettingsChange}
-                      />
-                    </Form.Group>
-                    
-                    <Form.Group className="mb-3">
-                      <Form.Check 
-                        type="checkbox"
-                        id="requireAllQuestions"
-                        label="Require all questions by default"
-                        name="requireAllQuestions"
-                        checked={surveySettings.requireAllQuestions}
-                        onChange={handleSettingsChange}
-                      />
-                    </Form.Group>
-                    
-                    <Form.Group className="mb-3">
-                      <Form.Check 
-                        type="checkbox"
-                        id="allowMultipleResponses"
-                        label="Allow multiple responses from same user"
-                        name="allowMultipleResponses"
-                        checked={surveySettings.allowMultipleResponses}
-                        onChange={handleSettingsChange}
-                      />
-                    </Form.Group>
-                    
-                    <Form.Group className="mb-3">
-                      <Form.Check 
-                        type="checkbox"
-                        id="showThankYouPage"
-                        label="Show thank you page after submission"
-                        name="showThankYouPage"
-                        checked={surveySettings.showThankYouPage}
-                        onChange={handleSettingsChange}
-                      />
-                    </Form.Group>
-                    
-                    {surveySettings.showThankYouPage && (
-                      <Form.Group className="mb-3">
-                        <Form.Label>Thank You Message</Form.Label>
-                        <Form.Control 
-                          as="textarea"
-                          rows={2}
-                          name="thankYouMessage"
-                          value={surveySettings.thankYouMessage}
-                          onChange={handleSettingsChange}
-                          placeholder="Message to show after survey completion"
-                        />
-                      </Form.Group>
-                    )}
-                    
-                    <div className="mt-4">
-                      <Button 
-                        variant="outline-primary" 
-                        onClick={handleAddSection}
-                      >
-                        <FaPlus className="me-1" /> Add Section
-                      </Button>
-                    </div>
-                  </Form>
-                </Accordion.Body>
-              </Accordion.Item>
-            </Accordion>
-          </Col>
+          {/* Right Panel - Properties */}
+          <SurveyPropertiesPanel 
+            selectedQuestion={selectedQuestion}
+            selectedSection={selectedSection}
+            sections={sections}
+            surveySettings={surveySettings}
+            surveyAppearance={surveyAppearance}
+            onQuestionUpdate={handleQuestionUpdate}
+            onSectionUpdate={handleSectionUpdate}
+            onSettingsChange={handleSettingsChange}
+            onAppearanceChange={handleAppearanceChange}
+            onOptionChange={handleOptionChange}
+            onAddOption={handleAddOption}
+            onRemoveOption={handleRemoveOption}
+            onScaleChange={handleScaleChange}
+            onDeleteQuestion={handleDeleteQuestion}
+            onDeleteSection={handleDeleteSection}
+            onMoveQuestion={handleMoveQuestion}
+            onMoveSection={handleMoveSection}
+            onAddSection={handleAddSection}
+          />
         </Row>
       )}
     </div>

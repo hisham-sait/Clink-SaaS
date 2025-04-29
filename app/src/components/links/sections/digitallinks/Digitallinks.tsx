@@ -3,6 +3,8 @@ import { Card, Button, Table, Badge, Row, Col, Form, InputGroup, Dropdown, Alert
 import { FaQrcode, FaFilter, FaSort, FaSearch, FaPlus, FaFileImport, FaFileExport, FaEdit, FaTrash, FaEye, FaCopy } from 'react-icons/fa';
 import { DigitalLinksService, CategoriesService, LinksTypes } from '../../../../services/links';
 import { ProductsService, ProductsTypes } from '../../../../services/products';
+import { PagesService, FormsService } from '../../../../services/engage';
+import api from '../../../../services/api';
 
 // Import modal components
 import AddDigitalLinkModal from './AddDigitalLinkModal';
@@ -25,14 +27,21 @@ const Digitallinks: React.FC = () => {
   const [digitalLinks, setDigitalLinks] = useState<LinksTypes.DigitalLink[]>([]);
   const [categories, setCategories] = useState<LinksTypes.Category[]>([]);
   const [products, setProducts] = useState<ProductsTypes.Product[]>([]);
+  const [pages, setPages] = useState<any[]>([]);
+  const [forms, setForms] = useState<any[]>([]);
+  // Extended redirect type to include page and form
+  type ExtendedRedirectType = 'standard' | 'custom' | 'page' | 'form';
+
   const [newDigitalLink, setNewDigitalLink] = useState({
     title: '',
     type: 'ProductInfo' as LinksTypes.DigitalLinkType,
     gs1Key: '',
     gs1KeyType: 'GTIN',
-    redirectType: 'standard',
+    redirectType: 'standard' as ExtendedRedirectType,
     customUrl: '',
     productId: '',
+    pageId: '',
+    formId: '',
     status: 'Active' as LinksTypes.LinkStatus,
     expiresAt: '',
     password: '',
@@ -43,9 +52,11 @@ const Digitallinks: React.FC = () => {
     type: 'ProductInfo' as LinksTypes.DigitalLinkType,
     gs1Key: '',
     gs1KeyType: '',
-    redirectType: 'standard' as 'standard' | 'custom',
+    redirectType: 'standard' as ExtendedRedirectType,
     customUrl: '',
     productId: '',
+    pageId: '',
+    formId: '',
     status: 'Active' as LinksTypes.LinkStatus,
     expiresAt: '',
     password: '',
@@ -68,11 +79,13 @@ const Digitallinks: React.FC = () => {
     'GSIN': '402'
   };
 
-  // Fetch digitallinks, categories, and products on component mount
+  // Fetch digitallinks, categories, products, pages, and forms on component mount
   useEffect(() => {
     fetchDigitalLinks();
     fetchCategories();
     fetchProducts();
+    fetchPages();
+    fetchForms();
   }, []);
 
   // Refetch digitallinks when filters change
@@ -124,6 +137,28 @@ const Digitallinks: React.FC = () => {
     }
   };
 
+  // Function to fetch pages using the service layer
+  const fetchPages = async () => {
+    try {
+      const pagesData = await PagesService.getAllPages();
+      setPages(pagesData || []);
+    } catch (err: any) {
+      console.error('Error fetching pages:', err);
+      // Don't set error state here to avoid blocking the UI
+    }
+  };
+
+  // Function to fetch forms using the service layer
+  const fetchForms = async () => {
+    try {
+      const formsData = await FormsService.getAllForms();
+      setForms(formsData || []);
+    } catch (err: any) {
+      console.error('Error fetching forms:', err);
+      // Don't set error state here to avoid blocking the UI
+    }
+  };
+
   const handleAddDigitalLink = () => {
     setShowAddModal(true);
   };
@@ -143,6 +178,8 @@ const Digitallinks: React.FC = () => {
       redirectType: 'standard',
       customUrl: '',
       productId: '',
+      pageId: '',
+      formId: '',
       status: 'Active',
       expiresAt: '',
       password: '',
@@ -155,7 +192,7 @@ const Digitallinks: React.FC = () => {
     const { name, value } = e.target;
     setNewDigitalLink({
       ...newDigitalLink,
-      [name]: value
+      [name]: value as any
     });
   };
 
@@ -163,35 +200,92 @@ const Digitallinks: React.FC = () => {
     const { name, value } = e.target;
     setEditedDigitalLink({
       ...editedDigitalLink,
-      [name]: value
+      [name]: value as any
     });
   };
 
   // Set up edited digitallink when selectedDigitalLink changes
   useEffect(() => {
     if (selectedDigitalLink && showEditModal) {
+      // Determine redirect type and related IDs
+      let redirectType: ExtendedRedirectType = selectedDigitalLink.redirectType || 'standard';
+      let pageId = '';
+      let formId = '';
+      
+      // Check if customUrl is a page or form URL
+      const customUrl = selectedDigitalLink.customUrl || '';
+      if (customUrl.startsWith('/p/')) {
+        redirectType = 'page';
+        const pageSlug = customUrl.substring(3);
+        const page = pages.find(p => p.slug === pageSlug);
+        if (page) {
+          pageId = page.id;
+        }
+      } else if (customUrl.startsWith('/f/')) {
+        redirectType = 'form';
+        const formSlug = customUrl.substring(3);
+        const form = forms.find(f => f.slug === formSlug);
+        if (form) {
+          formId = form.id;
+        }
+      }
+      
       setEditedDigitalLink({
         title: selectedDigitalLink.title || '',
         type: selectedDigitalLink.type || 'ProductInfo',
         gs1Key: selectedDigitalLink.gs1Key || '',
         gs1KeyType: selectedDigitalLink.gs1KeyType || '',
-        redirectType: selectedDigitalLink.redirectType || 'standard',
-        customUrl: selectedDigitalLink.customUrl || '',
+        redirectType: redirectType,
+        customUrl: redirectType === 'custom' ? customUrl : '',
         productId: selectedDigitalLink.productId || '',
+        pageId: pageId,
+        formId: formId,
         status: selectedDigitalLink.status || 'Active',
         expiresAt: selectedDigitalLink.expiresAt ? new Date(selectedDigitalLink.expiresAt).toISOString().split('T')[0] : '',
         password: selectedDigitalLink.password || '',
         categoryId: selectedDigitalLink.categoryId || ''
       });
     }
-  }, [selectedDigitalLink, showEditModal]);
+  }, [selectedDigitalLink, showEditModal, pages, forms]);
 
   const handleSaveDigitalLink = async () => {
     try {
       setLoading(true);
       
+      // Determine the link type based on redirectType
+      let linkType = null;
+      let redirectType: 'standard' | 'custom' = 'custom';
+      
+      if (newDigitalLink.redirectType === 'page') {
+        linkType = 'page';
+      } else if (newDigitalLink.redirectType === 'form') {
+        linkType = 'form';
+      } else {
+        redirectType = newDigitalLink.redirectType;
+      }
+      
+      // Prepare the payload
+      const payload = {
+        ...newDigitalLink,
+        redirectType,
+        customUrl: newDigitalLink.redirectType === 'custom' ? newDigitalLink.customUrl : 
+                  newDigitalLink.redirectType === 'page' ? `/p/${pages.find(p => p.id === newDigitalLink.pageId)?.slug}` :
+                  newDigitalLink.redirectType === 'form' ? `/f/${forms.find(f => f.id === newDigitalLink.formId)?.slug}` :
+                  null
+      };
+      
       // Use the service layer to create the digitallink
-      await DigitalLinksService.createDigitalLink(newDigitalLink);
+      if (linkType) {
+        // Create a URL with query parameters
+        const queryParams = new URLSearchParams();
+        queryParams.append('linkType', linkType);
+        
+        // Make the API call with the query parameters
+        await api.post(`/links/digitallinks?${queryParams.toString()}`, payload);
+      } else {
+        // Use the service layer to create the digitallink
+        await DigitalLinksService.createDigitalLink(payload);
+      }
       
       // Refresh the digitallinks list
       await fetchDigitalLinks();
@@ -208,6 +302,8 @@ const Digitallinks: React.FC = () => {
         redirectType: 'standard',
         customUrl: '',
         productId: '',
+        pageId: '',
+        formId: '',
         status: 'Active' as LinksTypes.LinkStatus,
         expiresAt: '',
         password: '',
@@ -229,8 +325,40 @@ const Digitallinks: React.FC = () => {
         throw new Error('No digital link selected');
       }
       
+      // Determine the link type based on redirectType
+      let linkType = null;
+      let redirectType: 'standard' | 'custom' = 'custom';
+      
+      if (editedDigitalLink.redirectType === 'page') {
+        linkType = 'page';
+      } else if (editedDigitalLink.redirectType === 'form') {
+        linkType = 'form';
+      } else {
+        redirectType = editedDigitalLink.redirectType as 'standard' | 'custom';
+      }
+      
+      // Prepare the payload
+      const payload = {
+        ...editedDigitalLink,
+        redirectType,
+        customUrl: editedDigitalLink.redirectType === 'custom' ? editedDigitalLink.customUrl : 
+                  editedDigitalLink.redirectType === 'page' ? `/p/${pages.find(p => p.id === editedDigitalLink.pageId)?.slug}` :
+                  editedDigitalLink.redirectType === 'form' ? `/f/${forms.find(f => f.id === editedDigitalLink.formId)?.slug}` :
+                  null
+      };
+      
       // Use the service layer to update the digitallink
-      await DigitalLinksService.updateDigitalLink(selectedDigitalLink.id, editedDigitalLink);
+      if (linkType) {
+        // Create a URL with query parameters
+        const queryParams = new URLSearchParams();
+        queryParams.append('linkType', linkType);
+        
+        // Make the API call with the query parameters
+        await api.put(`/links/digitallinks/${selectedDigitalLink.id}?${queryParams.toString()}`, payload);
+      } else {
+        // Use the service layer to update the digitallink
+        await DigitalLinksService.updateDigitalLink(selectedDigitalLink.id, payload);
+      }
       
       // Refresh the digitallinks list
       await fetchDigitalLinks();
@@ -311,6 +439,33 @@ const Digitallinks: React.FC = () => {
     if (!productId) return '-';
     const product = products.find(p => p.id === productId);
     return product ? product.name : '-';
+  };
+
+  // Helper function to adapt DigitalLink to ViewDigitalLinkModal props
+  const adaptDigitalLinkForView = (digitalLink: LinksTypes.DigitalLink | null) => {
+    if (!digitalLink) return null;
+    
+    // Create a view model that matches the expected interface
+    const gs1Url = digitalLink.gs1Url || `${gs1KeyTypeToAI[digitalLink.gs1KeyType] || digitalLink.gs1KeyType}/${digitalLink.gs1Key}`;
+    
+    // Create a new object with the expected interface
+    return {
+      id: digitalLink.id,
+      title: digitalLink.title || '',
+      gs1KeyType: digitalLink.gs1KeyType,
+      gs1Key: digitalLink.gs1Key,
+      gs1Url: gs1Url,
+      productId: digitalLink.productId || null,
+      product: digitalLink.productId ? { id: digitalLink.productId, name: getProductName(digitalLink.productId) } : undefined,
+      status: digitalLink.status,
+      expiresAt: digitalLink.expiresAt,
+      password: digitalLink.password,
+      categoryId: digitalLink.categoryId,
+      category: digitalLink.category,
+      clicks: digitalLink.clicks,
+      createdAt: digitalLink.createdAt,
+      updatedAt: digitalLink.updatedAt
+    };
   };
 
   return (
@@ -517,7 +672,7 @@ const Digitallinks: React.FC = () => {
                         variant="link" 
                         className="p-0 me-2" 
                         title="QR Code" 
-                        onClick={() => handleShowQRCode(digitalLink.gs1Url || '', digitalLink.gs1Key)}
+                        onClick={() => handleShowQRCode(digitalLink.gs1Url || `${gs1KeyTypeToAI[digitalLink.gs1KeyType] || digitalLink.gs1KeyType}/${digitalLink.gs1Key}`, digitalLink.gs1Key)}
                       >
                         <FaQrcode />
                       </Button>
@@ -572,6 +727,8 @@ const Digitallinks: React.FC = () => {
         handleSaveDigitalLink={handleSaveDigitalLink}
         categories={categories}
         products={products}
+        pages={pages}
+        forms={forms}
       />
 
       <ViewDigitalLinkModal
@@ -593,6 +750,8 @@ const Digitallinks: React.FC = () => {
         handleUpdateDigitalLink={handleUpdateDigitalLink}
         categories={categories}
         products={products}
+        pages={pages}
+        forms={forms}
       />
 
       <DeleteDigitalLinkModal

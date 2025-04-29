@@ -4,42 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= survey.title %></title>
+  
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Google Fonts - Dynamically load the selected font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- Load all Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=PT+Sans:wght@400;700&family=Oswald:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&family=Ubuntu:wght@300;400;500;700&family=Playfair+Display:wght@400;500;600;700&family=Quicksand:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&family=Nunito+Sans:wght@300;400;600;700&family=Cabin:wght@400;500;600;700&family=Josefin+Sans:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Bitter:wght@300;400;500;600;700&family=Crimson+Text:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=Karla:wght@300;400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&family=Mulish:wght@300;400;500;600;700&family=Barlow:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+  
+  <script>
+    // Helper function to darken a color for hover states
+    function adjustColor(color, amount) {
+      return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+    }
+    
+    // Function to load a specific Google Font dynamically
+    function loadGoogleFont(fontFamily) {
+      // Extract the font name from the font family string
+      const fontName = fontFamily.split(',')[0].replace(/['"]/g, '');
+      console.log('Loading font:', fontName);
+      
+      // Create a link element for the Google Font
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@300;400;500;700&display=swap`;
+      document.head.appendChild(link);
+    }
+  </script>
   <style>
+    /* Set the font family on the html and body elements */
+    html, body {
+      font-family: <%= survey.appearance && survey.appearance.fontFamily ? survey.appearance.fontFamily : 'Arial, sans-serif' %> !important;
+    }
+    
     body {
       background-color: #f8f9fa;
       padding: 20px;
+      color: <%= survey.appearance && survey.appearance.textColor ? survey.appearance.textColor : '#212529' %>;
     }
+    
+    /* Apply font to all elements */
+    *, *::before, *::after {
+      font-family: inherit !important;
+    }
+    
+    /* Force font on all form elements */
+    input, textarea, select, button, option, 
+    .form-control, .form-select, .form-check-label, 
+    .btn, h1, h2, h3, h4, h5, h6, p, span, div, label, 
+    .form-text, .text-muted, .alert, .alert-heading, th, td {
+      font-family: <%= survey.appearance && survey.appearance.fontFamily ? survey.appearance.fontFamily : 'Arial, sans-serif' %> !important;
+    }
+    
+    /* Fix for placeholder text */
+    ::placeholder {
+      font-family: <%= survey.appearance && survey.appearance.fontFamily ? survey.appearance.fontFamily : 'Arial, sans-serif' %> !important;
+    }
+    
     .survey-container {
-      max-width: 800px;
+      max-width: <%= survey.appearance && survey.appearance.width ? survey.appearance.width : '800px' %>;
       margin: 0 auto;
-      background-color: #fff;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      background-color: <%= survey.appearance && survey.appearance.backgroundColor ? survey.appearance.backgroundColor : '#fff' %>;
+      <% if (survey.appearance && survey.appearance.backgroundImage) { %>
+      background-image: url('<%= survey.appearance.backgroundImage %>');
+      background-size: cover;
+      background-position: center;
+      <% } %>
+      border-radius: <%= survey.appearance && survey.appearance.borderRadius ? survey.appearance.borderRadius : '10px' %>;
+      box-shadow: <%= survey.appearance && survey.appearance.boxShadow ? survey.appearance.boxShadow : '0 0 20px rgba(0, 0, 0, 0.1)' %>;
       padding: 30px;
     }
+    
     .survey-header {
       margin-bottom: 30px;
-      text-align: center;
+      text-align: <%= survey.appearance && survey.appearance.headerAlignment ? survey.appearance.headerAlignment : 'center' %>;
     }
+    
     .survey-footer {
       margin-top: 30px;
-      text-align: center;
+      text-align: <%= survey.appearance && survey.appearance.headerAlignment ? survey.appearance.headerAlignment : 'center' %>;
     }
+    
     .thank-you-message {
       display: none;
       text-align: center;
       padding: 20px;
     }
+    
     .section-title {
       margin-top: 30px;
       margin-bottom: 15px;
       padding-bottom: 10px;
-      border-bottom: 1px solid #dee2e6;
+      border-bottom: 1px solid <%= survey.appearance && survey.appearance.sectionDividerColor ? survey.appearance.sectionDividerColor : '#dee2e6' %>;
+      color: <%= survey.appearance && survey.appearance.sectionTitleColor ? survey.appearance.sectionTitleColor : '#343a40' %>;
     }
+    
     .progress {
       height: 8px;
       margin-bottom: 20px;
+    }
+    
+    .progress-bar {
+      background-color: <%= survey.appearance && survey.appearance.primaryColor ? survey.appearance.primaryColor : '#007bff' %>;
+    }
+    
+    .survey-section {
+      margin-bottom: <%= survey.appearance && survey.appearance.questionSpacing ? survey.appearance.questionSpacing : '20px' %>;
+    }
+    
+    <% if (survey.appearance && survey.appearance.buttonStyle === 'rounded') { %>
+    .btn {
+      border-radius: 50px;
+    }
+    <% } else if (survey.appearance && survey.appearance.buttonStyle === 'square') { %>
+    .btn {
+      border-radius: 0;
+    }
+    <% } %>
+    
+    /* Debug info */
+    .debug-info {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    /* Font samples */
+    .font-samples {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+    }
+    
+    .font-sample {
+      margin-bottom: 10px;
+      padding: 5px;
+      border-bottom: 1px solid #dee2e6;
     }
   </style>
 </head>
@@ -73,12 +181,62 @@
           <p><%= survey.settings.thankYouMessage || 'Thank you for completing the survey!' %></p>
         </div>
       </div>
+      
+      <!-- Debug info to show the current font family -->
+      <div class="debug-info">
+        <p>Current font family: <%= survey.appearance && survey.appearance.fontFamily ? survey.appearance.fontFamily : 'Arial, sans-serif' %></p>
+      </div>
+      
+      <!-- Font samples -->
+      <div class="font-samples">
+        <h5>Font Samples</h5>
+        <div class="font-sample" style="font-family: 'Roboto', sans-serif;">Roboto: The quick brown fox jumps over the lazy dog</div>
+        <div class="font-sample" style="font-family: 'Open Sans', sans-serif;">Open Sans: The quick brown fox jumps over the lazy dog</div>
+        <div class="font-sample" style="font-family: 'Lato', sans-serif;">Lato: The quick brown fox jumps over the lazy dog</div>
+        <div class="font-sample" style="font-family: 'Montserrat', sans-serif;">Montserrat: The quick brown fox jumps over the lazy dog</div>
+        <div class="font-sample" style="font-family: 'Poppins', sans-serif;">Poppins: The quick brown fox jumps over the lazy dog</div>
+        <div class="font-sample" style="font-family: 'Pacifico', cursive;">Pacifico: The quick brown fox jumps over the lazy dog</div>
+      </div>
     </div>
   </div>
   
   <script>
     // Survey data from server
     const surveyData = <%- JSON.stringify(survey) %>;
+    
+    // Log the survey appearance settings for debugging
+    console.log('Survey appearance settings:', surveyData.appearance);
+    
+    // Load the selected font
+    if (surveyData.appearance && surveyData.appearance.fontFamily) {
+      loadGoogleFont(surveyData.appearance.fontFamily);
+    }
+    
+    // Track survey view if analytics is enabled
+    const analyticsEnabled = surveyData.settings && surveyData.settings.enableAnalytics !== false;
+    if (analyticsEnabled) {
+      // Send analytics data to the server
+      fetch(`/api/engage/surveys/${surveyData.id}/view`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          metadata: {
+            referrer: document.referrer,
+            screenSize: {
+              width: window.innerWidth,
+              height: window.innerHeight
+            },
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            timestamp: new Date().toISOString()
+          }
+        })
+      }).catch(err => {
+        console.error('Failed to send analytics data:', err);
+      });
+    }
     
     // Function to render survey sections and questions
     function renderSurvey() {
@@ -245,10 +403,66 @@
         
         container.appendChild(sectionDiv);
       });
+      
+      // Apply font family to all dynamically created elements
+      document.querySelectorAll('input, textarea, select, button, label, .form-text, .form-label, .form-check-label, th, td')
+        .forEach(el => {
+          el.style.fontFamily = surveyData.appearance && surveyData.appearance.fontFamily 
+            ? surveyData.appearance.fontFamily 
+            : 'Arial, sans-serif';
+        });
     }
     
     // Handle form submission success
-    document.getElementById('publicSurvey').addEventListener('submit', function() {
+    document.getElementById('publicSurvey').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Get form data
+      const formData = new FormData(document.getElementById('publicSurvey'));
+      const formDataObj = {};
+      
+      for (const [key, value] of formData.entries()) {
+        formDataObj[key] = value;
+      }
+      
+      // Send survey response to server
+      fetch('/api/engage/public/surveys/submit/<%= survey.slug %>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formDataObj)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Survey submission failed');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Track survey submission if analytics is enabled
+        if (analyticsEnabled) {
+          fetch(`/api/engage/surveys/${surveyData.id}/submit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              metadata: {
+                referrer: document.referrer,
+                screenSize: {
+                  width: window.innerWidth,
+                  height: window.innerHeight
+                },
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                timestamp: new Date().toISOString()
+              }
+            })
+          }).catch(err => {
+            console.error('Failed to send analytics data:', err);
+          });
+        }
       // Show thank you message after a short delay
       setTimeout(() => {
         document.getElementById('publicSurvey').style.display = 'none';
@@ -258,6 +472,20 @@
     
     // Initialize survey
     renderSurvey();
+    
+    // Apply font family to all elements after rendering
+    document.addEventListener('DOMContentLoaded', function() {
+      const fontFamily = surveyData.appearance && surveyData.appearance.fontFamily 
+        ? surveyData.appearance.fontFamily 
+        : 'Arial, sans-serif';
+      
+      // Apply to all elements
+      document.querySelectorAll('*').forEach(el => {
+        if (el.tagName !== 'STYLE' && el.tagName !== 'SCRIPT') {
+          el.style.fontFamily = fontFamily;
+        }
+      });
+    });
   </script>
 </body>
 </html>

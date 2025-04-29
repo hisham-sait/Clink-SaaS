@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User and Authentication
 model User {
   id                    String                @id @default(uuid())
   title                 String?
@@ -24,31 +23,30 @@ model User {
   invitedAt             DateTime?
   joinedAt              DateTime?
   status                UserStatus            @default(Pending)
-  planId                String? // Added: User's selected plan
-  billingCompanyId      String? // Added: Company selected for billing
+  planId                String?
+  billingCompanyId      String?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
-  roles                 UserRole[]
   createdCompanies      Company[]             @relation("CreatedBy")
-  userCompanies         UserCompany[]
-  createdRoles          Role[]                @relation("RoleCreatedBy")
-  createdInvoices       Invoice[]             @relation("InvoiceCreatedBy")
-  notifications         Notification[]
-  preferences           UserPreference?
-  securitySettings      SecuritySettings?
-  plan                  Plan?                 @relation(fields: [planId], references: [id]) // Added: Relation to Plan
-  billingCompany        Company?              @relation("UserBillingCompany", fields: [billingCompanyId], references: [id]) // Added: Relation to billing Company
-  productActivities     ProductActivity[]
-  linkActivities        LinkActivity[]
   digitalLinkActivities DigitalLinkActivity[]
-  qrCodeActivities      QRCodeActivity[]
+  createdInvoices       Invoice[]             @relation("InvoiceCreatedBy")
+  linkActivities        LinkActivity[]
+  notifications         Notification[]
+  productActivities     ProductActivity[]
+  createdRoles          Role[]                @relation("RoleCreatedBy")
+  securitySettings      SecuritySettings?
+  billingCompany        Company?              @relation("UserBillingCompany", fields: [billingCompanyId], references: [id])
+  plan                  Plan?                 @relation(fields: [planId], references: [id])
+  userCompanies         UserCompany[]
+  preferences           UserPreference?
+  roles                 UserRole[]
 }
 
 model SecuritySettings {
   id                  String    @id @default(uuid())
   userId              String    @unique
   twoFactorEnabled    Boolean   @default(false)
-  twoFactorMethod     String? // app, sms, email
+  twoFactorMethod     String?
   passwordLastChanged DateTime?
   lastSecurityAudit   DateTime?
   user                User      @relation(fields: [userId], references: [id])
@@ -64,11 +62,10 @@ model UserPreference {
   timezone          String  @default("UTC")
   emailDigest       Boolean @default(true)
   pushNotifications Boolean @default(true)
-  columnPreferences Json? // Added: For storing column visibility/order
+  columnPreferences Json?
   user              User    @relation(fields: [userId], references: [id])
 }
 
-// Role and Permission Management
 model Permission {
   id          String           @id @default(uuid())
   name        String
@@ -96,9 +93,9 @@ model Role {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   createdById String?
-  createdBy   User?            @relation("RoleCreatedBy", fields: [createdById], references: [id])
   companyId   String?
   company     Company?         @relation(fields: [companyId], references: [id])
+  createdBy   User?            @relation("RoleCreatedBy", fields: [createdById], references: [id])
   permissions RolePermission[]
   users       UserRole[]
 
@@ -141,28 +138,28 @@ model Contact {
   department     String?
   position       String
   type           String[]
-  source         String? // Lead source
+  source         String?
   status         Status                 @default(Active)
   lastContact    DateTime
   nextFollowUp   DateTime?
-  socialProfiles Json? // Store social media profiles
+  socialProfiles Json?
   mailingAddress String?
   otherAddress   String?
   timezone       String?                @default("UTC")
-  preferredTime  String? // Best time to contact
+  preferredTime  String?
   tags           String[]
   notes          String?
   companyId      String
-  estimatedValue Float? // Added: Estimated value of the contact
-  currency       String                 @default("EUR") // Added: Currency for value
+  estimatedValue Float?
+  currency       String                 @default("EUR")
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
+  assignedTo     String?
   company        Company                @relation(fields: [companyId], references: [id])
-  assignedTo     String? // User ID of assigned team member
-  activities     Activity[]             @relation("ContactActivities")
+  pipelineStages ContactPipelineStage[]
+  deals          Deal[]
   proposals      Proposal[]
-  pipelineStages ContactPipelineStage[] // Added: Relation to pipeline stages
-  deals          Deal[] // Added: Relation to deals
+  activities     Activity[]             @relation("ContactActivities")
 
   @@index([companyId])
   @@index([assignedTo])
@@ -193,42 +190,39 @@ model Company {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   createdById        String
-  createdBy          User               @relation("CreatedBy", fields: [createdById], references: [id])
-  userCompanies      UserCompany[]
-  roles              Role[]
   activities         Activity[]
-  primaryContact     PrimaryContact?
-  billingDetails     BillingDetails?
-  invoices           Invoice[]          @relation("CompanyInvoices")
-  payments           Payment[]          @relation("CompanyPayments")
-  billingForUsers    User[]             @relation("UserBillingCompany")
-  // CRM Relations
-  contacts           Contact[]
-  clients            Client[]
-  organisations      Organisation[]
-  pipelines          Pipeline[]
   automations        Automation[]
-  products           Product[]
-  proposals          Proposal[]
-  proposalTemplates  ProposalTemplate[]
-  sectionTemplates   SectionTemplate[]
-  deals              Deal[] // Added: Relation to deals
-  // PIM Relations
-  productCategories  ProductCategory[]
-  productFamilies    ProductFamily[]
-  productAttributes  ProductAttribute[]
-  productSections    ProductSection[]
-  // Links Relations
-  links              Link[]
+  billingDetails     BillingDetails?
+  clients            Client[]
+  createdBy          User               @relation("CreatedBy", fields: [createdById], references: [id])
+  contacts           Contact[]
+  datasets           Dataset[]
+  deals              Deal[]
   digitalLinks       DigitalLink[]
-  linkCategories     LinkCategory[]
-  qrCodes            QRCode[]
-  // Engage Relations
   forms              Form[]
   formCategories     FormCategory[]
+  invoices           Invoice[]          @relation("CompanyInvoices")
+  links              Link[]
+  linkCategories     LinkCategory[]
+  organisations      Organisation[]
+  pages              Page[]
+  pageCategories     PageCategory[]
+  payments           Payment[]          @relation("CompanyPayments")
+  pipelines          Pipeline[]
+  primaryContact     PrimaryContact?
+  products           Product[]
+  productAttributes  ProductAttribute[]
+  productCategories  ProductCategory[]
+  productFamilies    ProductFamily[]
+  productSections    ProductSection[]
+  proposals          Proposal[]
+  proposalTemplates  ProposalTemplate[]
+  roles              Role[]
+  sectionTemplates   SectionTemplate[]
   surveys            Survey[]
   surveyCategories   SurveyCategory[]
-  datasets           Dataset[]
+  billingForUsers    User[]             @relation("UserBillingCompany")
+  userCompanies      UserCompany[]
 }
 
 model UserCompany {
@@ -236,8 +230,8 @@ model UserCompany {
   companyId  String
   role       String
   assignedAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, companyId])
   @@index([userId])
@@ -265,13 +259,13 @@ model Pipeline {
   id          String                 @id @default(cuid())
   name        String
   description String?
-  stages      Stage[]
   companyId   String
-  company     Company                @relation(fields: [companyId], references: [id])
-  contacts    ContactPipelineStage[]
-  deals       Deal[]
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
+  contacts    ContactPipelineStage[]
+  deals       Deal[]
+  company     Company                @relation(fields: [companyId], references: [id])
+  stages      Stage[]
 
   @@index([companyId])
 }
@@ -280,14 +274,14 @@ model Stage {
   id          String                 @id @default(cuid())
   name        String
   order       Int
-  color       String? // For UI representation
+  color       String?
   description String?
   pipelineId  String
-  pipeline    Pipeline               @relation(fields: [pipelineId], references: [id])
-  contacts    ContactPipelineStage[]
-  deals       Deal[]
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
+  contacts    ContactPipelineStage[]
+  deals       Deal[]
+  pipeline    Pipeline               @relation(fields: [pipelineId], references: [id])
 
   @@index([pipelineId])
 }
@@ -297,26 +291,26 @@ model Deal {
   name              String
   amount            Float
   stageId           String
-  stage             Stage         @relation(fields: [stageId], references: [id])
   pipelineId        String
-  pipeline          Pipeline      @relation(fields: [pipelineId], references: [id])
-  probability       Int // Success probability percentage
+  probability       Int
   expectedCloseDate DateTime
   actualCloseDate   DateTime?
   status            DealStatus    @default(Open)
   priority          Priority      @default(Medium)
   contactId         String
-  contact           Contact       @relation(fields: [contactId], references: [id])
   companyId         String
-  company           Company       @relation(fields: [companyId], references: [id])
   organisationId    String?
-  organisation      Organisation? @relation(fields: [organisationId], references: [id])
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   notes             String?
-  activities        Activity[]    @relation("DealActivities")
-  automations       Automation[]
+  company           Company       @relation(fields: [companyId], references: [id])
+  contact           Contact       @relation(fields: [contactId], references: [id])
+  organisation      Organisation? @relation(fields: [organisationId], references: [id])
+  pipeline          Pipeline      @relation(fields: [pipelineId], references: [id])
+  stage             Stage         @relation(fields: [stageId], references: [id])
   proposals         Proposal[]
+  automations       Automation[]  @relation("AutomationToDeal")
+  activities        Activity[]    @relation("DealActivities")
 
   @@index([contactId])
   @@index([companyId])
@@ -330,38 +324,24 @@ model Automation {
   id          String   @id @default(cuid())
   name        String
   description String?
-  trigger     String // e.g., "stage_change", "deal_amount_change"
-  conditions  Json // Conditions that must be met
-  actions     Json // Actions to perform
+  trigger     String
+  conditions  Json
+  actions     Json
   isActive    Boolean  @default(true)
-  deals       Deal[]
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id])
+  deals       Deal[]   @relation("AutomationToDeal")
 
   @@index([companyId])
 }
 
-enum DealStatus {
-  Open
-  Won
-  Lost
-  OnHold
-}
-
-enum Priority {
-  High
-  Medium
-  Low
-}
-
-// CRM Models
 model Organisation {
   id              String     @id @default(cuid())
   name            String
   industry        String?
-  subIndustry     String? // More specific industry classification
+  subIndustry     String?
   website         String?
   email           String?
   phone           String?
@@ -370,24 +350,24 @@ model Organisation {
   shippingAddress String?
   type            String[]
   status          Status     @default(Active)
-  ownership       String? // Public, Private, Subsidiary, etc.
+  ownership       String?
   lastContact     DateTime?
   nextFollowUp    DateTime?
   annualRevenue   Float?
   employeeCount   Int?
-  rating          Int? // 1-5 star rating
+  rating          Int?
   parentCompany   String?
   subsidiaries    String[]
   timezone        String?    @default("UTC")
-  socialProfiles  Json? // Store social media profiles
+  socialProfiles  Json?
   tags            String[]
   notes           String?
   companyId       String
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+  assignedTo      String?
+  deals           Deal[]
   company         Company    @relation(fields: [companyId], references: [id])
-  assignedTo      String? // User ID of assigned team member
-  deals           Deal[] // Relation to deals
   activities      Activity[] @relation("OrganisationActivities")
 
   @@index([companyId])
@@ -396,34 +376,32 @@ model Organisation {
   @@index([industry])
 }
 
-// PIM Models
 model Product {
   id              String                  @id @default(cuid())
   name            String
-  description     String                  @db.Text
+  description     String
   type            ProductType
   sku             String?
   status          Status                  @default(Active)
   companyId       String
-  company         Company                 @relation(fields: [companyId], references: [id])
-  tiers           ProductTier[]
-  proposals       ProposalProduct[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
-  // PIM Relations
   categoryId      String?
-  category        ProductCategory?        @relation(fields: [categoryId], references: [id])
+  completeness    Int?
   familyId        String?
-  family          ProductFamily?          @relation(fields: [familyId], references: [id])
-  attributeValues ProductAttributeValue[]
-  variants        ProductVariant[]        @relation("ParentProduct")
+  isVariant       Boolean                 @default(false)
   parentId        String?
+  variantAxis     String[]
+  category        ProductCategory?        @relation(fields: [categoryId], references: [id])
+  company         Company                 @relation(fields: [companyId], references: [id])
+  family          ProductFamily?          @relation(fields: [familyId], references: [id])
   parent          Product?                @relation("ParentProduct", fields: [parentId], references: [id])
   children        Product[]               @relation("ParentProduct")
+  attributeValues ProductAttributeValue[]
   media           ProductMedia[]
-  completeness    Int? // Percentage of required attributes filled
-  isVariant       Boolean                 @default(false)
-  variantAxis     String[] // Attributes used for variants (e.g., ["size", "color"])
+  tiers           ProductTier[]
+  variants        ProductVariant[]        @relation("ParentProduct")
+  proposals       ProposalProduct[]
 
   @@index([companyId])
   @@index([type])
@@ -436,13 +414,13 @@ model Product {
 model ProductTier {
   id          String   @id @default(cuid())
   productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   type        PlanType
   price       Float
   features    Json[]
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
@@ -451,16 +429,16 @@ model ProductCategory {
   id          String            @id @default(cuid())
   name        String
   code        String
-  description String?           @db.Text
+  description String?
   parentId    String?
-  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    ProductCategory[] @relation("CategoryHierarchy")
   level       Int               @default(1)
   companyId   String
-  company     Company           @relation(fields: [companyId], references: [id])
-  products    Product[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  products    Product[]
+  company     Company           @relation(fields: [companyId], references: [id])
+  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    ProductCategory[] @relation("CategoryHierarchy")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -471,14 +449,14 @@ model ProductFamily {
   id                 String                   @id @default(cuid())
   name               String
   code               String
-  description        String?                  @db.Text
+  description        String?
   companyId          String
-  company            Company                  @relation(fields: [companyId], references: [id])
-  products           Product[]
-  attributeGroups    ProductAttributeGroup[]
-  requiredAttributes ProductFamilyAttribute[]
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
+  products           Product[]
+  attributeGroups    ProductAttributeGroup[]
+  company            Company                  @relation(fields: [companyId], references: [id])
+  requiredAttributes ProductFamilyAttribute[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -488,13 +466,13 @@ model ProductAttributeGroup {
   id          String                   @id @default(cuid())
   name        String
   code        String
-  description String?                  @db.Text
+  description String?
   order       Int                      @default(1)
   familyId    String
-  family      ProductFamily            @relation(fields: [familyId], references: [id])
-  attributes  ProductFamilyAttribute[]
   createdAt   DateTime                 @default(now())
   updatedAt   DateTime                 @updatedAt
+  family      ProductFamily            @relation(fields: [familyId], references: [id])
+  attributes  ProductFamilyAttribute[]
 
   @@unique([familyId, code])
   @@index([familyId])
@@ -505,22 +483,22 @@ model ProductAttribute {
   name             String
   code             String
   type             AttributeType
-  description      String?                  @db.Text
-  options          Json? // For select/multiselect attributes
-  unit             String? // For numeric attributes
+  description      String?
+  options          Json?
+  unit             String?
   isLocalizable    Boolean                  @default(false)
-  isScopable       Boolean                  @default(false) // For channel-specific values
+  isScopable       Boolean                  @default(false)
   isUnique         Boolean                  @default(false)
   isRequired       Boolean                  @default(false)
-  validationRules  Json? // Validation rules (min, max, regex, etc.)
+  validationRules  Json?
   companyId        String
-  company          Company                  @relation(fields: [companyId], references: [id])
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
   sectionId        String?
+  company          Company                  @relation(fields: [companyId], references: [id])
   section          ProductSection?          @relation(fields: [sectionId], references: [id])
   attributeValues  ProductAttributeValue[]
   familyAttributes ProductFamilyAttribute[]
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -531,13 +509,13 @@ model ProductAttribute {
 model ProductFamilyAttribute {
   id          String                 @id @default(cuid())
   familyId    String
-  family      ProductFamily          @relation(fields: [familyId], references: [id])
   attributeId String
-  attribute   ProductAttribute       @relation(fields: [attributeId], references: [id])
   groupId     String?
-  group       ProductAttributeGroup? @relation(fields: [groupId], references: [id])
   isRequired  Boolean                @default(false)
   order       Int                    @default(1)
+  attribute   ProductAttribute       @relation(fields: [attributeId], references: [id])
+  family      ProductFamily          @relation(fields: [familyId], references: [id])
+  group       ProductAttributeGroup? @relation(fields: [groupId], references: [id])
 
   @@unique([familyId, attributeId])
   @@index([familyId])
@@ -548,14 +526,14 @@ model ProductFamilyAttribute {
 model ProductAttributeValue {
   id          String           @id @default(cuid())
   productId   String
-  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
   attributeId String
-  attribute   ProductAttribute @relation(fields: [attributeId], references: [id])
-  value       Json // Store different types of values
-  locale      String? // For localizable attributes
-  scope       String? // For scopable attributes (e.g., channel)
+  value       Json
+  locale      String?
+  scope       String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  attribute   ProductAttribute @relation(fields: [attributeId], references: [id])
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, attributeId, locale, scope])
   @@index([productId])
@@ -565,12 +543,12 @@ model ProductAttributeValue {
 model ProductVariant {
   id            String   @id @default(cuid())
   productId     String
-  product       Product  @relation("ParentProduct", fields: [productId], references: [id], onDelete: Cascade)
   variantCode   String
   variantTitle  String
-  variantValues Json // Variant-specific attribute values
+  variantValues Json
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  product       Product  @relation("ParentProduct", fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, variantCode])
   @@index([productId])
@@ -579,22 +557,22 @@ model ProductVariant {
 model ProductMedia {
   id           String    @id @default(cuid())
   productId    String
-  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   type         MediaType
   url          String
   filename     String
   originalName String
   mimeType     String
   size         Int
-  width        Int? // For images
-  height       Int? // For images
+  width        Int?
+  height       Int?
   title        String?
-  description  String?   @db.Text
+  description  String?
   alt          String?
   order        Int       @default(1)
-  locale       String? // For localized media
+  locale       String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([type])
@@ -604,14 +582,14 @@ model ProductSection {
   id          String             @id @default(cuid())
   name        String
   code        String
-  description String?            @db.Text
-  displayIn   String             @default("both") // 'left', 'right', or 'both'
+  description String?
+  displayIn   String             @default("both")
   order       Int                @default(1)
   companyId   String
-  company     Company            @relation(fields: [companyId], references: [id])
-  attributes  ProductAttribute[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  attributes  ProductAttribute[]
+  company     Company            @relation(fields: [companyId], references: [id])
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -621,13 +599,13 @@ model ProductActivity {
   id        String   @id @default(cuid())
   companyId String
   userId    String?
-  action    String // created, updated, deleted, etc.
-  itemType  String // product, category, family, attribute, etc.
+  action    String
+  itemType  String
   itemId    String
   itemName  String
-  details   Json? // Additional details about the activity
+  details   Json?
   timestamp DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([companyId])
   @@index([userId])
@@ -638,20 +616,20 @@ model ProductActivity {
 model Proposal {
   id         String            @id @default(cuid())
   name       String
-  template   String? // Template ID or null for custom
-  content    Json // Stored sections and content
-  variables  Json? // Dynamic variables
+  template   String?
+  content    Json
+  variables  Json?
   status     Status            @default(Active)
   validUntil DateTime?
   dealId     String?
   contactId  String?
   companyId  String
-  products   ProposalProduct[]
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
   company    Company           @relation(fields: [companyId], references: [id])
-  deal       Deal?             @relation(fields: [dealId], references: [id])
   contact    Contact?          @relation(fields: [contactId], references: [id])
+  deal       Deal?             @relation(fields: [dealId], references: [id])
+  products   ProposalProduct[]
 
   @@index([companyId])
   @@index([dealId])
@@ -663,12 +641,12 @@ model ProposalProduct {
   proposalId String
   productId  String
   planType   PlanType
-  tierId     String // Reference to the selected tier
+  tierId     String
   quantity   Int      @default(1)
-  price      Float // Price at time of proposal
-  features   Json[] // Features at time of proposal
-  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  price      Float
+  features   Json[]
   product    Product  @relation(fields: [productId], references: [id])
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
 
   @@index([proposalId])
   @@index([productId])
@@ -681,9 +659,9 @@ model ProposalTemplate {
   content     Json
   isDefault   Boolean  @default(false)
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
 }
@@ -692,51 +670,16 @@ model SectionTemplate {
   id          String   @id @default(cuid())
   name        String
   description String
-  content     String   @db.Text
+  content     String
   type        String
   icon        String?
   isDefault   Boolean  @default(false)
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
-}
-
-enum ProductType {
-  PHYSICAL
-  DIGITAL
-  SERVICE
-}
-
-enum PlanType {
-  BASIC
-  STANDARD
-  PREMIUM
-}
-
-enum AttributeType {
-  TEXT
-  TEXTAREA
-  NUMBER
-  BOOLEAN
-  DATE
-  DATETIME
-  SELECT
-  MULTISELECT
-  PRICE
-  IMAGE
-  FILE
-  REFERENCE
-  METRIC
-}
-
-enum MediaType {
-  IMAGE
-  VIDEO
-  DOCUMENT
-  OTHER
 }
 
 model Client {
@@ -759,13 +702,12 @@ model Client {
   company       Company  @relation(fields: [companyId], references: [id])
 }
 
-// Billing and Payments
 model Plan {
   id           String     @id @default(uuid())
   name         String     @unique
   description  String
   price        Float
-  billingCycle String // Monthly, Yearly, etc.
+  billingCycle String
   features     String[]
   maxUsers     Int
   maxCompanies Int
@@ -774,7 +716,7 @@ model Plan {
   metadata     Json?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-  users        User[] // Added: Users on this plan
+  users        User[]
 
   @@index([status])
 }
@@ -789,7 +731,7 @@ model BillingDetails {
   postalCode     String
   taxId          String?
   currency       String          @default("USD")
-  paymentTerms   Int             @default(30) // Days
+  paymentTerms   Int             @default(30)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   company        Company         @relation(fields: [companyId], references: [id])
@@ -799,8 +741,8 @@ model BillingDetails {
 model PaymentMethod {
   id               String         @id @default(uuid())
   billingDetailsId String
-  type             String // card, bank, etc.
-  provider         String // stripe, paypal, etc.
+  type             String
+  provider         String
   lastFour         String?
   expiryDate       DateTime?
   isDefault        Boolean        @default(false)
@@ -825,8 +767,8 @@ model Invoice {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   createdById String
-  createdBy   User          @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
   company     Company       @relation("CompanyInvoices", fields: [companyId], references: [id])
+  createdBy   User          @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
   payments    Payment[]
 }
 
@@ -841,15 +783,14 @@ model Payment {
   metadata  Json?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-  invoice   Invoice       @relation(fields: [invoiceId], references: [id])
   company   Company       @relation("CompanyPayments", fields: [companyId], references: [id])
+  invoice   Invoice       @relation(fields: [invoiceId], references: [id])
 }
 
-// Notifications
 model Notification {
   id        String   @id @default(uuid())
   userId    String
-  type      String // email, push, etc.
+  type      String
   title     String
   message   String
   read      Boolean  @default(false)
@@ -892,44 +833,59 @@ model PrimaryContact {
   company   Company  @relation(fields: [companyId], references: [id])
 }
 
-// Link Management Models
 model Link {
-  id             String         @id @default(cuid())
-  originalUrl    String         @db.Text
-  shortCode      String         @unique
-  title          String?
-  description    String?
-  tags           String[]
-  clicks         Int            @default(0)
-  status         Status         @default(Active)
-  expiresAt      DateTime?
-  password       String?
-  customDomain   String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  companyId      String
-  company        Company        @relation(fields: [companyId], references: [id])
-  categoryId     String?
-  category       LinkCategory?  @relation(fields: [categoryId], references: [id])
-  linkClicks     LinkClick[]
-  linkActivities LinkActivity[]
+  id           String          @id @default(cuid())
+  originalUrl  String
+  shortCode    String          @unique
+  title        String?
+  description  String?
+  tags         String[]
+  clicks       Int             @default(0)
+  status       Status          @default(Active)
+  expiresAt    DateTime?
+  password     String?
+  customDomain String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  companyId    String
+  categoryId   String?
+  category     LinkCategory?   @relation(fields: [categoryId], references: [id])
+  company      Company         @relation(fields: [companyId], references: [id])
+  analytics    LinkAnalytics[]
 
   @@index([companyId])
-  @@index([status])
   @@index([categoryId])
+  @@index([status])
 }
 
-model LinkClick {
+model LinkCategory {
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  color        String?
+  companyId    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  digitalLinks DigitalLink[]
+  links        Link[]
+  company      Company       @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+}
+
+model LinkAnalytics {
   id        String   @id @default(cuid())
   linkId    String
-  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
-  ipAddress String?
+  ip        String?
   userAgent String?
-  referrer  String?
-  location  String?
+  referer   String?
+  country   String?
+  city      String?
   device    String?
   browser   String?
+  os        String?
   timestamp DateTime @default(now())
+  link      Link     @relation(fields: [linkId], references: [id])
 
   @@index([linkId])
   @@index([timestamp])
@@ -937,50 +893,256 @@ model LinkClick {
 
 model LinkActivity {
   id        String   @id @default(cuid())
-  linkId    String
-  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
-  action    String // created, updated, deleted, etc.
+  action    String
   details   Json?
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   timestamp DateTime @default(now())
+  companyId String   @default("")
+  itemId    String   @default("")
+  itemName  String   @default("")
+  itemType  String   @default("")
+  user      User?    @relation(fields: [userId], references: [id])
 
-  @@index([linkId])
+  @@index([companyId])
   @@index([userId])
+  @@index([itemType, itemId])
   @@index([timestamp])
 }
 
-model LinkCategory {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  color       String?
-  companyId   String
-  company     Company       @relation(fields: [companyId], references: [id])
-  links       Link[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  DigitalLink DigitalLink[]
-  qrCodes     QRCode[]
+model DigitalLink {
+  id                String                @id @default(cuid())
+  title             String?
+  description       String?
+  tags              String[]
+  status            Status                @default(Active)
+  expiresAt         DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  companyId         String
+  categoryId        String?
+  password          String?
+  url               String                @default("https://example.com")
+  gs1Key            String?
+  gs1KeyType        String?
+  gs1Url            String?               @unique
+  redirectType      String?
+  customUrl         String?
+  productId         String?
+  category          LinkCategory?         @relation(fields: [categoryId], references: [id])
+  company           Company               @relation(fields: [companyId], references: [id])
+  activities        DigitalLinkActivity[]
+  digitalLinkEvents DigitalLinkEvent[]
 
-  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model DigitalLinkEvent {
+  id            String      @id @default(cuid())
+  digitalLinkId String
+  eventType     String
+  data          Json?
+  timestamp     DateTime    @default(now())
+  digitalLink   DigitalLink @relation(fields: [digitalLinkId], references: [id])
+
+  @@index([digitalLinkId])
+  @@index([eventType])
+  @@index([timestamp])
+}
+
+model DigitalLinkActivity {
+  id        String      @id @default(cuid())
+  action    String
+  details   Json?
+  userId    String?
+  timestamp DateTime    @default(now())
+  companyId String      @default("")
+  itemId    String      @default("")
+  itemName  String      @default("")
+  linkId    String      @default("")
+  link      DigitalLink @relation(fields: [linkId], references: [id])
+  user      User?       @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([linkId])
+  @@index([timestamp])
+}
+
+
+model Form {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  slug        String           @unique
+  settings    Json
+  status      Status           @default(Active)
+  categoryId  String?
+  companyId   String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  appearance  Json?
+  sections    Json             @default("[]")
+  elements    Json             @default("[]")
+  category    FormCategory?    @relation(fields: [categoryId], references: [id])
+  company     Company          @relation(fields: [companyId], references: [id])
+  submissions FormSubmission[]
+  views       FormView[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model FormCategory {
+  id          String   @id @default(cuid())
+  name        String
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  color       String?
+  description String?
+  forms       Form[]
+  company     Company  @relation(fields: [companyId], references: [id])
+
   @@index([companyId])
 }
 
-// Data Management Models
+model FormSubmission {
+  id             String   @id @default(cuid())
+  formId         String
+  data           Json
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  ipAddress      String?
+  updatedAt      DateTime @default(now()) @updatedAt
+  userAgent      String?
+  visitorId      String?
+  device         String?
+  browser        String?
+  location       String?
+  referrer       String?
+  completionTime Int?
+  status         String?  @default("completed")
+  form           Form     @relation(fields: [formId], references: [id])
+
+  @@index([formId])
+  @@index([createdAt])
+}
+
+model FormView {
+  id         String   @id @default(cuid())
+  formId     String
+  visitorId  String?
+  device     String?
+  browser    String?
+  location   String?
+  referrer   String?
+  timeOnPage Int?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  form       Form     @relation(fields: [formId], references: [id])
+
+  @@index([formId])
+  @@index([createdAt])
+}
+
+model Survey {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  slug        String           @unique
+  sections    Json
+  settings    Json
+  status      Status           @default(Active)
+  categoryId  String?
+  companyId   String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  appearance  Json?
+  category    SurveyCategory?  @relation(fields: [categoryId], references: [id])
+  company     Company          @relation(fields: [companyId], references: [id])
+  responses   SurveyResponse[]
+  views       SurveyView[]
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model SurveyCategory {
+  id          String   @id @default(cuid())
+  name        String
+  companyId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  color       String?
+  description String?
+  surveys     Survey[]
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+}
+
+model SurveyResponse {
+  id             String   @id @default(cuid())
+  surveyId       String
+  data           Json
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  ipAddress      String?
+  updatedAt      DateTime @default(now()) @updatedAt
+  userAgent      String?
+  visitorId      String?
+  device         String?
+  browser        String?
+  location       String?
+  referrer       String?
+  completionTime Int?
+  status         String?  @default("completed")
+  survey         Survey   @relation(fields: [surveyId], references: [id])
+
+  @@index([surveyId])
+  @@index([createdAt])
+}
+
+model SurveyView {
+  id         String   @id @default(cuid())
+  surveyId   String
+  visitorId  String?
+  device     String?
+  browser    String?
+  location   String?
+  referrer   String?
+  timeOnPage Int?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  survey     Survey   @relation(fields: [surveyId], references: [id])
+
+  @@index([surveyId])
+  @@index([createdAt])
+}
+
 model Dataset {
   id            String       @id @default(cuid())
   name          String
   description   String?
-  type          String       // "form", "survey", "upload", "webhook"
-  sourceId      String?      // formId or surveyId if applicable
-  sourceName    String?      // Name of the source form/survey
-  webhookId     String?      @unique // Unique ID for webhook access
-  webhookSecret String?      // Secret for webhook authentication
+  type          String
   companyId     String
-  company       Company      @relation(fields: [companyId], references: [id])
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  data          Json         @default("{}")
+  schema        Json?
+  webhookId     String?      @unique
+  webhookSecret String?
+  sourceId      String?
+  sourceName    String?
+  company       Company      @relation(fields: [companyId], references: [id])
   records       DataRecord[]
 
   @@index([companyId])
@@ -991,278 +1153,128 @@ model Dataset {
 model DataRecord {
   id        String   @id @default(cuid())
   datasetId String
-  dataset   Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
-  data      Json     // The actual data
-  metadata  Json?    // Additional metadata
+  data      Json
+  metadata  Json?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dataset   Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 
   @@index([datasetId])
   @@index([createdAt])
 }
 
-// GS1 Digital Link Model
-model DigitalLink {
-  id                    String                @id @default(cuid())
-  gs1Key                String // GS1 key (GTIN, GLN, etc.)
-  gs1KeyType            String // Type of GS1 key (GTIN-12, GTIN-13, etc.)
-  gs1Url                String                @unique // The formatted GS1 Digital Link URL
-  redirectType          String // "standard" or "custom"
-  customUrl             String?               @db.Text // Custom URL if redirectType is "custom"
-  productId             String? // Reference to product in PIM if redirectType is "standard"
-  title                 String?
-  description           String?
-  tags                  String[]
-  clicks                Int                   @default(0)
-  status                Status                @default(Active)
-  expiresAt             DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  companyId             String
-  company               Company               @relation(fields: [companyId], references: [id])
-  categoryId            String?
-  category              LinkCategory?         @relation(fields: [categoryId], references: [id])
-  digitalLinkClicks     DigitalLinkClick[]
-  digitalLinkActivities DigitalLinkActivity[]
-
-  @@index([companyId])
-  @@index([gs1Key])
-  @@index([productId])
-  @@index([status])
-  @@index([categoryId])
-}
-
-// Click tracking for Digital Links
-model DigitalLinkClick {
-  id            String      @id @default(cuid())
-  digitalLinkId String
-  digitalLink   DigitalLink @relation(fields: [digitalLinkId], references: [id], onDelete: Cascade)
-  ipAddress     String?
-  userAgent     String?
-  referrer      String?
-  location      String?
-  device        String?
-  browser       String?
-  timestamp     DateTime    @default(now())
-
-  @@index([digitalLinkId])
-  @@index([timestamp])
-}
-
-model DigitalLinkActivity {
-  id            String      @id @default(cuid())
-  digitalLinkId String
-  digitalLink   DigitalLink @relation(fields: [digitalLinkId], references: [id], onDelete: Cascade)
-  action        String // created, updated, deleted, etc.
-  details       Json?
-  userId        String?
-  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  timestamp     DateTime    @default(now())
-
-  @@index([digitalLinkId])
-  @@index([userId])
-  @@index([timestamp])
-}
-
-// QR Code Models
-model QRCode {
-  id                String           @id @default(cuid())
-  title             String
-  content           String           @db.Text
-  contentType       String           // url, text, vcard, email, sms, wifi
-  config            Json             // Stores all customization options
-  status            Status           @default(Active)
-  expiresAt         DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  companyId         String
-  company           Company          @relation(fields: [companyId], references: [id])
-  categoryId        String?
-  category          LinkCategory?    @relation(fields: [categoryId], references: [id])
-  clicks            Int              @default(0)
-  qrCodeClicks      QRCodeClick[]
-  qrCodeActivities  QRCodeActivity[]
-
-  @@index([companyId])
-  @@index([status])
-  @@index([categoryId])
-}
-
-model QRCodeClick {
-  id            String   @id @default(cuid())
-  qrCodeId      String
-  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
-  ipAddress     String?
-  userAgent     String?
-  referrer      String?
-  location      String?
-  device        String?
-  browser       String?
-  timestamp     DateTime @default(now())
-
-  @@index([qrCodeId])
-  @@index([timestamp])
-}
-
-model QRCodeActivity {
-  id            String   @id @default(cuid())
-  qrCodeId      String
-  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
-  action        String   // created, updated, deleted, etc.
-  details       Json?
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  timestamp     DateTime @default(now())
-
-  @@index([qrCodeId])
-  @@index([userId])
-  @@index([timestamp])
-}
-
-// Form and Survey Models
-model Form {
-  id             String          @id @default(cuid())
-  title          String
-  description    String?
-  slug           String          @unique // For public URL
-  elements       Json            // Stores form elements configuration
-  settings       Json            // Stores form settings
-  status         Status          @default(Active)
-  submissions    Int             @default(0)
-  categoryId     String?
-  category       FormCategory?   @relation(fields: [categoryId], references: [id])
-  companyId      String
-  company        Company         @relation(fields: [companyId], references: [id])
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  formSubmissions FormSubmission[]
+model Page {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  slug        String        @unique
+  status      Status        @default(Active)
+  sections    Json
+  settings    Json
+  appearance  Json?
+  companyId   String
+  categoryId  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  category    PageCategory? @relation(fields: [categoryId], references: [id])
+  company     Company       @relation(fields: [companyId], references: [id])
+  views       PageView[]
 
   @@index([companyId])
   @@index([categoryId])
   @@index([status])
-  @@index([slug])
 }
 
-model FormCategory {
+model PageCategory {
   id          String   @id @default(cuid())
   name        String
+  description String?
+  color       String?
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  forms       Form[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  pages       Page[]
+  company     Company  @relation(fields: [companyId], references: [id])
 
-  @@unique([companyId, name])
   @@index([companyId])
 }
 
-model FormSubmission {
-  id        String   @id @default(cuid())
-  formId    String
-  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
-  data      Json     // Submitted form data
-  metadata  Json?    // Additional metadata (browser, IP, etc.)
-  createdAt DateTime @default(now())
+model PageView {
+  id         String   @id @default(cuid())
+  pageId     String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  visitorId  String?
+  device     String?
+  browser    String?
+  location   String?
+  referrer   String?
+  timeOnPage Int?
+  page       Page     @relation(fields: [pageId], references: [id])
 
-  @@index([formId])
+  @@index([pageId])
   @@index([createdAt])
 }
 
-model Survey {
-  id             String           @id @default(cuid())
-  title          String
-  description    String?
-  slug           String           @unique // For public URL
-  sections       Json             // Stores survey sections and questions
-  settings       Json             // Stores survey settings
-  status         Status           @default(Active)
-  responses      Int              @default(0)
-  categoryId     String?
-  category       SurveyCategory?  @relation(fields: [categoryId], references: [id])
-  companyId      String
-  company        Company          @relation(fields: [companyId], references: [id])
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  surveyResponses SurveyResponse[]
-
-  @@index([companyId])
-  @@index([categoryId])
-  @@index([status])
-  @@index([slug])
+enum DealStatus {
+  Open
+  Won
+  Lost
+  OnHold
 }
 
-model SurveyCategory {
-  id          String   @id @default(cuid())
-  name        String
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  surveys     Survey[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([companyId, name])
-  @@index([companyId])
+enum Priority {
+  High
+  Medium
+  Low
 }
 
-model SurveyResponse {
-  id        String   @id @default(cuid())
-  surveyId  String
-  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  data      Json     // Submitted survey responses
-  metadata  Json?    // Additional metadata (browser, IP, etc.)
-  createdAt DateTime @default(now())
-
-  @@index([surveyId])
-  @@index([createdAt])
+enum ProductType {
+  PHYSICAL
+  DIGITAL
+  SERVICE
 }
 
-// Enums
+enum PlanType {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum AttributeType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  BOOLEAN
+  DATE
+  DATETIME
+  SELECT
+  MULTISELECT
+  PRICE
+  IMAGE
+  FILE
+  REFERENCE
+  METRIC
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  OTHER
+}
+
+
 enum Status {
   Active
   Inactive
   Archived
-}
-
-enum PaymentStatus {
   Pending
-  Paid
-  Partially_Paid
-  Failed
-}
-
-enum ActivityType {
-  appointment
-  resignation
-  update
-  removal
-  added
-  updated
-  removed
-  status_changed
-}
-
-enum RoleScope {
-  Global
-  Company
-  Team
-}
-
-enum RoleStatus {
-  Active
-  Inactive
-  Deprecated
-}
-
-enum PlanStatus {
-  Active
-  Inactive
-  Deprecated
-}
-
-enum AccessLevel {
-  None
-  Read
-  Write
-  Admin
+  Draft
+  Published
 }
 
 enum UserStatus {
@@ -1272,10 +1284,49 @@ enum UserStatus {
   Suspended
 }
 
+enum RoleStatus {
+  Active
+  Inactive
+}
+
+enum RoleScope {
+  System
+  Company
+  Team
+}
+
+enum AccessLevel {
+  Read
+  Write
+  Admin
+}
+
+enum ActivityType {
+  Call
+  Email
+  Meeting
+  Task
+  Note
+  Other
+}
+
 enum InvoiceStatus {
   Draft
-  Pending
+  Sent
   Paid
   Overdue
   Cancelled
+}
+
+enum PaymentStatus {
+  Pending
+  Completed
+  Failed
+  Refunded
+}
+
+enum PlanStatus {
+  Active
+  Inactive
+  Deprecated
 }

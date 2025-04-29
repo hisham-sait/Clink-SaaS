@@ -19,8 +19,9 @@ export const getShortLinks = async (params?: LinkQueryParams): Promise<ShortLink
     
     const response = await api.get(`/links/shortlinks?${queryParams.toString()}`);
     
-    // Transform the response to match the expected format
+    // Standardized response handling
     if (response.data && response.data.data) {
+      // Backend returns { data: [...], total: number, page: number, ... }
       return {
         shortLinks: response.data.data,
         total: response.data.total || response.data.data.length,
@@ -28,15 +29,26 @@ export const getShortLinks = async (params?: LinkQueryParams): Promise<ShortLink
         limit: response.data.limit || 10,
         totalPages: response.data.totalPages || Math.ceil((response.data.total || response.data.data.length) / (response.data.limit || 10))
       };
+    } else if (response.data && Array.isArray(response.data)) {
+      // Backend returns array directly
+      return {
+        shortLinks: response.data,
+        total: response.data.length,
+        page: 1,
+        limit: response.data.length,
+        totalPages: 1
+      };
+    } else {
+      // Fallback for unexpected response format
+      console.warn('Unexpected response format from short links API:', response.data);
+      return {
+        shortLinks: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0
+      };
     }
-    
-    return {
-      shortLinks: [],
-      total: 0,
-      page: 1,
-      limit: 10,
-      totalPages: 0
-    };
   } catch (error) {
     console.error('Error fetching short links:', error);
     throw error;
@@ -49,11 +61,20 @@ export const getShortLinks = async (params?: LinkQueryParams): Promise<ShortLink
 export const getShortLink = async (id: string): Promise<ShortLink> => {
   try {
     const response = await api.get(`/links/shortlinks/${id}`);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const shortLink = response.data.data || response.data;
+    return shortLink;
   } catch (error) {
     console.error(`Error fetching short link with ID ${id}:`, error);
     throw error;
   }
+};
+
+/**
+ * Get a single short link by ID (alias for getShortLink)
+ */
+export const getShortLinkById = async (id: string): Promise<ShortLink> => {
+  return getShortLink(id);
 };
 
 /**
@@ -73,7 +94,9 @@ export const createShortLink = async (shortLink: Omit<ShortLink, 'id' | 'created
     };
     
     const response = await api.post('/links/shortlinks', payload);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const createdLink = response.data.data || response.data;
+    return createdLink;
   } catch (error) {
     console.error('Error creating short link:', error);
     throw error;
@@ -86,7 +109,9 @@ export const createShortLink = async (shortLink: Omit<ShortLink, 'id' | 'created
 export const updateShortLink = async (id: string, shortLink: Partial<ShortLink>): Promise<ShortLink> => {
   try {
     const response = await api.put(`/links/shortlinks/${id}`, shortLink);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const updatedLink = response.data.data || response.data;
+    return updatedLink;
   } catch (error) {
     console.error(`Error updating short link with ID ${id}:`, error);
     throw error;
@@ -145,7 +170,9 @@ export const bulkCreateShortLinks = async (
 ): Promise<ShortLink[]> => {
   try {
     const response = await api.post('/links/shortlinks/bulk-create', { shortLinks });
-    return response.data.data || response.data;
+    // Standardized response handling
+    const links = response.data.data || response.data;
+    return links;
   } catch (error) {
     console.error('Error bulk creating short links:', error);
     throw error;
@@ -230,32 +257,13 @@ export const importShortLinks = async (file: File): Promise<any> => {
 export const getShortLinkByCode = async (shortCode: string): Promise<ShortLink> => {
   try {
     const response = await api.get(`/links/resolver/s/${shortCode}/info`);
-    return response.data.data || response.data;
+    // Standardized response handling
+    const link = response.data.data || response.data;
+    return link;
   } catch (error) {
     console.error(`Error fetching short link with code ${shortCode}:`, error);
     throw error;
   }
 };
 
-/**
- * Helper function to build a short link URL
- */
-export const buildShortLinkUrl = (shortCode: string): string => {
-  const baseUrl = window.location.origin;
-  return `${baseUrl}/s/${shortCode}`;
-};
-
-/**
- * Helper function to generate a QR code URL for a short link
- */
-export const generateQRCodeUrl = (url: string, options: any = {}): string => {
-  const {
-    size = 200,
-    color = '000000',
-    backgroundColor = 'FFFFFF',
-    margin = 1,
-    errorCorrectionLevel = 'M'
-  } = options;
-
-  return `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=${size}x${size}&color=${color}&bgcolor=${backgroundColor}&margin=${margin}&ecc=${errorCorrectionLevel}`;
-};
+// Helper functions moved to index.ts to avoid duplication
