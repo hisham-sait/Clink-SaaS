@@ -1,0 +1,170 @@
+timeout: '1800s'  # 30 minutes
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'  # Faster builds
+  dynamicSubstitutions: true
+  env:
+    - 'NODE_ENV=production'
+
+steps:
+  # Pull cached images if available
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest || true
+        docker pull europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest || true
+
+  # Build frontend with caching
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest'
+      - '--cache-from'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest'
+      - '--build-arg'
+      - 'BUILDKIT_INLINE_CACHE=1'
+      - './app'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
+  # Build backend with caching
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest'
+      - '--cache-from'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest'
+      - '--build-arg'
+      - 'BUILDKIT_INLINE_CACHE=1'
+      - './api'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
+  # Push frontend images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest']
+
+  # Push backend images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest']
+
+  # Get secrets
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "$$DB_PASSWORD" > db_password.txt
+        echo "$$JWT_SECRET" > jwt_secret.txt
+        echo "$$GOOGLE_CLIENT_ID" > google_client_id.txt
+        echo "$$GOOGLE_CLIENT_SECRET" > google_client_secret.txt
+        echo "$$GOOGLE_REDIRECT_URI" > google_redirect_uri.txt
+    secretEnv: ['DB_PASSWORD', 'JWT_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI']
+
+  # Deploy backend to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        DB_PASS=$(cat db_password.txt)
+        JWT_SECRET=$(cat jwt_secret.txt)
+        GOOGLE_CLIENT_ID=$(cat google_client_id.txt)
+        GOOGLE_CLIENT_SECRET=$(cat google_client_secret.txt)
+        GOOGLE_REDIRECT_URI=$(cat google_redirect_uri.txt)
+        gcloud run deploy backend \
+          --image europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA \
+          --region europe-west1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --memory 512Mi \
+          --cpu 1 \
+          --min-instances 1 \
+          --max-instances 10 \
+          --set-env-vars NODE_ENV=production,PORT=8080 \
+          --set-secrets DB_PASSWORD=DB_PASSWORD:latest,JWT_SECRET=JWT_SECRET:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,GOOGLE_REDIRECT_URI=GOOGLE_REDIRECT_URI:latest \
+          --set-env-vars DATABASE_URL="postgresql://postgres:$$DB_PASS@/clink?host=/cloudsql/$PROJECT_ID:europe-west1:clink-db" \
+          --set-cloudsql-instances $PROJECT_ID:europe-west1:clink-db \
+          --vpc-connector clink-connector
+
+  # Get the URL of the backend service
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "VITE_API_URL=https://$(gcloud run services describe backend --region europe-west1 --format='value(status.url)')" > app.env
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend'
+      - '--image'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '1'
+      - '--max-instances'
+      - '5'
+      - '--set-env-vars-file'
+      - 'app.env'
+
+  # Send build status notification
+  - name: 'gcr.io/cloud-builders/curl'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [ "$STATUS" = "SUCCESS" ]; then
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"text":"🚀 Deployment successful!\nCommit: '"$COMMIT_SHA"'\nBranch: '"$BRANCH_NAME"'\nAuthor: '"$COMMIT_AUTHOR"'"}' \
+            $$WEBHOOK_URL
+        else
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"text":"❌ Deployment failed!\nCommit: '"$COMMIT_SHA"'\nBranch: '"$BRANCH_NAME"'\nAuthor: '"$COMMIT_AUTHOR"'"}' \
+            $$WEBHOOK_URL
+        fi
+    secretEnv: ['WEBHOOK_URL']
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest'
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/DB_PASSWORD/versions/latest
+      env: 'DB_PASSWORD'
+    - versionName: projects/$PROJECT_ID/secrets/JWT_SECRET/versions/latest
+      env: 'JWT_SECRET'
+    - versionName: projects/$PROJECT_ID/secrets/GOOGLE_CLIENT_ID/versions/latest
+      env: 'GOOGLE_CLIENT_ID'
+    - versionName: projects/$PROJECT_ID/secrets/GOOGLE_CLIENT_SECRET/versions/latest
+      env: 'GOOGLE_CLIENT_SECRET'
+    - versionName: projects/$PROJECT_ID/secrets/GOOGLE_REDIRECT_URI/versions/latest
+      env: 'GOOGLE_REDIRECT_URI'
+    - versionName: projects/$PROJECT_ID/secrets/WEBHOOK_URL/versions/latest
+      env: 'WEBHOOK_URL'

@@ -1,0 +1,51 @@
+# Ignore git and version control
+.git
+.gitignore
+
+# Ignore development and local files
+**/node_modules
+**/.env
+**/.env.local
+**/.env.development
+**/npm-debug.log
+**/.DS_Store
+
+# Ignore test files
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# Ignore documentation
+**/*.md
+**/docs
+
+# Ignore build artifacts
+**/dist
+**/build
+**/.next
+**/.nuxt
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore Docker files not needed for build
+**/docker-compose*.yml
+**/Dockerfile.dev
+**/.dockerignore
+
+# Ignore CI/CD files
+.github/
+.gitlab/
+.circleci/
+
+# Ignore local development scripts
+**/*.sh
+**/scripts
+
+# Keep necessary files
+!app/Dockerfile
+!api/Dockerfile
+!cloudbuild.yaml
