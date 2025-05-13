@@ -1,4 +1,5 @@
 timeout: '1800s'  # 30 minutes
+logsBucket: 'gs://clink-saas-app-build-logs-${PROJECT_ID}'
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'N1_HIGHCPU_8'  # Faster builds
@@ -7,6 +8,14 @@ options:
     - 'NODE_ENV=production'
 
 steps:
+  # Create logs bucket if it doesn't exist
+  - name: 'gcr.io/cloud-builders/gsutil'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gsutil mb -l europe-west1 gs://clink-saas-app-build-logs-${PROJECT_ID} || true
+
   # Pull cached images if available
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
