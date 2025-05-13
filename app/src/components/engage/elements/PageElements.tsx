@@ -4,16 +4,15 @@ import { FaBoxOpen } from 'react-icons/fa';
 import './elements.css';
 
 // Import all element components
-import TextElement from './TextElement';
-import ImageElement from './ImageElement';
-import VideoElement from './VideoElement';
-import ButtonElement from './ButtonElement';
+import TextElement from './text/TextElement';
+import ImageElement from './image/ImageElement';
+import VideoElement from './video/VideoElement';
+import ButtonElement from './button/ButtonElement';
 import FormElement from './FormElement';
-import SurveyElement from './SurveyElement';
 import CarouselElement from './CarouselElement';
 import WysiwygElement from './WysiwygElement';
-import ProfileElement from './ProfileElement';
-import SocialElement from './SocialElement';
+import ProfileElement from './profile/ProfileElement';
+import SocialElement from './social/SocialElement';
 import InstagramElement from './InstagramElement';
 import FacebookElement from './FacebookElement';
 import YoutubeElement from './YoutubeElement';
@@ -58,11 +57,6 @@ const PageElements: React.FC<PageElementsProps> = ({ onAddElement }) => {
             {/* Form Element */}
             <Col xs={4}>
               <FormElement onAdd={onAddElement} size="tiny" />
-            </Col>
-            
-            {/* Survey Element */}
-            <Col xs={4}>
-              <SurveyElement onAdd={onAddElement} size="tiny" />
             </Col>
             
             {/* Carousel Element */}

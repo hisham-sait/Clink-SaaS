@@ -33,28 +33,9 @@ router.get('/:companyId', asyncHandler(async (req, res) => {
       })
     );
     
-    // Get survey categories
-    const surveyCategories = await prisma.surveyCategory.findMany({
-      where: { companyId },
-      orderBy: [
-        { name: 'asc' }
-      ]
-    });
-    
-    // Count surveys for each category
-    const surveyCategoriesWithCounts = await Promise.all(
-      surveyCategories.map(async (category) => {
-        const surveysCount = await prisma.survey.count({
-          where: { categoryId: category.id }
-        });
-        
-        return {
-          ...category,
-          surveysCount,
-          type: 'survey' // Add type to distinguish between categories
-        };
-      })
-    );
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    // Initialize empty arrays for survey categories
+    const surveyCategoriesWithCounts = [];
     
     // Get page categories (with error handling for if the model doesn't exist yet)
     let pageCategoriesWithCounts = [];
@@ -141,32 +122,9 @@ router.post('/:companyId', asyncHandler(async (req, res) => {
       category.type = 'form';
       
     } else if (type === 'survey') {
-      // Check if survey category with same name already exists
-      const existingCategory = await prisma.surveyCategory.findFirst({
-        where: {
-          companyId,
-          name: {
-            equals: name,
-            mode: 'insensitive'
-          }
-        }
-      });
-      
-      if (existingCategory) {
-        const { statusCode, body } = ErrorTypes.CONFLICT('A survey category with this name already exists');
-        return res.status(statusCode).json(body);
-      }
-      
-      // Create survey category
-      category = await prisma.surveyCategory.create({
-        data: {
-          name,
-          companyId
-        }
-      });
-      
-      // Add type for the response
-      category.type = 'survey';
+      // Survey categories have been removed in migration 20250429191510_remove_survey_models
+      const { statusCode, body } = ErrorTypes.BAD_REQUEST('Survey categories have been removed and cannot be created');
+      return res.status(statusCode).json(body);
     } else if (type === 'page') {
       try {
         // Check if page category with same name already exists
@@ -400,31 +358,10 @@ router.get('/forms/categories/:companyId/:id/forms', async (req, res) => {
 // Get all survey categories for a company
 router.get('/surveys/categories/:companyId', async (req, res) => {
   try {
-    const { companyId } = req.params;
-    
-    const categories = await prisma.surveyCategory.findMany({
-      where: { companyId },
-      orderBy: [
-        { name: 'asc' }
-      ]
-    });
-    
-    // Count surveys for each category
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (category) => {
-        const surveysCount = await prisma.survey.count({
-          where: { categoryId: category.id }
-        });
-        
-        return {
-          ...category,
-          surveysCount
-        };
-      })
-    );
-    
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    // Return empty categories
     res.json({
-      categories: categoriesWithCounts
+      categories: []
     });
   } catch (error) {
     console.error('Error fetching survey categories:', error);
@@ -435,25 +372,8 @@ router.get('/surveys/categories/:companyId', async (req, res) => {
 // Get a single survey category
 router.get('/surveys/categories/:companyId/:id', async (req, res) => {
   try {
-    const { companyId, id } = req.params;
-    
-    const category = await prisma.surveyCategory.findFirst({
-      where: { id, companyId }
-    });
-    
-    if (!category) {
-      return res.status(404).json({ error: 'Survey category not found' });
-    }
-    
-    // Get surveys count for this category
-    const surveysCount = await prisma.survey.count({
-      where: { categoryId: id }
-    });
-    
-    res.json({
-      ...category,
-      surveysCount
-    });
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    return res.status(404).json({ error: 'Survey categories have been removed' });
   } catch (error) {
     console.error('Error fetching survey category:', error);
     res.status(500).json({ error: 'Failed to fetch survey category' });
@@ -463,36 +383,8 @@ router.get('/surveys/categories/:companyId/:id', async (req, res) => {
 // Create a new survey category
 router.post('/surveys/categories/:companyId', async (req, res) => {
   try {
-    const { companyId } = req.params;
-    const { name } = req.body;
-    
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ error: 'Category name is required' });
-    }
-    
-    // Check if category with same name already exists
-    const existingCategory = await prisma.surveyCategory.findFirst({
-      where: {
-        companyId,
-        name: {
-          equals: name,
-          mode: 'insensitive'
-        }
-      }
-    });
-    
-    if (existingCategory) {
-      return res.status(400).json({ error: 'A category with this name already exists' });
-    }
-    
-    const category = await prisma.surveyCategory.create({
-      data: {
-        name,
-        companyId
-      }
-    });
-    
-    res.status(201).json(category);
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    return res.status(400).json({ error: 'Survey categories have been removed and cannot be created' });
   } catch (error) {
     console.error('Error creating survey category:', error);
     res.status(500).json({ error: 'Failed to create survey category', details: error.message });
@@ -502,45 +394,8 @@ router.post('/surveys/categories/:companyId', async (req, res) => {
 // Update a survey category
 router.put('/surveys/categories/:companyId/:id', async (req, res) => {
   try {
-    const { companyId, id } = req.params;
-    const { name } = req.body;
-    
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ error: 'Category name is required' });
-    }
-    
-    // Check if category exists
-    const existingCategory = await prisma.surveyCategory.findFirst({
-      where: { id, companyId }
-    });
-    
-    if (!existingCategory) {
-      return res.status(404).json({ error: 'Survey category not found' });
-    }
-    
-    // Check if another category with the same name exists
-    const duplicateName = await prisma.surveyCategory.findFirst({
-      where: {
-        companyId,
-        name: {
-          equals: name,
-          mode: 'insensitive'
-        },
-        id: { not: id }
-      }
-    });
-    
-    if (duplicateName) {
-      return res.status(400).json({ error: 'A category with this name already exists' });
-    }
-    
-    // Update the category
-    const updatedCategory = await prisma.surveyCategory.update({
-      where: { id },
-      data: { name }
-    });
-    
-    res.json(updatedCategory);
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    return res.status(404).json({ error: 'Survey categories have been removed and cannot be updated' });
   } catch (error) {
     console.error('Error updating survey category:', error);
     res.status(500).json({ error: 'Failed to update survey category', details: error.message });
@@ -550,35 +405,8 @@ router.put('/surveys/categories/:companyId/:id', async (req, res) => {
 // Delete a survey category
 router.delete('/surveys/categories/:companyId/:id', async (req, res) => {
   try {
-    const { companyId, id } = req.params;
-    
-    // Check if category exists
-    const category = await prisma.surveyCategory.findFirst({
-      where: { id, companyId }
-    });
-    
-    if (!category) {
-      return res.status(404).json({ error: 'Survey category not found' });
-    }
-    
-    // Check if category has surveys
-    const surveysCount = await prisma.survey.count({
-      where: { categoryId: id }
-    });
-    
-    if (surveysCount > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete category with associated surveys',
-        surveysCount
-      });
-    }
-    
-    // Delete the category
-    await prisma.surveyCategory.delete({
-      where: { id }
-    });
-    
-    res.status(204).send();
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    return res.status(404).json({ error: 'Survey categories have been removed and cannot be deleted' });
   } catch (error) {
     console.error('Error deleting survey category:', error);
     res.status(500).json({ error: 'Failed to delete survey category' });
@@ -588,29 +416,8 @@ router.delete('/surveys/categories/:companyId/:id', async (req, res) => {
 // Get surveys in a category
 router.get('/surveys/categories/:companyId/:id/surveys', async (req, res) => {
   try {
-    const { companyId, id } = req.params;
-    
-    // Check if category exists
-    const category = await prisma.surveyCategory.findFirst({
-      where: { id, companyId }
-    });
-    
-    if (!category) {
-      return res.status(404).json({ error: 'Survey category not found' });
-    }
-    
-    // Get surveys in this category
-    const surveys = await prisma.survey.findMany({
-      where: { 
-        categoryId: id,
-        companyId
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      }
-    });
-    
-    res.json(surveys);
+    // Survey categories have been removed in migration 20250429191510_remove_survey_models
+    return res.status(404).json({ error: 'Survey categories have been removed' });
   } catch (error) {
     console.error('Error fetching surveys for category:', error);
     res.status(500).json({ error: 'Failed to fetch surveys for category' });

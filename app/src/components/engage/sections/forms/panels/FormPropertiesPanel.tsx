@@ -220,7 +220,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   id="enableAnalytics"
                   label="Enable analytics tracking"
                   name="enableAnalytics"
-                  checked={formSettings.enableAnalytics !== false}
+                  checked={!!formSettings.enableAnalytics}
                   onChange={onSettingsChange}
                 />
                 <Form.Text className="text-muted">
@@ -234,7 +234,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   id="showResetButton"
                   label="Show reset button"
                   name="showResetButton"
-                  checked={formSettings.showResetButton}
+                  checked={!!formSettings.showResetButton}
                   onChange={onSettingsChange}
                 />
               </Form.Group>
@@ -245,7 +245,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   <Form.Control 
                     type="text"
                     name="resetButtonText"
-                    value={formSettings.resetButtonText}
+                    value={formSettings.resetButtonText || ''}
                     onChange={onSettingsChange}
                     placeholder="Reset"
                   />
@@ -258,7 +258,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   id="showSubmitButton"
                   label="Show submit button"
                   name="showSubmitButton"
-                  checked={formSettings.showSubmitButton}
+                  checked={!!formSettings.showSubmitButton}
                   onChange={onSettingsChange}
                 />
               </Form.Group>
@@ -269,7 +269,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   <Form.Control 
                     type="text"
                     name="submitButtonText"
-                    value={formSettings.submitButtonText}
+                    value={formSettings.submitButtonText || ''}
                     onChange={onSettingsChange}
                     placeholder="Submit"
                   />
@@ -282,7 +282,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   id="redirectAfterSubmit"
                   label="Redirect after submission"
                   name="redirectAfterSubmit"
-                  checked={formSettings.redirectAfterSubmit}
+                  checked={!!formSettings.redirectAfterSubmit}
                   onChange={onSettingsChange}
                 />
               </Form.Group>
@@ -293,7 +293,7 @@ const FormPropertiesPanel: React.FC<FormPropertiesPanelProps> = ({
                   <Form.Control 
                     type="text"
                     name="redirectUrl"
-                    value={formSettings.redirectUrl}
+                    value={formSettings.redirectUrl || ''}
                     onChange={onSettingsChange}
                     placeholder="https://example.com/thank-you"
                   />

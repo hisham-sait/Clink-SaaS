@@ -1,0 +1,30 @@
+# Authelia .gitignore
+
+# Environment variables
+.env
+
+# Redis data
+redis_data/
+
+# SQLite database
+config/db.sqlite3
+
+# Notification files
+config/notification.txt
+
+# Logs
+logs/
+*.log
+
+# SSL certificates
+*.crt
+*.key
+*.pem
+
+# Docker volumes
+volumes/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store

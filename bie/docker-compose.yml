@@ -1,0 +1,125 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: bie_redis
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:14
+    container_name: bie_db
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  superset:
+    image: apache/superset
+    container_name: bie_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8089:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=biengine_secret_key
+      - SUPERSET_LOAD_EXAMPLES=no
+      - JWT_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+      - ASYNC_QUERIES_JWT_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+      - SUPERSET_JWT_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+      - JWT_TOKEN_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+    volumes:
+      - ./config:/app/pythonpath
+      - superset_home:/app/superset_home
+      - ./static:/app/superset/static/assets/custom
+      - ./css_templates:/app/css_templates
+    command: >
+      bash -c "
+        pip install psycopg2-binary flask-jwt-extended &&
+        /usr/bin/run-server.sh
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  superset-init:
+    image: apache/superset
+    container_name: bie_init
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/pythonpath
+      - ./scripts:/app/scripts
+      - ./css_templates:/app/css_templates
+    command: >
+      bash -c "
+        pip install psycopg2-binary flask-jwt-extended &&
+        superset db upgrade &&
+        superset fab create-admin --username admin --firstname BI --lastname Engine --email admin@biengine.com --password admin &&
+        superset init &&
+        python /app/scripts/load_css_template.py &&
+        echo 'BI Engine initialization completed successfully!'
+      "
+    environment:
+      - SUPERSET_SECRET_KEY=biengine_secret_key
+      - FLASK_APP=superset
+      - JWT_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+      - ASYNC_QUERIES_JWT_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+      - SUPERSET_JWT_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+      - JWT_TOKEN_SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4I5J6K7L8M9N0O1P2
+
+  superset-worker:
+    image: apache/superset
+    container_name: bie_worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/pythonpath
+      - superset_home:/app/superset_home
+    command: >
+      bash -c "
+        pip install psycopg2-binary flask-jwt-extended &&
+        celery worker --app=superset.tasks.celery_app:app --pool=prefork --concurrency=4
+      "
+    environment:
+      - SUPERSET_SECRET_KEY=biengine_secret_key
+    healthcheck:
+      test: ["CMD", "celery", "--app=superset.tasks.celery_app:app", "inspect", "ping", "-d", "celery@$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  redis:
+  db_data:
+  superset_home:

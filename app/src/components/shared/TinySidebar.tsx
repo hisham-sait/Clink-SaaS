@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'insights' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 interface Section {
@@ -45,7 +45,8 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
     { id: 'crm', title: 'CRM', icon: 'bi bi-people', route: '/crm/dashboard' },
     { id: 'products', title: 'Products', icon: 'bi bi-box', route: '/products/dashboard' },
     { id: 'links', title: 'Links', icon: 'bi bi-link-45deg', route: '/links/dashboard' },
-    { id: 'engage', title: 'Engage', icon: 'bi bi-chat-dots', route: '/engage/dashboard' }
+    { id: 'engage', title: 'Engage', icon: 'bi bi-chat-dots', route: '/engage/dashboard' },
+    { id: 'insights', title: 'Insights', icon: 'bi bi-graph-up', route: '/insights/dashboard' }
   ];
 
   const bottomSections: Section[] = [
@@ -101,6 +102,9 @@ const TinySidebar: React.FC<TinySidebarProps> = ({
         break;
       case 'engage':
         navigate('/engage/dashboard');
+        break;
+      case 'insights':
+        navigate('/insights/reports');
         break;
     }
   };

@@ -16,11 +16,11 @@ const CRM = lazy(() => import('./components/crm/CRM'));
 const Products = lazy(() => import('./components/products/Products'));
 const Links = lazy(() => import('./components/links/Links'));
 const Engage = lazy(() => import('./components/engage/Engage'));
+const Insights = lazy(() => import('./components/insights/Insights'));
 const Help = lazy(() => import('./components/help/Help'));
 const FormEmbedPage = lazy(() => import('./components/forms/FormEmbedPage'));
-const SurveyEmbedPage = lazy(() => import('./components/surveys/SurveyEmbedPage'));
 
-type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'insights' | 'settings' | 'help';
 type ThemeType = 'light' | 'dark' | 'system';
 
 const AppContent = () => {
@@ -207,6 +207,14 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/insights/*"
+              element={
+                <ProtectedRoute>
+                  <Insights />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Form embed route - for internal use */}
             <Route path="/embed/form/:formId" element={<FormEmbedPage />} />
@@ -220,14 +228,10 @@ const AppContent = () => {
             <Route path="/r/*" element={null} />
             <Route path="/d/*" element={null} />
             <Route path="/f/*" element={null} />
-            <Route path="/y/*" element={null} />
             <Route path="/p/*" element={null} />
             {/* Redirect old form and survey URLs to new format */}
             <Route path="/forms/:formId" element={
               <Navigate to={`/f/${window.location.pathname.split('/').pop()}`} replace />
-            } />
-            <Route path="/surveys/:surveyId" element={
-              <Navigate to={`/y/${window.location.pathname.split('/').pop()}`} replace />
             } />
             <Route path="/pages/:pageId" element={
               <Navigate to={`/p/${window.location.pathname.split('/').pop()}`} replace />

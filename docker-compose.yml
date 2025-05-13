@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:14-alpine
+    container_name: clink-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=clink_saas
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for queue processing
+  redis:
+    image: redis:alpine
+    container_name: clink-redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Backend
+  api:
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: clink-api
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/clink_saas
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=6Ysh5tSbzUVpfWVAbsvQ1h8roUGYPB55nKWhAutnWO0=
+      - ENCRYPTION_KEY=lfSOr4REr1raxNYUg6taEb7dZtcyIHVM/vnEqFhNpvM=
+      - LOG_LEVEL=info
+      - LOG_DIR=logs
+      - IMPORT_BATCH_SIZE=1000
+      - MAX_FILE_SIZE=10485760
+      - UPLOAD_DIR=uploads/imports
+    ports:
+      - "3000:3000"
+    networks:
+      - app_network
+    volumes:
+      - api_uploads:/app/uploads
+      - api_logs:/app/logs
+    restart: unless-stopped
+
+  # Frontend App
+  app:
+    build: 
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: clink-app
+    ports:
+      - "80:80"
+    networks:
+      - app_network
+    depends_on:
+      - api
+    restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_uploads:
+  api_logs:

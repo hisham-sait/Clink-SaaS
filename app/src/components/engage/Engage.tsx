@@ -4,9 +4,6 @@ import Dashboard from './sections/dashboard/Dashboard';
 import Forms from './sections/forms/Forms';
 import FormDesigner from './sections/forms/FormDesigner';
 import FormAnalytics from './sections/forms/FormAnalytics';
-import Survey from './sections/survey/Survey';
-import SurveyDesigner from './sections/survey/SurveyDesigner';
-import SurveyAnalytics from './sections/survey/SurveyAnalytics';
 import Pages from './sections/pages/Pages';
 import PageDesigner from './sections/pages/PageDesigner';
 import PageAnalytics from './sections/pages/PageAnalytics';
@@ -22,9 +19,6 @@ const Engage: React.FC = () => {
         <Route path="forms" element={<Forms />} />
         <Route path="forms/designer/:formId" element={<FormDesigner />} />
         <Route path="forms/analytics/:id" element={<FormAnalytics />} />
-        <Route path="survey" element={<Survey />} />
-        <Route path="survey/designer/:surveyId" element={<SurveyDesigner />} />
-        <Route path="surveys/analytics/:id" element={<SurveyAnalytics />} />
         <Route path="pages" element={<Pages />} />
         <Route path="pages/designer/:pageId" element={<PageDesigner />} />
         <Route path="pages/analytics/:id" element={<PageAnalytics />} />

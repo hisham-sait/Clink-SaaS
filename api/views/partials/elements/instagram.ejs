@@ -1,0 +1,10 @@
+<div class="embed-container">
+  <% if (element.instagramUrl) { %>
+    <iframe src="<%= element.instagramUrl %>" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+  <% } else { %>
+    <div class="text-center p-4 bg-light">
+      <i class="fab fa-instagram fa-3x mb-3"></i>
+      <p>Instagram embed placeholder</p>
+    </div>
+  <% } %>
+</div>

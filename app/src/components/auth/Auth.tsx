@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import AuthentikLogin from './AuthentikLogin';
+import AuthentikCallback from './AuthentikCallback';
 import './Auth.css';
 
 interface QuickLoginUser {
@@ -119,6 +121,13 @@ const Login = () => {
                 {user.role}
               </button>
             ))}
+          </div>
+          
+          <div className="mt-4 text-center">
+            <Link to="/auth/authentik-login" className="btn btn-outline-secondary">
+              <i className="bi bi-key me-2"></i>
+              Login with SSO
+            </Link>
           </div>
         </div>
       </div>
@@ -268,6 +277,8 @@ const Auth: React.FC = () => {
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route path="authentik-login" element={<AuthentikLogin />} />
+      <Route path="authentik-callback" element={<AuthentikCallback />} />
       <Route path="*" element={<Navigate to="login" replace />} />
     </Routes>
   );

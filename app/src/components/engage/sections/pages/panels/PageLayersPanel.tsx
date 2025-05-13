@@ -65,65 +65,78 @@ const PageLayersPanel: React.FC<PageLayersPanelProps> = ({
               <Card key={section.id} className="mb-2 border">
                 <Card.Header 
                   className={`py-1 px-2 d-flex justify-content-between align-items-center ${selectedSection.id === section.id && !selectedElement ? 'bg-primary text-white' : 'bg-light'}`}
-                  onClick={() => onSectionSelect(section)}
-                  style={{ cursor: 'pointer' }}
                 >
-                  <div className="d-flex align-items-center">
+                  <div 
+                    className="d-flex align-items-center"
+                    onClick={() => onSectionSelect(section)}
+                    style={{ cursor: 'pointer', flexGrow: 1 }}
+                  >
                     {selectedSection.id === section.id ? <FaFolderOpen className="me-2" /> : <FaFolder className="me-2" />}
                     <span>{section.title}</span>
                   </div>
                   <div className="section-actions">
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    <span 
                       className={`p-0 me-1 ${selectedSection.id === section.id && !selectedElement ? 'text-white' : ''}`}
                       onClick={(e) => { 
                         e.stopPropagation(); 
-                        onMoveSection(section.id, 'up'); 
+                        if (sectionIndex !== 0) {
+                          onMoveSection(section.id, 'up');
+                        }
                       }}
-                      disabled={sectionIndex === 0}
+                      style={{ 
+                        cursor: sectionIndex === 0 ? 'not-allowed' : 'pointer',
+                        opacity: sectionIndex === 0 ? 0.5 : 1,
+                        display: 'inline-block'
+                      }}
                       title="Move Up"
                     >
                       <FaArrowUp />
-                    </Button>
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    </span>
+                    <span 
                       className={`p-0 me-1 ${selectedSection.id === section.id && !selectedElement ? 'text-white' : ''}`}
                       onClick={(e) => { 
                         e.stopPropagation(); 
-                        onMoveSection(section.id, 'down'); 
+                        if (sectionIndex !== sections.length - 1) {
+                          onMoveSection(section.id, 'down');
+                        }
                       }}
-                      disabled={sectionIndex === sections.length - 1}
+                      style={{ 
+                        cursor: sectionIndex === sections.length - 1 ? 'not-allowed' : 'pointer',
+                        opacity: sectionIndex === sections.length - 1 ? 0.5 : 1,
+                        display: 'inline-block'
+                      }}
                       title="Move Down"
                     >
                       <FaArrowDown />
-                    </Button>
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    </span>
+                    <span 
                       className={`p-0 me-1 ${selectedSection.id === section.id && !selectedElement ? 'text-white' : ''}`}
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         onCloneSection(section.id); 
                       }}
+                      style={{ cursor: 'pointer', display: 'inline-block' }}
                       title="Clone"
                     >
                       <FaClone />
-                    </Button>
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    </span>
+                    <span 
                       className={`p-0 ${selectedSection.id === section.id && !selectedElement ? 'text-white' : 'text-danger'}`}
                       onClick={(e) => { 
                         e.stopPropagation(); 
-                        onDeleteSection(section.id); 
+                        if (sections.length > 1) {
+                          onDeleteSection(section.id);
+                        }
                       }}
-                      disabled={sections.length <= 1}
+                      style={{ 
+                        cursor: sections.length <= 1 ? 'not-allowed' : 'pointer',
+                        opacity: sections.length <= 1 ? 0.5 : 1,
+                        display: 'inline-block'
+                      }}
                       title="Delete"
                     >
                       <FaTrash />
-                    </Button>
+                    </span>
                   </div>
                 </Card.Header>
                 {section.elements.length > 0 && (
@@ -144,56 +157,62 @@ const PageLayersPanel: React.FC<PageLayersPanelProps> = ({
                           <div className="element-label">{element.label}</div>
                         </div>
                         <div className="element-actions">
-                          <Button 
-                            variant="link" 
-                            size="sm" 
+                          <span 
                             className="p-0 me-1" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              onMoveElement(element.id, 'up'); 
+                              if (elementIndex !== 0) {
+                                onMoveElement(element.id, 'up');
+                              }
                             }}
-                            disabled={elementIndex === 0}
+                            style={{ 
+                              cursor: elementIndex === 0 ? 'not-allowed' : 'pointer',
+                              opacity: elementIndex === 0 ? 0.5 : 1,
+                              display: 'inline-block'
+                            }}
                             title="Move Up"
                           >
                             <FaArrowUp />
-                          </Button>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
+                          </span>
+                          <span 
                             className="p-0 me-1" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              onMoveElement(element.id, 'down'); 
+                              if (elementIndex !== section.elements.length - 1) {
+                                onMoveElement(element.id, 'down');
+                              }
                             }}
-                            disabled={elementIndex === section.elements.length - 1}
+                            style={{ 
+                              cursor: elementIndex === section.elements.length - 1 ? 'not-allowed' : 'pointer',
+                              opacity: elementIndex === section.elements.length - 1 ? 0.5 : 1,
+                              display: 'inline-block'
+                            }}
                             title="Move Down"
                           >
                             <FaArrowDown />
-                          </Button>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
+                          </span>
+                          <span 
                             className="p-0 me-1" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
                               onCloneElement(element.id); 
                             }}
+                            style={{ cursor: 'pointer', display: 'inline-block' }}
                             title="Clone"
                           >
                             <FaClone />
-                          </Button>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
+                          </span>
+                          <span 
                             className="p-0 text-danger" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
                               onDeleteElement(element.id); 
                             }}
+                            style={{ cursor: 'pointer', display: 'inline-block' }}
                             title="Delete"
                           >
                             <FaTrash />
-                          </Button>
+                          </span>
                         </div>
                       </ListGroup.Item>
                     ))}

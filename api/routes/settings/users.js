@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 // Get all users
@@ -70,19 +71,39 @@ router.post('/create', async (req, res, next) => {
       department,
       jobTitle,
       roles,
-      status = 'Active'
+      status = 'Active',
+      companyId // Added companyId parameter
     } = req.body;
 
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Find a company to associate with if not provided
+    let userCompanyId = companyId;
+    if (!userCompanyId) {
+      // Try to find the first available company
+      const companies = await prisma.company.findMany({
+        take: 1,
+        select: { id: true }
+      });
+      
+      if (companies.length > 0) {
+        userCompanyId = companies[0].id;
+      }
+    }
+
+    // Create the user with hashed password
     const user = await prisma.user.create({
       data: {
         email,
-        password, // In a real app, this should be hashed
+        password: hashedPassword, // Store hashed password
         firstName,
         lastName,
         title,
         department,
         jobTitle,
         status,
+        billingCompanyId: userCompanyId, // Set billing company
         roles: {
           create: roles.map(role => ({
             role: {
@@ -90,14 +111,24 @@ router.post('/create', async (req, res, next) => {
             },
             assignedAt: new Date()
           }))
-        }
+        },
+        // Associate user with company if company ID is available
+        ...(userCompanyId ? {
+          userCompanies: {
+            create: [{
+              companyId: userCompanyId,
+              role: 'Company Admin' // Default role
+            }]
+          }
+        } : {})
       },
       include: {
         roles: {
           include: {
             role: true
           }
-        }
+        },
+        userCompanies: true
       }
     });
 
@@ -116,7 +147,21 @@ router.post('/create', async (req, res, next) => {
 // Invite user
 router.post('/invite', async (req, res, next) => {
   try {
-    const { email, roleId, department, jobTitle } = req.body;
+    const { email, roleId, department, jobTitle, companyId } = req.body;
+
+    // Find a company to associate with if not provided
+    let userCompanyId = companyId;
+    if (!userCompanyId) {
+      // Try to find the first available company
+      const companies = await prisma.company.findMany({
+        take: 1,
+        select: { id: true }
+      });
+      
+      if (companies.length > 0) {
+        userCompanyId = companies[0].id;
+      }
+    }
 
     const user = await prisma.user.create({
       data: {
@@ -126,6 +171,7 @@ router.post('/invite', async (req, res, next) => {
         status: 'Pending',
         department,
         jobTitle,
+        billingCompanyId: userCompanyId, // Set billing company
         roles: {
           create: [{
             role: {
@@ -133,7 +179,16 @@ router.post('/invite', async (req, res, next) => {
             },
             assignedAt: new Date()
           }]
-        }
+        },
+        // Associate user with company if company ID is available
+        ...(userCompanyId ? {
+          userCompanies: {
+            create: [{
+              companyId: userCompanyId,
+              role: 'Company Admin' // Default role
+            }]
+          }
+        } : {})
       },
       include: {
         roles: {
@@ -169,7 +224,9 @@ router.put('/:id', async (req, res, next) => {
       department,
       jobTitle,
       roles,
-      status
+      status,
+      password, // Added password parameter for updates
+      companyId // Added companyId parameter
     } = req.body;
 
     // Check if user exists
@@ -186,26 +243,60 @@ router.put('/:id', async (req, res, next) => {
       where: { userId: req.params.id }
     });
 
+    // Prepare update data
+    const updateData = {
+      email,
+      firstName,
+      lastName,
+      title,
+      department,
+      jobTitle,
+      status,
+      roles: {
+        create: roles.map(role => ({
+          role: {
+            connect: { id: role.id }
+          },
+          assignedAt: new Date()
+        }))
+      }
+    };
+
+    // Hash password if provided
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    // Update billing company if provided
+    if (companyId) {
+      updateData.billingCompanyId = companyId;
+      
+      // Check if user is already associated with this company
+      const existingUserCompany = await prisma.userCompany.findUnique({
+        where: {
+          userId_companyId: {
+            userId: req.params.id,
+            companyId
+          }
+        }
+      });
+      
+      // If not associated, create the association
+      if (!existingUserCompany) {
+        await prisma.userCompany.create({
+          data: {
+            userId: req.params.id,
+            companyId,
+            role: 'Company Admin' // Default role
+          }
+        });
+      }
+    }
+
     // Update user
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data: {
-        email,
-        firstName,
-        lastName,
-        title,
-        department,
-        jobTitle,
-        status,
-        roles: {
-          create: roles.map(role => ({
-            role: {
-              connect: { id: role.id }
-            },
-            assignedAt: new Date()
-          }))
-        }
-      },
+      data: updateData,
       include: {
         roles: {
           include: {
@@ -241,6 +332,11 @@ router.delete('/:id', async (req, res, next) => {
 
     // Delete user roles first
     await prisma.userRole.deleteMany({
+      where: { userId: req.params.id }
+    });
+
+    // Delete user company associations
+    await prisma.userCompany.deleteMany({
       where: { userId: req.params.id }
     });
 

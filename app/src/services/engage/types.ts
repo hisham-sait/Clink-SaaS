@@ -80,49 +80,13 @@ export interface FormSubmission {
   createdAt: string;
 }
 
-// Survey Types
-export interface SurveyData {
-  id?: string;
-  title: string;
-  description?: string;
-  categoryId?: string;
-  sections?: any[];
-  settings?: any;
-  appearance?: any;
-  status?: string;
-  responses?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface SurveyCategory {
-  id: string;
-  name: string;
-  companyId?: string;
-  surveysCount?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface SurveyCategoriesResponse {
-  categories: SurveyCategory[];
-  total?: number;
-}
-
-export interface SurveyResponse {
-  id: string;
-  surveyId: string;
-  data: any;
-  metadata?: any;
-  createdAt: string;
-}
 
 // Data Types
 export interface DatasetData {
   id?: string;
   name: string;
   description?: string;
-  type: 'form' | 'survey' | 'upload' | 'webhook';
+  type: 'form' | 'upload' | 'webhook';
   sourceId?: string;
   sourceName?: string;
   webhookId?: string;

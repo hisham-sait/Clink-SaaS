@@ -6,9 +6,10 @@ import CRMSidebar from '../crm/CRMSidebar';
 import ProductsSidebar from '../products/ProductsSidebar';
 import LinksSidebar from '../links/LinksSidebar';
 import EngageSidebar from '../engage/EngageSidebar';
+import InsightsSidebar from '../insights/InsightsSidebar';
 import api from '../../services/api';
 
-type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'settings' | 'help';
+type SectionType = 'crm' | 'products' | 'links' | 'engage' | 'insights' | 'settings' | 'help';
 
 interface ModuleConfig {
   icon: string;
@@ -28,7 +29,8 @@ const moduleConfigs: Record<SectionType, ModuleConfig> = {
   crm: { icon: 'bi-people', title: 'CRM' },
   products: { icon: 'bi-box', title: 'Products' },
   links: { icon: 'bi-link-45deg', title: 'Links' },
-  engage: { icon: 'bi-chat-dots', title: 'Engage' }
+  engage: { icon: 'bi-chat-dots', title: 'Engage' },
+  insights: { icon: 'bi-graph-up', title: 'Insights' }
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -79,6 +81,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         return <LinksSidebar isExpanded={isExpanded} />;
       case 'engage':
         return <EngageSidebar isExpanded={isExpanded} />;
+      case 'insights':
+        return <InsightsSidebar isExpanded={isExpanded} />;
       default:
         return <div className="p-4">Coming Soon</div>;
     }

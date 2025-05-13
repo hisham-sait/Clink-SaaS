@@ -23,11 +23,6 @@ const EngageSidebar: React.FC<EngageSidebarProps> = ({ isExpanded = true }) => {
       route: '/engage/forms'
     },
     {
-      label: 'Survey',
-      icon: 'bi-clipboard-data',
-      route: '/engage/survey'
-    },
-    {
       label: 'AI Chat',
       icon: 'bi-chat-dots',
       route: '/engage/ai-chat',

@@ -1,0 +1,198 @@
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- YouTube API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+  // Page data from server
+  const pageData = <%- JSON.stringify(page) %>;
+  
+  // Log the page appearance settings for debugging
+  console.log('Page appearance settings:', pageData.appearance);
+  
+  // Load the selected font
+  if (pageData.appearance && pageData.appearance.fontFamily) {
+    loadGoogleFont(pageData.appearance.fontFamily);
+  }
+  
+  // YouTube API initialization
+  let youtubeReady = false;
+  function onYouTubeIframeAPIReady() {
+    youtubeReady = true;
+    console.log('YouTube API ready');
+    
+    // Find all YouTube iframes and initialize them
+    const youtubeIframes = document.querySelectorAll('iframe[src*="youtube.com/embed"]');
+    youtubeIframes.forEach((iframe, index) => {
+      // Extract the video ID from the iframe src
+      const src = iframe.getAttribute('src');
+      const match = src.match(/\/embed\/([^?&]+)/);
+      if (match && match[1]) {
+        const videoId = match[1];
+        
+        // Create a unique ID for the player container
+        const playerId = `youtube-player-${index}`;
+        
+        // Replace the iframe with a div that will contain the YouTube player
+        const playerDiv = document.createElement('div');
+        playerDiv.id = playerId;
+        playerDiv.style.width = '100%';
+        playerDiv.style.height = '100%';
+        iframe.parentNode.replaceChild(playerDiv, iframe);
+        
+        // Create the YouTube player
+        new YT.Player(playerId, {
+          videoId: videoId,
+          playerVars: {
+            autoplay: src.includes('autoplay=1') ? 1 : 0,
+            controls: src.includes('controls=0') ? 0 : 1,
+            loop: src.includes('loop=1') ? 1 : 0,
+            mute: src.includes('mute=1') ? 1 : 0,
+            start: (() => {
+              const startMatch = src.match(/start=(\d+)/);
+              return startMatch ? parseInt(startMatch[1]) : 0;
+            })(),
+            end: (() => {
+              const endMatch = src.match(/end=(\d+)/);
+              return endMatch ? parseInt(endMatch[1]) : 0;
+            })()
+          },
+          events: {
+            'onReady': (event) => {
+              console.log(`YouTube player ${playerId} ready`);
+              if (src.includes('autoplay=1') && src.includes('mute=1')) {
+                event.target.playVideo();
+              }
+            },
+            'onError': (event) => {
+              console.error(`YouTube player ${playerId} error:`, event.data);
+            }
+          }
+        });
+      }
+    });
+  }
+  
+  // Ensure button hover and active states work properly
+  document.addEventListener('DOMContentLoaded', function() {
+    // Find all button elements
+    const buttons = document.querySelectorAll('.button-element');
+    
+    // Add touch event listeners for mobile devices
+    buttons.forEach(button => {
+      // Add active class on touch start
+      button.addEventListener('touchstart', function(e) {
+        this.classList.add('button-active');
+      }, { passive: true });
+      
+      // Remove active class on touch end
+      button.addEventListener('touchend', function(e) {
+        this.classList.remove('button-active');
+      }, { passive: true });
+      
+      // Remove active class if touch is moved away
+      button.addEventListener('touchcancel', function(e) {
+        this.classList.remove('button-active');
+      }, { passive: true });
+      
+      // Add click feedback
+      button.addEventListener('click', function(e) {
+        // Create ripple effect
+        const ripple = document.createElement('span');
+        ripple.classList.add('button-ripple');
+        this.appendChild(ripple);
+        
+        // Position the ripple
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+        
+        // Remove ripple after animation
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      });
+    });
+  });
+  
+  // Track page view if analytics is enabled
+  const analyticsEnabled = pageData.settings && pageData.settings.enableAnalytics !== false;
+  if (analyticsEnabled) {
+    // Send analytics data to the server
+    fetch(`/api/engage/pages/${pageData.id}/view`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        metadata: {
+          referrer: document.referrer,
+          screenSize: {
+            width: window.innerWidth,
+            height: window.innerHeight
+          },
+          userAgent: navigator.userAgent,
+          language: navigator.language,
+          timestamp: new Date().toISOString()
+        }
+      })
+    }).catch(err => {
+      console.error('Failed to send analytics data:', err);
+    });
+  }
+  
+  // Check if Font Awesome is loaded correctly
+  document.addEventListener('DOMContentLoaded', function() {
+    // Check if Font Awesome is loaded
+    const isFontAwesomeLoaded = (function() {
+      // Create a test element
+      const testElement = document.createElement('i');
+      testElement.className = 'fa fa-facebook';
+      testElement.style.visibility = 'hidden';
+      document.body.appendChild(testElement);
+      
+      // Get the computed style
+      const computedStyle = window.getComputedStyle(testElement, ':before');
+      const fontFamily = computedStyle.getPropertyValue('font-family');
+      
+      // Remove the test element
+      document.body.removeChild(testElement);
+      
+      // Check if the font family contains "FontAwesome" or "Font Awesome"
+      return fontFamily.includes('FontAwesome') || fontFamily.includes('Font Awesome');
+    })();
+    
+    console.log('Font Awesome loaded:', isFontAwesomeLoaded);
+    
+    if (!isFontAwesomeLoaded) {
+      console.error('Font Awesome is not loaded correctly. Trying to reload...');
+      
+      // Try to reload Font Awesome
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+      document.head.appendChild(link);
+    }
+    
+    // Apply font family to all elements after rendering
+    const fontFamily = pageData.appearance && pageData.appearance.fontFamily 
+      ? pageData.appearance.fontFamily 
+      : 'Arial, sans-serif';
+    
+    // Apply to all elements
+    document.querySelectorAll('*').forEach(el => {
+      if (el.tagName !== 'STYLE' && el.tagName !== 'SCRIPT') {
+        el.style.fontFamily = fontFamily;
+      }
+    });
+    
+    // Initialize carousels
+    const carousels = document.querySelectorAll('.carousel');
+    carousels.forEach(carousel => {
+      new bootstrap.Carousel(carousel);
+    });
+  });
+</script>

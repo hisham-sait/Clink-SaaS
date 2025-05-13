@@ -1,0 +1,338 @@
+<% 
+  // Extract video ID from URL if needed
+  const extractYouTubeVideoId = (url) => {
+    if (!url) return '';
+    
+    // Log the URL for debugging
+    console.log('Extracting YouTube ID from URL:', url);
+    
+    // Handle youtu.be URLs
+    if (url.includes('youtu.be')) {
+      // Extract the ID from youtu.be URLs
+      const match = url.match(/youtu\.be\/([^?&#]+)/i);
+      if (match && match[1]) {
+        console.log('Extracted YouTube ID (youtu.be):', match[1]);
+        return match[1];
+      }
+    }
+    
+    // Handle youtube.com URLs
+    if (url.includes('youtube.com')) {
+      // Try to extract from watch URLs
+      let match = url.match(/[?&]v=([^?&#]+)/i);
+      if (match && match[1]) {
+        console.log('Extracted YouTube ID (watch):', match[1]);
+        return match[1];
+      }
+      
+      // Try to extract from embed URLs
+      match = url.match(/embed\/([^?&#]+)/i);
+      if (match && match[1]) {
+        console.log('Extracted YouTube ID (embed):', match[1]);
+        return match[1];
+      }
+      
+      // Try to extract from v URLs
+      match = url.match(/youtube\.com\/v\/([^?&#]+)/i);
+      if (match && match[1]) {
+        console.log('Extracted YouTube ID (v):', match[1]);
+        return match[1];
+      }
+    }
+    
+    // If the URL is already just the ID (11 characters of letters, numbers, - and _)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      console.log('URL is already a YouTube ID:', url);
+      return url;
+    }
+    
+    // If no match found, return empty string
+    console.log('No YouTube ID found in URL:', url);
+    return '';
+  };
+  
+  const extractVimeoVideoId = (url) => {
+    if (!url) return '';
+    
+    // Log the URL for debugging
+    console.log('Extracting Vimeo ID from URL:', url);
+    
+    // Try to match Vimeo URLs
+    const match = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|video\/|)(\d+)(?:$|\/|\?)/i);
+    
+    if (match && match[1]) {
+      console.log('Extracted Vimeo ID:', match[1]);
+      return match[1];
+    }
+    
+    // If the URL is already just the ID (numeric)
+    if (/^\d+$/.test(url)) {
+      console.log('URL is already a Vimeo ID:', url);
+      return url;
+    }
+    
+    // If no match found, return empty string
+    console.log('No Vimeo ID found in URL:', url);
+    return '';
+  };
+  
+  const videoId = element.videoId || (element.url ? (
+    element.videoType === 'youtube' ? extractYouTubeVideoId(element.url) :
+    element.videoType === 'vimeo' ? extractVimeoVideoId(element.url) : ''
+  ) : '');
+  
+  // Log video properties for debugging
+  console.log('Rendering Video EJS:', {
+    videoType: element.videoType,
+    videoId,
+    url: element.url,
+    videoUrl: element.videoUrl,
+    embedCode: element.embedCode
+  });
+  
+  // YouTube embed URL with parameters
+  const youtubeEmbedUrl = videoId && element.videoType === 'youtube' ? 
+    `https://www.youtube.com/embed/${videoId}?autoplay=${element.autoplay ? 1 : 0}&mute=${element.muted ? 1 : 0}&controls=${element.controls ? 1 : 0}&loop=${element.loop ? 1 : 0}${element.startTime ? `&start=${Math.floor(element.startTime)}` : ''}${element.endTime ? `&end=${Math.floor(element.endTime)}` : ''}` 
+    : '';
+  
+  // Vimeo embed URL with parameters
+  const vimeoEmbedUrl = videoId && element.videoType === 'vimeo' ? 
+    `https://player.vimeo.com/video/${videoId}?autoplay=${element.autoplay ? 1 : 0}&muted=${element.muted ? 1 : 0}&controls=${element.controls ? 1 : 0}&loop=${element.loop ? 1 : 0}` 
+    : '';
+  
+  // Direct video URL
+  const videoUrl = element.videoUrl || element.url || '';
+  
+  // Extract src from embed code if present
+  let embedSrc = '';
+  if (element.embedCode) {
+    const srcMatch = element.embedCode.match(/src=["']([^"']+)["']/i);
+    embedSrc = srcMatch ? srcMatch[1] : '';
+  }
+  
+  // Add responsive classes based on visibility settings
+  let className = 'video-element';
+  
+  if (element.hideOnMobile) {
+    className += ' hide-on-mobile';
+  }
+  
+  if (element.hideOnDesktop) {
+    className += ' hide-on-desktop';
+  }
+  
+  // Generate a unique ID for this element
+  const elementId = `video-${element.id || Date.now()}`;
+%>
+
+<style>
+  /* Base styles for the video element */
+  .<%= elementId %> {
+    width: <%= element.width || '100%' %>;
+    border-radius: <%= element.borderRadius || '4px' %>;
+    overflow: hidden;
+    position: relative;
+    
+    <% if (element.aspectRatio && element.aspectRatio !== 'custom') { %>
+      <% let paddingTop = '56.25%'; // Default 16:9 %>
+      <% if (element.aspectRatio === '4:3') { %>
+        <% paddingTop = '75%'; %>
+      <% } else if (element.aspectRatio === '1:1') { %>
+        <% paddingTop = '100%'; %>
+      <% } %>
+      padding-top: <%= paddingTop %>;
+    <% } else if (element.customAspectRatio) { %>
+      <% const parts = element.customAspectRatio.split(':'); %>
+      <% if (parts.length === 2) { %>
+        <% const width = parseFloat(parts[0]); %>
+        <% const height = parseFloat(parts[1]); %>
+        <% if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) { %>
+          padding-top: <%= (height / width) * 100 %>%;
+        <% } %>
+      <% } %>
+    <% } %>
+    
+    <% if (element.height && element.height !== 'auto' && (!element.aspectRatio || element.aspectRatio === 'custom')) { %>
+      height: <%= element.height %>;
+      padding-top: 0;
+    <% } %>
+    
+    <% if (element.borderStyle && element.borderStyle !== 'none') { %>
+      border: <%= element.borderWidth || '1px' %> <%= element.borderStyle %> <%= element.borderColor || '#000000' %>;
+    <% } %>
+    
+    <% if (element.backgroundColor && element.backgroundColor !== 'transparent') { %>
+      background-color: <%= element.backgroundColor %>;
+    <% } %>
+    
+    <% if (element.boxShadow && element.boxShadow !== 'none') { %>
+      <% const color = element.boxShadowColor || 'rgba(0,0,0,0.2)'; %>
+      <% const blur = element.boxShadowBlur || '10px'; %>
+      <% const spread = element.boxShadowSpread || '0'; %>
+      <% const offsetX = element.boxShadowOffsetX || '0'; %>
+      <% const offsetY = element.boxShadowOffsetY || '4px'; %>
+      box-shadow: <%= offsetX %> <%= offsetY %> <%= blur %> <%= spread %> <%= color %>;
+    <% } %>
+    
+    <% if (element.margin) { %>
+      margin: <%= element.margin %>;
+    <% } %>
+    
+    <% if (element.padding) { %>
+      padding: <%= element.padding %>;
+    <% } %>
+    
+    <% if (element.alignment) { %>
+      <% if (element.alignment === 'center') { %>
+        margin-left: auto;
+        margin-right: auto;
+      <% } else if (element.alignment === 'right') { %>
+        margin-left: auto;
+        margin-right: 0;
+      <% } else { %>
+        margin-left: 0;
+        margin-right: auto;
+      <% } %>
+    <% } %>
+  }
+  
+  /* Caption styles */
+  .<%= elementId %>-caption {
+    <% if (element.captionPosition === 'bottom') { %>
+      margin-top: 0.5rem;
+    <% } else { %>
+      margin-bottom: 0.5rem;
+    <% } %>
+    font-size: <%= element.captionSize || '14px' %>;
+    color: <%= element.captionColor || '#000000' %>;
+    text-align: <%= element.captionAlignment || 'center' %>;
+  }
+  
+  /* Video iframe and player styles */
+  .<%= elementId %> iframe,
+  .<%= elementId %> video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  
+  /* Video player object-fit */
+  .<%= elementId %> video {
+    object-fit: <%= element.objectFit || 'contain' %>;
+  }
+  
+  /* Overlay styles */
+  .<%= elementId %>-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: <%= element.overlayColor || 'rgba(0,0,0,0.5)' %>;
+    opacity: <%= element.overlayOpacity || 0.5 %>;
+    display: flex;
+    align-items: <%= element.overlayTextPosition === 'top' ? 'flex-start' : element.overlayTextPosition === 'bottom' ? 'flex-end' : 'center' %>;
+    justify-content: center;
+    padding: 1rem;
+    color: <%= element.overlayTextColor || '#ffffff' %>;
+    font-size: <%= element.overlayTextSize || '16px' %>;
+    text-align: center;
+    z-index: 1;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    <% if (element.hideOnMobile) { %>
+      .hide-on-mobile {
+        display: none !important;
+      }
+    <% } %>
+    
+    <% if (element.mobileWidth || element.mobileHeight) { %>
+      .<%= elementId %> {
+        <% if (element.mobileWidth) { %>
+          width: <%= element.mobileWidth %>;
+        <% } %>
+        <% if (element.mobileHeight) { %>
+          height: <%= element.mobileHeight %>;
+          padding-top: 0;
+        <% } %>
+      }
+    <% } %>
+  }
+  
+  @media (min-width: 769px) {
+    <% if (element.hideOnDesktop) { %>
+      .hide-on-desktop {
+        display: none !important;
+      }
+    <% } %>
+  }
+</style>
+
+<div class="<%= className %>">
+  <% if (element.showCaption && element.captionPosition === 'top' && element.caption) { %>
+    <div class="<%= elementId %>-caption">
+      <%= element.caption %>
+    </div>
+  <% } %>
+  
+  <div class="<%= elementId %>">
+    <% if (element.videoType === 'youtube' && videoId) { %>
+      <iframe 
+        src="<%= youtubeEmbedUrl %>"
+        allowfullscreen
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        title="<%= element.ariaLabel || 'YouTube video player' %>"
+      ></iframe>
+    <% } else if (element.videoType === 'vimeo' && videoId) { %>
+      <iframe 
+        src="<%= vimeoEmbedUrl %>"
+        allowfullscreen
+        frameborder="0"
+        allow="autoplay; fullscreen; picture-in-picture"
+        title="<%= element.ariaLabel || 'Vimeo video player' %>"
+      ></iframe>
+    <% } else if (element.videoType === 'embed' && embedSrc) { %>
+      <iframe 
+        src="<%= embedSrc %>"
+        allowfullscreen
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        title="<%= element.ariaLabel || 'Embedded video player' %>"
+      ></iframe>
+    <% } else { %>
+      <video
+        <% if (element.controls) { %>controls<% } %>
+        <% if (element.autoplay) { %>autoplay<% } %>
+        <% if (element.loop) { %>loop<% } %>
+        <% if (element.muted) { %>muted<% } %>
+        <% if (element.posterImage) { %>poster="<%= element.posterImage %>"<% } %>
+        preload="<%= element.preload || 'metadata' %>"
+        aria-label="<%= element.ariaLabel || 'Video player' %>"
+      >
+        <source src="<%= videoUrl %>" type="video/mp4">
+        <% if (element.captions) { %>
+          <track kind="captions" src="<%= element.captions %>" srclang="en" label="English" default>
+        <% } %>
+        Your browser does not support the video tag.
+      </video>
+    <% } %>
+    
+    <% if (element.overlay) { %>
+      <div class="<%= elementId %>-overlay">
+        <%= element.overlayText %>
+      </div>
+    <% } %>
+  </div>
+  
+  <% if (element.showCaption && element.captionPosition === 'bottom' && element.caption) { %>
+    <div class="<%= elementId %>-caption">
+      <%= element.caption %>
+    </div>
+  <% } %>
+</div>

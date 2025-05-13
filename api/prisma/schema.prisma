@@ -199,11 +199,14 @@ model Company {
   datasets           Dataset[]
   deals              Deal[]
   digitalLinks       DigitalLink[]
+  folders            Folder[]
   forms              Form[]
   formCategories     FormCategory[]
+  insightReports     InsightReport[]
   invoices           Invoice[]          @relation("CompanyInvoices")
   links              Link[]
   linkCategories     LinkCategory[]
+  media              Media[]
   organisations      Organisation[]
   pages              Page[]
   pageCategories     PageCategory[]
@@ -219,8 +222,6 @@ model Company {
   proposalTemplates  ProposalTemplate[]
   roles              Role[]
   sectionTemplates   SectionTemplate[]
-  surveys            Survey[]
-  surveyCategories   SurveyCategory[]
   billingForUsers    User[]             @relation("UserBillingCompany")
   userCompanies      UserCompany[]
 }
@@ -922,12 +923,12 @@ model DigitalLink {
   categoryId        String?
   password          String?
   url               String                @default("https://example.com")
+  customUrl         String?
   gs1Key            String?
   gs1KeyType        String?
   gs1Url            String?               @unique
-  redirectType      String?
-  customUrl         String?
   productId         String?
+  redirectType      String?
   category          LinkCategory?         @relation(fields: [categoryId], references: [id])
   company           Company               @relation(fields: [companyId], references: [id])
   activities        DigitalLinkActivity[]
@@ -969,7 +970,6 @@ model DigitalLinkActivity {
   @@index([linkId])
   @@index([timestamp])
 }
-
 
 model Form {
   id          String           @id @default(cuid())
@@ -1050,84 +1050,6 @@ model FormView {
   @@index([createdAt])
 }
 
-model Survey {
-  id          String           @id @default(cuid())
-  title       String
-  description String?
-  slug        String           @unique
-  sections    Json
-  settings    Json
-  status      Status           @default(Active)
-  categoryId  String?
-  companyId   String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  appearance  Json?
-  category    SurveyCategory?  @relation(fields: [categoryId], references: [id])
-  company     Company          @relation(fields: [companyId], references: [id])
-  responses   SurveyResponse[]
-  views       SurveyView[]
-
-  @@index([companyId])
-  @@index([categoryId])
-  @@index([status])
-}
-
-model SurveyCategory {
-  id          String   @id @default(cuid())
-  name        String
-  companyId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  color       String?
-  description String?
-  surveys     Survey[]
-  company     Company  @relation(fields: [companyId], references: [id])
-
-  @@index([companyId])
-}
-
-model SurveyResponse {
-  id             String   @id @default(cuid())
-  surveyId       String
-  data           Json
-  metadata       Json?
-  createdAt      DateTime @default(now())
-  ipAddress      String?
-  updatedAt      DateTime @default(now()) @updatedAt
-  userAgent      String?
-  visitorId      String?
-  device         String?
-  browser        String?
-  location       String?
-  referrer       String?
-  completionTime Int?
-  status         String?  @default("completed")
-  survey         Survey   @relation(fields: [surveyId], references: [id])
-
-  @@index([surveyId])
-  @@index([createdAt])
-}
-
-model SurveyView {
-  id         String   @id @default(cuid())
-  surveyId   String
-  visitorId  String?
-  device     String?
-  browser    String?
-  location   String?
-  referrer   String?
-  timeOnPage Int?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  survey     Survey   @relation(fields: [surveyId], references: [id])
-
-  @@index([surveyId])
-  @@index([createdAt])
-}
-
 model Dataset {
   id            String       @id @default(cuid())
   name          String
@@ -1142,8 +1064,8 @@ model Dataset {
   webhookSecret String?
   sourceId      String?
   sourceName    String?
-  company       Company      @relation(fields: [companyId], references: [id])
   records       DataRecord[]
+  company       Company      @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
   @@index([type])
@@ -1219,6 +1141,89 @@ model PageView {
   @@index([createdAt])
 }
 
+model InsightReport {
+  id          String              @id @default(cuid())
+  title       String
+  description String?
+  dashboardId String
+  status      String              @default("Active")
+  companyId   String
+  createdById String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  company     Company             @relation(fields: [companyId], references: [id])
+  views       InsightReportView[]
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model InsightReportView {
+  id         String        @id @default(cuid())
+  reportId   String
+  visitorId  String?
+  device     String?
+  browser    String?
+  location   String?
+  referrer   String?
+  timeOnPage Int?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  report     InsightReport @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@index([createdAt])
+}
+
+model Media {
+  id           String    @id @default(cuid())
+  companyId    String
+  section      String    @default("general")
+  type         MediaType
+  url          String
+  thumbnailUrl String?
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  title        String?
+  description  String?
+  alt          String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  folderId     String?
+  path         String?
+  company      Company   @relation(fields: [companyId], references: [id])
+  folder       Folder?   @relation(fields: [folderId], references: [id])
+
+  @@index([companyId])
+  @@index([type])
+  @@index([section])
+  @@index([folderId])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  path      String
+  parentId  String?
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id])
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderHierarchy")
+  media     Media[]
+
+  @@unique([companyId, path])
+  @@index([companyId])
+  @@index([parentId])
+}
+
 enum DealStatus {
   Open
   Won
@@ -1266,7 +1271,6 @@ enum MediaType {
   DOCUMENT
   OTHER
 }
-
 
 enum Status {
   Active

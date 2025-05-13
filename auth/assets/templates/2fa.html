@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Factor Authentication - SEEGAP</title>
+    <link rel="stylesheet" href="/assets/css/custom.css">
+</head>
+<body>
+    <div class="layout-content">
+        <div class="card">
+            <div class="card-header">
+                <img src="/assets/images/logo.svg" alt="SEEGAP Logo" class="logo-img">
+                <h1 class="card-title">Two-Factor Authentication</h1>
+            </div>
+            <div class="card-body">
+                {{if .Error}}
+                <div class="message error">{{.Error}}</div>
+                {{end}}
+                
+                <form action="{{.ActionEndpoint}}" method="POST">
+                    <div class="form-group">
+                        <label for="one-time-password">One-Time Password</label>
+                        <input type="text" id="one-time-password-textfield" name="one_time_password" placeholder="One-Time Password" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="remember-checkbox" name="remember" value="true">
+                        <label for="remember-checkbox" style="display: inline-block; margin-left: 5px;">Remember this device</label>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn-primary">Verify</button>
+                    </div>
+                </form>
+            </div>
+            <div class="footer">
+                <p>© 2025 SEEGAP. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

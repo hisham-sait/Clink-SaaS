@@ -1,0 +1,186 @@
+/**
+ * BI Engine Theme CSS Template for Superset
+ * 
+ * This CSS template can be loaded through the Superset UI to further customize the appearance
+ * of dashboards. To use this template:
+ * 
+ * 1. Log in to Superset as an admin
+ * 2. Go to "Settings" > "CSS Templates"
+ * 3. Click "+" to add a new template
+ * 4. Name it "BI Engine Theme"
+ * 5. Copy and paste the CSS below
+ * 6. Save the template
+ * 7. When creating or editing a dashboard, you can select this template in the dashboard properties
+ */
+
+/* Dashboard container */
+.dashboard-content {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+}
+
+/* Dashboard header */
+.dashboard-header {
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  padding: 16px;
+}
+
+.dashboard-header .dashboard-component-header {
+  font-weight: 600;
+}
+
+/* Chart containers */
+.dashboard-component-chart-holder {
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-component-chart-holder:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Chart headers */
+.chart-header {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  font-weight: 600;
+}
+
+/* Filter indicators */
+.filter-indicator {
+  background-color: #0066cc;
+  color: white;
+}
+
+/* Dashboard tabs */
+.dashboard-component-tabs .nav-tabs .nav-item .nav-link {
+  color: #333333;
+}
+
+.dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
+  color: #0066cc;
+  border-bottom-color: #0066cc;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #0066cc;
+  border-color: #0066cc;
+}
+
+.btn-secondary {
+  background-color: #333333;
+  border-color: #333333;
+}
+
+/* Dark theme support */
+.dashboard--dark {
+  color: #f8f9fa;
+}
+
+.dashboard--dark .dashboard-header,
+.dashboard--dark .dashboard-component-chart-holder {
+  background-color: #1e1f20;
+  border-color: #343a40;
+}
+
+.dashboard--dark .dashboard-component-tabs .nav-tabs .nav-item .nav-link {
+  color: #adb5bd;
+}
+
+.dashboard--dark .dashboard-component-tabs .nav-tabs .nav-item .nav-link.active {
+  color: #0066cc;
+  border-bottom-color: #0066cc;
+}
+
+/* Custom BI Engine styling */
+.navbar {
+  background-color: #0066cc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 600;
+}
+
+.navbar-light .navbar-brand,
+.navbar-light .navbar-nav .nav-link {
+  color: white;
+}
+
+.navbar-light .navbar-nav .nav-link:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Dashboard grid layout improvements */
+.grid-container .dashboard-component-chart-holder {
+  margin-bottom: 16px;
+}
+
+/* Filter controls */
+.filter-control-container {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-control-container .control-label {
+  font-weight: 600;
+  color: #333333;
+}
+
+/* Chart legends */
+.legend-item-container {
+  font-size: 12px;
+}
+
+/* Tooltips */
+.tooltip-inner {
+  background-color: #333333;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Table visualizations */
+.table-condensed {
+  font-size: 13px;
+}
+
+.table-condensed thead th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+/* Dashboard title */
+.dashboard-header .dashboard-component-header {
+  font-size: 24px;
+  color: #333333;
+}
+
+/* Dashboard description */
+.dashboard-header .dashboard-component-header + div {
+  color: #666666;
+  font-size: 14px;
+}
+
+/* Filters section */
+.dashboard-component-tabs .tab-content {
+  padding: 16px 0;
+}
+
+/* Chart titles */
+.slice-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+}
+
+/* Loading indicators */
+.loading-indicator {
+  color: #0066cc;
+}

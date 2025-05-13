@@ -1,0 +1,10 @@
+# Example .env file for API integration with Authelia
+# Copy this to api/.env or add these variables to your existing .env file
+
+# Authelia JWT Secret (must match the jwt_secret in Authelia's configuration.yml)
+AUTHELIA_JWT_SECRET=17a5d7a52cc5a11bf9faf6af4d6443b2649ea9e79c0645bcff034c3a584b9aad
+
+# Your existing JWT secret for your application's authentication
+JWT_SECRET=your_existing_jwt_secret
+
+# Other environment variables...

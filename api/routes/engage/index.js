@@ -3,7 +3,6 @@ const router = express.Router();
 
 // Import sub-routes
 const formsRouter = require('./forms');
-const surveysRouter = require('./surveys');
 const dataRouter = require('./data');
 const categoriesRouter = require('./categories');
 const pagesRouter = require('./pages');
@@ -13,7 +12,6 @@ const resolverRouter = require('./resolver');
 
 // Mount sub-routes
 router.use('/forms', formsRouter);
-router.use('/surveys', surveysRouter);
 router.use('/data', dataRouter);
 router.use('/categories', categoriesRouter);
 router.use('/pages', pagesRouter);

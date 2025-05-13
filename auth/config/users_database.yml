@@ -1,0 +1,27 @@
+###############################################################################
+#                         Users Database Configuration                        #
+###############################################################################
+
+# This file can be used if you do not have an LDAP server or other external
+# authentication provider. It should be secured properly to prevent unauthorized access.
+
+# Password is 'password' hashed with argon2id
+users:
+  testuser:
+    displayname: "Test User"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$urolqAjKBpz3NnQKCMSGFQ$CVd0M/gm4nrCifNRUWLDGQRn6EUOEKEGda+DWFJF0Vw"
+    email: test@example.com
+    groups:
+      - admins
+      - users
+  
+  admin:
+    displayname: "Admin User"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$+xd3yf7wc3FzU56V2SgmFQ$6ZNpEDjGnIVfGuwB5B0v+B7nAmqU8GQaa9VGYRZBKEI"
+    email: admin@example.com
+    groups:
+      - admins
+      - superusers
+    # TOTP secret for 2FA (optional)
+    # to generate: docker run --rm authelia/authelia:latest authelia crypto totp generate
+    # totp_secret: JBSWY3DPEHPK3PXP

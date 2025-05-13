@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    volumes:
+      - ./config:/config
+      - ./assets:/app/resources/public/assets
+      - ./assets/templates:/app/resources/templates
+    ports:
+      - "9091:9091"
+    environment:
+      - TZ=Europe/Dublin
+    restart: unless-stopped
+    networks:
+      - auth_network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - ./redis_data:/data
+    networks:
+      - auth_network
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+
+networks:
+  auth_network:
+    driver: bridge

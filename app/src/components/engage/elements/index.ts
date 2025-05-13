@@ -8,16 +8,33 @@ import { getDatePickerProperties, renderDatePickerPropertiesUI } from './DatePic
 import { getFileUploadProperties, renderFileUploadPropertiesUI } from './FileUploadElement';
 
 // Import new page element property functions
-import { getTextElementProperties, renderTextElementPropertiesUI, TextElementData } from './TextElement';
-import { getImageElementProperties, ImageElementData } from './ImageElement';
-import { getVideoElementProperties, VideoElementData } from './VideoElement';
-import { getButtonElementProperties, ButtonElementData } from './ButtonElement';
+import { TextElementData } from './text/TextElementData';
+import { getTextElementProperties } from './text/utils/defaultProperties';
+import { renderTextElementPropertiesUI } from './text';
+import { ImageElementData } from './image/ImageElementData';
+import { getImageElementProperties } from './image/utils/defaultProperties';
+import { renderImageElementPropertiesUI } from './image';
+import { VideoElementData } from './video/VideoElementData';
+import { getVideoElementProperties, renderVideoElementPropertiesUI } from './video';
+// Import from the new button module
+import { 
+  getButtonElementProperties, 
+  ButtonElementData,
+  renderButtonElementPropertiesUI 
+} from './button';
 import { getFormElementProperties, FormElementData } from './FormElement';
-import { getSurveyElementProperties, SurveyElementData } from './SurveyElement';
 import { getCarouselElementProperties, CarouselElementData } from './CarouselElement';
 import { getWysiwygElementProperties, WysiwygElementData } from './WysiwygElement';
-import { getProfileElementProperties, ProfileElementData } from './ProfileElement';
-import { getSocialElementProperties, SocialElementData } from './SocialElement';
+import { 
+  getProfileElementProperties, 
+  ProfileElementData,
+  renderProfileElementPropertiesUI 
+} from './profile';
+import { 
+  getSocialElementProperties, 
+  SocialElementData,
+  renderSocialElementPropertiesUI 
+} from './social';
 import { getInstagramElementProperties, InstagramElementData } from './InstagramElement';
 import { getFacebookElementProperties, FacebookElementData } from './FacebookElement';
 import { getYoutubeElementProperties, YoutubeElementData } from './YoutubeElement';
@@ -33,7 +50,6 @@ export type {
   VideoElementData,
   ButtonElementData,
   FormElementData,
-  SurveyElementData,
   CarouselElementData,
   WysiwygElementData,
   ProfileElementData,
@@ -62,7 +78,7 @@ type OptionsRenderer = (
 // Export all property getters
 export const elementProperties = {
   // Form elements
-  text: getTextFieldProperties,
+  text: getTextElementProperties, // Changed to use text element properties
   textarea: getTextAreaProperties,
   checkbox: getCheckboxProperties,
   radio: getRadioProperties,
@@ -71,12 +87,10 @@ export const elementProperties = {
   file: getFileUploadProperties,
   
   // Page elements
-  pageText: getTextElementProperties,
   image: getImageElementProperties,
   video: getVideoElementProperties,
   button: getButtonElementProperties,
   form: getFormElementProperties,
-  survey: getSurveyElementProperties,
   carousel: getCarouselElementProperties,
   wysiwyg: getWysiwygElementProperties,
   profile: getProfileElementProperties,
@@ -90,7 +104,7 @@ export const elementProperties = {
 // Export all property UI renderers
 export const elementPropertiesUI = {
   // Form elements
-  text: renderTextFieldPropertiesUI as SimpleRenderer,
+  text: renderTextElementPropertiesUI as unknown as SimpleRenderer, // Use enhanced text element properties
   textarea: renderTextAreaPropertiesUI as SimpleRenderer,
   checkbox: renderCheckboxPropertiesUI as OptionsRenderer,
   radio: renderRadioPropertiesUI as OptionsRenderer,
@@ -99,16 +113,15 @@ export const elementPropertiesUI = {
   file: renderFileUploadPropertiesUI as SimpleRenderer,
   
   // Page elements
-  pageText: renderTextElementPropertiesUI as SimpleRenderer,
-  image: null,
-  video: null,
-  button: null,
+  image: renderImageElementPropertiesUI as unknown as SimpleRenderer,
+  video: renderVideoElementPropertiesUI as unknown as SimpleRenderer,
+  button: renderButtonElementPropertiesUI as unknown as SimpleRenderer,
   form: null,
   survey: null,
   carousel: null,
   wysiwyg: null,
-  profile: null,
-  social: null,
+  profile: renderProfileElementPropertiesUI as unknown as SimpleRenderer,
+  social: renderSocialElementPropertiesUI as unknown as SimpleRenderer,
   instagram: null,
   facebook: null,
   youtube: null,

@@ -1,0 +1,560 @@
+<%
+/**
+ * Profile Element EJS Template
+ * Renders a profile element with avatar, name, title, bio, contact info, and social links
+ * Supports multiple layout templates and cover photo
+ */
+
+// Extract element data
+const { element } = locals;
+
+// Determine animation class
+let animationClass = '';
+if (element.animation && element.animation !== 'none') {
+  animationClass = `animate__animated animate__${element.animation}`;
+}
+
+// Determine responsive classes
+let responsiveClass = '';
+if (element.hideOnMobile) {
+  responsiveClass += ' hide-on-mobile';
+}
+if (element.hideOnDesktop) {
+  responsiveClass += ' hide-on-desktop';
+}
+
+// Determine layout class
+const layoutClass = `profile-layout-${element.layoutTemplate || 'classic'}`;
+
+// Generate inline styles
+const styles = [];
+
+// Width and height
+if (element.width) styles.push(`width: ${element.width};`);
+if (element.height && element.height !== 'auto') styles.push(`height: ${element.height};`);
+
+// Border
+if (element.borderStyle && element.borderStyle !== 'none') {
+  styles.push(`border: ${element.borderWidth || '1px'} ${element.borderStyle} ${element.borderColor || '#000000'};`);
+}
+if (element.borderRadius) styles.push(`border-radius: ${element.borderRadius};`);
+
+// Background
+if (element.backgroundColor && element.backgroundColor !== 'transparent') {
+  styles.push(`background-color: ${element.backgroundColor};`);
+}
+
+// Box shadow
+if (element.boxShadow && element.boxShadow !== 'none') {
+  const color = element.boxShadowColor || 'rgba(0,0,0,0.2)';
+  const blur = element.boxShadowBlur || '10px';
+  const spread = element.boxShadowSpread || '0';
+  const offsetX = element.boxShadowOffsetX || '0';
+  const offsetY = element.boxShadowOffsetY || '4px';
+  
+  styles.push(`box-shadow: ${offsetX} ${offsetY} ${blur} ${spread} ${color};`);
+}
+
+// Margin and padding
+if (element.margin) styles.push(`margin: ${element.margin};`);
+if (element.padding) styles.push(`padding: ${element.padding};`);
+
+// Opacity
+if (element.opacity !== undefined && element.opacity !== 1) {
+  styles.push(`opacity: ${element.opacity};`);
+}
+
+// Additional styles
+styles.push('overflow: hidden;');
+styles.push('position: relative;');
+
+// Avatar styles
+const avatarStyles = [];
+if (element.showAvatar) {
+  avatarStyles.push('display: block;');
+  
+  // Size
+  if (element.avatarSize === 'sm') {
+    avatarStyles.push('width: 50px; height: 50px;');
+  } else if (element.avatarSize === 'md') {
+    avatarStyles.push('width: 100px; height: 100px;');
+  } else if (element.avatarSize === 'lg') {
+    avatarStyles.push('width: 150px; height: 150px;');
+  }
+  
+  // Shape
+  if (element.avatarShape === 'circle') {
+    avatarStyles.push('border-radius: 50%;');
+  } else if (element.avatarShape === 'square') {
+    avatarStyles.push('border-radius: 0;');
+  } else if (element.avatarShape === 'rounded') {
+    avatarStyles.push('border-radius: 8px;');
+  }
+  
+  // Object fit
+  avatarStyles.push('object-fit: cover;');
+} else {
+  avatarStyles.push('display: none;');
+}
+
+// Animation delay and duration
+if (element.animation && element.animation !== 'none') {
+  if (element.animationDuration) {
+    styles.push(`animation-duration: ${element.animationDuration};`);
+  }
+  if (element.animationDelay) {
+    styles.push(`animation-delay: ${element.animationDelay};`);
+  }
+  if (element.animationEasing) {
+    styles.push(`animation-timing-function: ${element.animationEasing};`);
+  }
+}
+
+// Typography styles
+const nameStyle = `margin: 0 0 ${element.nameSpacing || '0.5rem'}; font-weight: bold; font-size: ${element.nameFontSize || '1.5rem'};`;
+const titleStyle = `margin: 0 0 ${element.titleSpacing || '0.5rem'}; font-weight: normal; color: #666; font-size: ${element.titleFontSize || '1.1rem'};`;
+const bioStyle = `margin: 0 0 ${element.bioSpacing || '1rem'}; font-size: ${element.bioFontSize || '0.9rem'};`;
+const contactStyle = `margin: ${element.contactSpacing || '1rem'} 0; font-size: ${element.contactFontSize || '0.9rem'};`;
+const socialStyle = `display: flex; justify-content: ${element.alignment === 'center' ? 'center' : 'flex-start'}; gap: 1rem; margin: ${element.socialSpacing || '1rem'} 0;`;
+const socialLinkStyle = `font-size: ${element.socialIconSize || '1.5rem'}; color: inherit; text-decoration: none;`;
+
+// Helper function to render cover photo
+function renderCoverPhoto() {
+  if (!element.coverPhotoUrl) return '';
+  
+  const coverPhotoStyle = `width: 100%; height: ${element.coverPhotoHeight || '200px'}; object-fit: cover; object-position: ${element.coverPhotoPosition || 'center'};`;
+  
+  let html = `<div class="profile-cover-photo" style="position: relative; margin-bottom: 1rem;">
+    <img src="${element.coverPhotoUrl}" alt="Cover" style="${coverPhotoStyle}" />`;
+    
+  if (element.coverPhotoOverlay) {
+    const overlayStyle = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: ${element.coverPhotoOverlayColor || 'rgba(0,0,0,0.5)'}; opacity: ${element.coverPhotoOverlayOpacity || 0.5};`;
+    html += `<div style="${overlayStyle}"></div>`;
+  }
+  
+  html += `</div>`;
+  return html;
+}
+%>
+
+<div 
+  class="profile-element <%= layoutClass %> <%= animationClass %> <%= responsiveClass %>"
+  style="<%= styles.join(' ') %>"
+  aria-label="<%= element.ariaLabel || `Profile for ${element.name}` %>"
+  role="<%= element.role || 'region' %>"
+  tabindex="<%= element.tabIndex || 0 %>"
+  data-element-id="<%= element.id %>"
+  data-element-type="<%= element.type %>"
+>
+  <%- renderCoverPhoto() %>
+  
+  <% if (element.layoutTemplate === 'horizontal') { %>
+    <div style="display: flex; align-items: flex-start; gap: 1.5rem; padding: 1rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <div style="flex-shrink: 0;">
+        <% if (element.showAvatar && element.avatarUrl) { %>
+          <img 
+            src="<%= element.avatarUrl %>" 
+            alt="<%= element.name %> avatar" 
+            style="<%= avatarStyles.join(' ') %>"
+            class="profile-avatar"
+          />
+        <% } %>
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <% if (element.name) { %>
+          <h3 class="profile-name" style="<%= nameStyle %>">
+            <%= element.name %>
+          </h3>
+        <% } %>
+        
+        <% if (element.title) { %>
+          <h4 class="profile-title" style="<%= titleStyle %>">
+            <%= element.title %>
+          </h4>
+        <% } %>
+        
+        <% if (element.bio) { %>
+          <p class="profile-bio" style="<%= bioStyle %>">
+            <%= element.bio %>
+          </p>
+        <% } %>
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 1rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <% if (element.email || element.phone) { %>
+              <div class="profile-contact" style="<%= contactStyle %>">
+                <% if (element.email) { %>
+                  <div class="profile-email" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                    <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> <%= element.email %>
+                  </div>
+                <% } %>
+                
+                <% if (element.phone) { %>
+                  <div class="profile-phone" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                    <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> <%= element.phone %>
+                  </div>
+                <% } %>
+              </div>
+            <% } %>
+          </div>
+          <div>
+            <% if (element.showSocial && element.socialLinks && element.socialLinks.length > 0) { %>
+              <div class="profile-social" style="<%= socialStyle %>">
+                <% element.socialLinks.forEach(function(social) { %>
+                  <a 
+                    href="<%= social.url || '#' %>" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    class="profile-social-link"
+                    style="<%= socialLinkStyle %>"
+                  >
+                    <i class="fab fa-<%= social.icon || social.platform %>"></i>
+                  </a>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% } else if (element.layoutTemplate === 'minimal') { %>
+    <div style="background-color: #ffffff; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div style="display: flex; flex-direction: column; align-items: <%= element.alignment === 'center' ? 'center' : (element.alignment === 'right' ? 'flex-end' : 'flex-start') %>; gap: 0.75rem;">
+        <% if (element.showAvatar && element.avatarUrl) { %>
+          <img 
+            src="<%= element.avatarUrl %>" 
+            alt="<%= element.name %> avatar" 
+            style="<%= avatarStyles.join(' ') %>"
+            class="profile-avatar"
+          />
+        <% } %>
+        
+        <% if (element.name) { %>
+          <h3 class="profile-name" style="<%= nameStyle %>">
+            <%= element.name %>
+          </h3>
+        <% } %>
+        
+        <% if (element.title) { %>
+          <h4 class="profile-title" style="<%= titleStyle %>">
+            <%= element.title %>
+          </h4>
+        <% } %>
+        
+        <% if (element.bio) { %>
+          <p class="profile-bio" style="<%= bioStyle %>">
+            <%= element.bio %>
+          </p>
+        <% } %>
+        
+        <% if (element.email || element.phone) { %>
+          <div class="profile-contact" style="<%= contactStyle %>">
+            <% if (element.email) { %>
+              <div class="profile-email" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> <%= element.email %>
+              </div>
+            <% } %>
+            
+            <% if (element.phone) { %>
+              <div class="profile-phone" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> <%= element.phone %>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+        
+        <% if (element.showSocial && element.socialLinks && element.socialLinks.length > 0) { %>
+          <div class="profile-social" style="<%= socialStyle %>">
+            <% element.socialLinks.forEach(function(social) { %>
+              <a 
+                href="<%= social.url || '#' %>" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="profile-social-link"
+                style="<%= socialLinkStyle %>"
+              >
+                <i class="fab fa-<%= social.icon || social.platform %>"></i>
+              </a>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  <% } else if (element.layoutTemplate === 'corporate') { %>
+    <div style="border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); background-color: #ffffff;">
+      <div style="display: flex; align-items: center; padding: 1.25rem; border-bottom: 1px solid #f0f0f0; background-color: #fafafa;">
+        <div style="margin-right: 1.25rem; flex-shrink: 0;">
+          <% if (element.showAvatar && element.avatarUrl) { %>
+            <img 
+              src="<%= element.avatarUrl %>" 
+              alt="<%= element.name %> avatar" 
+              style="<%= avatarStyles.join(' ') %>"
+              class="profile-avatar"
+            />
+          <% } %>
+        </div>
+        <div>
+          <% if (element.name) { %>
+            <h3 class="profile-name" style="<%= nameStyle %>">
+              <%= element.name %>
+            </h3>
+          <% } %>
+          
+          <% if (element.title) { %>
+            <h4 class="profile-title" style="<%= titleStyle %>">
+              <%= element.title %>
+            </h4>
+          <% } %>
+        </div>
+      </div>
+      
+      <div style="padding: 1.25rem; border-bottom: <%= (element.email || element.phone) ? '1px solid #f0f0f0' : 'none' %>; background-color: #ffffff;">
+        <% if (element.bio) { %>
+          <p class="profile-bio" style="<%= bioStyle %>">
+            <%= element.bio %>
+          </p>
+        <% } %>
+      </div>
+      
+      <% if (element.email || element.phone) { %>
+        <div style="padding: 1.25rem; border-bottom: <%= (element.showSocial && element.socialLinks && element.socialLinks.length > 0) ? '1px solid #f0f0f0' : 'none' %>; background-color: #fafafa;">
+          <div class="profile-contact" style="<%= contactStyle %>">
+            <% if (element.email) { %>
+              <div class="profile-email" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> <%= element.email %>
+              </div>
+            <% } %>
+            
+            <% if (element.phone) { %>
+              <div class="profile-phone" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> <%= element.phone %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+      
+      <% if (element.showSocial && element.socialLinks && element.socialLinks.length > 0) { %>
+        <div style="padding: 1.25rem; display: flex; justify-content: center; gap: 1.5rem; background-color: #ffffff;">
+          <% element.socialLinks.forEach(function(social) { %>
+            <a 
+              href="<%= social.url || '#' %>" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="profile-social-link"
+              style="<%= socialLinkStyle %>; color: #555;"
+            >
+              <i class="fab fa-<%= social.icon || social.platform %>"></i>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  <% } else if (element.layoutTemplate === 'creative') { %>
+    <div style="position: relative; padding: 2rem; background-color: #f9f9f9; border-radius: 12px; min-height: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden;">
+      <!-- Decorative elements -->
+      <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; border-radius: 50%; background-color: rgba(0,123,255,0.1); z-index: 0;"></div>
+      <div style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; border-radius: 50%; background-color: rgba(0,123,255,0.05); z-index: 0;"></div>
+      
+      <div style="position: absolute; top: 1.5rem; right: 2rem; z-index: 2;">
+        <% if (element.showAvatar && element.avatarUrl) { %>
+          <img 
+            src="<%= element.avatarUrl %>" 
+            alt="<%= element.name %> avatar" 
+            style="<%= avatarStyles.join(' ') %>"
+            class="profile-avatar"
+          />
+        <% } %>
+      </div>
+      
+      <div style="position: relative; max-width: 70%; z-index: 1;">
+        <% if (element.name) { %>
+          <h3 class="profile-name" style="<%= nameStyle %>">
+            <%= element.name %>
+          </h3>
+        <% } %>
+        
+        <% if (element.title) { %>
+          <h4 class="profile-title" style="<%= titleStyle %>">
+            <%= element.title %>
+          </h4>
+        <% } %>
+        
+        <% if (element.bio) { %>
+          <p class="profile-bio" style="<%= bioStyle %>">
+            <%= element.bio %>
+          </p>
+        <% } %>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; position: absolute; bottom: 1.5rem; left: 2rem; right: 2rem; z-index: 1;">
+        <div>
+          <% if (element.email || element.phone) { %>
+            <div class="profile-contact" style="<%= contactStyle %>">
+              <% if (element.email) { %>
+                <div class="profile-email" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                  <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> <%= element.email %>
+                </div>
+              <% } %>
+              
+              <% if (element.phone) { %>
+                <div class="profile-phone" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                  <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> <%= element.phone %>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+        
+        <div>
+          <% if (element.showSocial && element.socialLinks && element.socialLinks.length > 0) { %>
+            <div class="profile-social" style="<%= socialStyle %>">
+              <% element.socialLinks.forEach(function(social) { %>
+                <a 
+                  href="<%= social.url || '#' %>" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  class="profile-social-link"
+                  style="<%= socialLinkStyle %>"
+                >
+                  <i class="fab fa-<%= social.icon || social.platform %>"></i>
+                </a>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  <% } else if (element.layoutTemplate === 'social') { %>
+    <div style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+      <div style="text-align: center; padding: 1.5rem;">
+        <div style="margin-top: <%= element.coverPhotoUrl ? '-3.5rem' : '0' %>; margin-bottom: 1rem;">
+          <% if (element.showAvatar && element.avatarUrl) { %>
+            <img 
+              src="<%= element.avatarUrl %>" 
+              alt="<%= element.name %> avatar" 
+              style="<%= avatarStyles.join(' ') %>; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
+              class="profile-avatar"
+            />
+          <% } %>
+        </div>
+        
+        <% if (element.name) { %>
+          <h3 class="profile-name" style="<%= nameStyle %>">
+            <%= element.name %>
+          </h3>
+        <% } %>
+        
+        <% if (element.title) { %>
+          <h4 class="profile-title" style="<%= titleStyle %>">
+            <%= element.title %>
+          </h4>
+        <% } %>
+        
+        <% if (element.bio) { %>
+          <p class="profile-bio" style="<%= bioStyle %>">
+            <%= element.bio %>
+          </p>
+        <% } %>
+        
+        <div style="margin: 1.5rem 0; padding: 1rem 0; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;">
+          <% if (element.showSocial && element.socialLinks && element.socialLinks.length > 0) { %>
+            <div class="profile-social" style="<%= socialStyle %>; justify-content: center; gap: 2rem;">
+              <% element.socialLinks.forEach(function(social) { %>
+                <a 
+                  href="<%= social.url || '#' %>" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  class="profile-social-link"
+                  style="<%= socialLinkStyle %>; font-size: 1.75rem;"
+                >
+                  <i class="fab fa-<%= social.icon || social.platform %>"></i>
+                </a>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+        
+        <div style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #f8f9fa; border-radius: 8px;">
+          <% if (element.email || element.phone) { %>
+            <div class="profile-contact" style="<%= contactStyle %>">
+              <% if (element.email) { %>
+                <div class="profile-email" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                  <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> <%= element.email %>
+                </div>
+              <% } %>
+              
+              <% if (element.phone) { %>
+                <div class="profile-phone" style="display: flex; align-items: center; margin: 0.5rem 0;">
+                  <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> <%= element.phone %>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <!-- Default layout for classic and other templates -->
+    <div style="text-align: <%= element.alignment === 'center' ? 'center' : (element.alignment === 'right' ? 'right' : 'left') %>; background-color: #ffffff; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+      <% if (element.showAvatar && element.avatarUrl) { %>
+        <img 
+          src="<%= element.avatarUrl %>" 
+          alt="<%= element.name %> avatar" 
+          style="<%= avatarStyles.join(' ') %>; <%= element.alignment === 'center' ? 'margin: 0 auto 1rem;' : 'margin: 0 0 1rem;' %>"
+          class="profile-avatar"
+        />
+      <% } %>
+      
+      <% if (element.name) { %>
+        <h3 class="profile-name" style="<%= nameStyle %>">
+          <%= element.name %>
+        </h3>
+      <% } %>
+      
+      <% if (element.title) { %>
+        <h4 class="profile-title" style="<%= titleStyle %>">
+          <%= element.title %>
+        </h4>
+      <% } %>
+      
+      <% if (element.bio) { %>
+        <p class="profile-bio" style="<%= bioStyle %>">
+          <%= element.bio %>
+        </p>
+      <% } %>
+      
+      <% if (element.email || element.phone) { %>
+        <div class="profile-contact" style="<%= contactStyle %>">
+          <% if (element.email) { %>
+            <div class="profile-email" style="display: flex; align-items: center; margin: 0.5rem 0; justify-content: <%= element.alignment === 'center' ? 'center' : (element.alignment === 'right' ? 'flex-end' : 'flex-start') %>;">
+              <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> <%= element.email %>
+            </div>
+          <% } %>
+          
+          <% if (element.phone) { %>
+            <div class="profile-phone" style="display: flex; align-items: center; margin: 0.5rem 0; justify-content: <%= element.alignment === 'center' ? 'center' : (element.alignment === 'right' ? 'flex-end' : 'flex-start') %>;">
+              <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> <%= element.phone %>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+      
+      <% if (element.showSocial && element.socialLinks && element.socialLinks.length > 0) { %>
+        <div class="profile-social" style="<%= socialStyle %>; justify-content: <%= element.alignment === 'center' ? 'center' : (element.alignment === 'right' ? 'flex-end' : 'flex-start') %>;">
+          <% element.socialLinks.forEach(function(social) { %>
+            <a 
+              href="<%= social.url || '#' %>" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="profile-social-link"
+              style="<%= socialLinkStyle %>"
+            >
+              <i class="fab fa-<%= social.icon || social.platform %>"></i>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>

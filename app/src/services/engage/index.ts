@@ -1,6 +1,5 @@
 // Re-export all engage services
 export * as FormsService from './forms';
-export * as SurveysService from './surveys';
 export * as CategoriesService from './categories';
 export * as PagesService from './pages';
 
@@ -99,11 +98,6 @@ export const buildFormEmbedUrl = (slug: string): string => {
   return `${baseUrl}/forms/${slug}`;
 };
 
-// Helper function to build a survey embed URL
-export const buildSurveyEmbedUrl = (slug: string): string => {
-  const baseUrl = window.location.origin;
-  return `${baseUrl}/surveys/${slug}`;
-};
 
 // Helper function to build a page embed URL
 export const buildPageEmbedUrl = (slug: string): string => {

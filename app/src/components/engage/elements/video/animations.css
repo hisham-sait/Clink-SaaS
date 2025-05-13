@@ -1,0 +1,211 @@
+/* Animations for Video Element */
+
+/* Fade In */
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide In from Left */
+@keyframes slideLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Slide In from Right */
+@keyframes slideRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Slide In from Top */
+@keyframes slideTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Slide In from Bottom */
+@keyframes slideBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Zoom In */
+@keyframes zoom {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Bounce */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-30px);
+  }
+  60% {
+    transform: translateY(-15px);
+  }
+}
+
+/* Flip */
+@keyframes flip {
+  from {
+    transform: perspective(400px) rotateY(90deg);
+    opacity: 0;
+  }
+  to {
+    transform: perspective(400px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+/* Rotate */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(360deg);
+    opacity: 1;
+  }
+}
+
+/* Pulse */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Animation Classes */
+.video-animation-fade {
+  animation: fade 1s ease;
+}
+
+.video-animation-slideLeft {
+  animation: slideLeft 1s ease;
+}
+
+.video-animation-slideRight {
+  animation: slideRight 1s ease;
+}
+
+.video-animation-slideTop {
+  animation: slideTop 1s ease;
+}
+
+.video-animation-slideBottom {
+  animation: slideBottom 1s ease;
+}
+
+.video-animation-zoom {
+  animation: zoom 1s ease;
+}
+
+.video-animation-bounce {
+  animation: bounce 1s ease;
+}
+
+.video-animation-flip {
+  animation: flip 1s ease;
+}
+
+.video-animation-rotate {
+  animation: rotate 1s ease;
+}
+
+.video-animation-pulse {
+  animation: pulse 1s ease infinite;
+}
+
+/* Hover Effects */
+.video-hover-zoom:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+.video-hover-brighten:hover {
+  filter: brightness(1.2);
+  transition: filter 0.3s ease;
+}
+
+.video-hover-darken:hover {
+  filter: brightness(0.8);
+  transition: filter 0.3s ease;
+}
+
+.video-hover-blur:hover {
+  filter: blur(2px);
+  transition: filter 0.3s ease;
+}
+
+.video-hover-grayscale:hover {
+  filter: grayscale(100%);
+  transition: filter 0.3s ease;
+}
+
+.video-hover-sepia:hover {
+  filter: sepia(100%);
+  transition: filter 0.3s ease;
+}
+
+.video-hover-shadow:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Responsive Classes */
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+}

@@ -296,14 +296,79 @@ const formService = {
   async deleteForm(id, companyId) {
     try {
       // Check if form exists and user has access
-      await this.getFormById(id, companyId);
+      const form = await this.getFormById(id, companyId);
       
-      // Delete the form
+      // Find all submissions for this form
+      const submissions = await prisma.formSubmission.findMany({
+        where: {
+          formId: id
+        }
+      });
+      
+      console.log(`Found ${submissions.length} submissions for form ${id}`);
+      
+      // STEP 1: First clone the submissions to a new dataset
+      // This ensures data is preserved even if the process is interrupted
+      
+      // Find or create a dataset for orphaned form submissions
+      let dataset = await prisma.dataset.findFirst({
+        where: {
+          type: 'orphaned_form_submissions',
+          companyId: companyId
+        }
+      });
+      
+      if (!dataset) {
+        console.log('Creating new dataset for orphaned form submissions');
+        dataset = await prisma.dataset.create({
+          data: {
+            name: 'Orphaned Form Submissions',
+            description: 'Submissions from deleted forms',
+            type: 'orphaned_form_submissions',
+            companyId: companyId
+          }
+        });
+      }
+      
+      // Copy all submissions to DataRecord
+      const dataRecords = [];
+      for (const submission of submissions) {
+        const dataRecord = await prisma.dataRecord.create({
+          data: {
+            datasetId: dataset.id,
+            data: submission.data,
+            metadata: {
+              ...(submission.metadata || {}),
+              originalFormId: id,
+              originalFormTitle: form.title,
+              originalSubmissionId: submission.id,
+              submittedAt: submission.createdAt.toISOString(),
+              source: 'deleted_form_submission'
+            }
+          }
+        });
+        dataRecords.push(dataRecord);
+      }
+      
+      console.log(`Successfully cloned ${dataRecords.length} submissions to DataRecord`);
+      
+      // STEP 2: Now that we've safely cloned the data, delete the original submissions
+      const deletedSubmissions = await prisma.formSubmission.deleteMany({
+        where: {
+          formId: id
+        }
+      });
+      
+      console.log(`Deleted ${deletedSubmissions.count} form submissions`);
+      
+      // STEP 3: Finally delete the form
       const deletedForm = await prisma.form.delete({
         where: {
           id: id
         }
       });
+      
+      console.log(`Successfully deleted form ${id}`);
       
       return deletedForm;
     } catch (error) {

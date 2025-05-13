@@ -1,0 +1,93 @@
+###############################################################################
+#                           Authelia Configuration                            #
+###############################################################################
+
+# The host and port to listen on
+server:
+  host: 0.0.0.0
+  port: 9091
+
+# Log configuration
+log:
+  level: info
+  format: text
+
+# JWT Secret used for session tokens
+jwt_secret: 17a5d7a52cc5a11bf9faf6af4d6443b2649ea9e79c0645bcff034c3a584b9aad
+
+# TOTP settings
+totp:
+  issuer: SEEGAP
+  period: 30
+  skew: 1
+
+# Theme and UI customization
+theme: light
+
+# Authentication backend
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 1
+      key_length: 32
+      salt_length: 16
+      memory: 1024
+      parallelism: 8
+
+# Access Control configuration
+access_control:
+  default_policy: deny
+  rules:
+    # Rules applied to everyone
+    - domain: localhost
+      policy: bypass
+    - domain: 127.0.0.1
+      policy: bypass
+      
+    # Superset access rules
+    - domain: bie.seegap.com
+      resources:
+        - "^/authelia/.*$"
+      policy: bypass
+    
+    # Admin access to Superset
+    - domain: bie.seegap.com
+      subject: "user:admin"
+      policy: one_factor
+      
+    # Regular access to Superset
+    - domain: bie.seegap.com
+      policy: one_factor
+
+# Session configuration
+session:
+  name: authelia_session
+  domain: auth.seegap.com
+  same_site: lax
+  expiration: 3600  # 1 hour
+  inactivity: 300   # 5 minutes
+  remember_me_duration: 2592000  # 30 days
+  secret: c93d4912eb4322aafc3b43f9461e1efb870bb6461e7ecd5c32ba768d97904cab
+  redis:
+    host: redis
+    port: 6379
+
+# Regulation configuration
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+# Storage configuration
+storage:
+  encryption_key: 37ade272f7dc844fac34f9558abb2cd399b127ad51e3a28835b4896f270a0f40
+  local:
+    path: /config/db.sqlite3
+
+# Notification configuration
+notifier:
+  # For testing purposes, notifications can be sent to a file
+  filesystem:
+    filename: /config/notification.txt

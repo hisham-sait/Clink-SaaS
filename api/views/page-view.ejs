@@ -1,179 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= page.title %></title>
-  
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Google Fonts - Dynamically load the selected font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  
-  <!-- Load all Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700&family=Source+Sans+Pro:wght@300;400;600;700&family=PT+Sans:wght@400;700&family=Oswald:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&family=Ubuntu:wght@300;400;500;700&family=Playfair+Display:wght@400;500;600;700&family=Quicksand:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&family=Work+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&family=Nunito+Sans:wght@300;400;600;700&family=Cabin:wght@400;500;600;700&family=Josefin+Sans:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Bitter:wght@300;400;500;600;700&family=Crimson+Text:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=Karla:wght@300;400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&family=Mulish:wght@300;400;500;600;700&family=Barlow:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
-  
-  <script>
-    // Helper function to darken a color for hover states
-    function adjustColor(color, amount) {
-      return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
-    }
-    
-    // Function to load a specific Google Font dynamically
-    function loadGoogleFont(fontFamily) {
-      // Extract the font name from the font family string
-      const fontName = fontFamily.split(',')[0].replace(/['"]/g, '');
-      console.log('Loading font:', fontName);
-      
-      // Create a link element for the Google Font
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@300;400;500;700&display=swap`;
-      document.head.appendChild(link);
-    }
-  </script>
-  <style>
-    /* Set the font family on the html and body elements */
-    html, body {
-      font-family: <%= page.appearance && page.appearance.fontFamily ? page.appearance.fontFamily : 'Arial, sans-serif' %> !important;
-    }
-    
-    body {
-      background-color: <%= page.appearance && page.appearance.backgroundColor ? page.appearance.backgroundColor : '#fff' %>;
-      <% if (page.appearance && page.appearance.backgroundImage) { %>
-      background-image: url('<%= page.appearance.backgroundImage %>');
-      background-size: cover;
-      background-position: center;
-      <% } %>
-      color: <%= page.appearance && page.appearance.textColor ? page.appearance.textColor : '#212529' %>;
-    }
-    
-    /* Apply font to all elements */
-    *, *::before, *::after {
-      font-family: inherit !important;
-    }
-    
-    /* Force font on all elements */
-    input, textarea, select, button, option, 
-    .form-control, .form-select, .form-check-label, 
-    .btn, h1, h2, h3, h4, h5, h6, p, span, div, label, 
-    .form-text, .text-muted, .alert, .alert-heading {
-      font-family: <%= page.appearance && page.appearance.fontFamily ? page.appearance.fontFamily : 'Arial, sans-serif' %> !important;
-    }
-    
-    /* Fix for placeholder text */
-    ::placeholder {
-      font-family: <%= page.appearance && page.appearance.fontFamily ? page.appearance.fontFamily : 'Arial, sans-serif' %> !important;
-    }
-    
-    .page-container {
-      max-width: <%= page.appearance && page.appearance.width ? page.appearance.width : '800px' %>;
-      margin: 0 auto;
-      padding: 30px;
-    }
-    
-    .page-header {
-      margin-bottom: 30px;
-      text-align: <%= page.appearance && page.appearance.headerAlignment ? page.appearance.headerAlignment : 'center' %>;
-    }
-    
-    .page-footer {
-      margin-top: 30px;
-      text-align: <%= page.appearance && page.appearance.headerAlignment ? page.appearance.headerAlignment : 'center' %>;
-    }
-    
-    .section-title {
-      color: <%= page.appearance && page.appearance.sectionTitleColor ? page.appearance.sectionTitleColor : '#343a40' %>;
-      margin-top: 20px;
-      margin-bottom: 10px;
-    }
-    
-    .section-divider {
-      border-bottom: 1px solid <%= page.appearance && page.appearance.sectionDividerColor ? page.appearance.sectionDividerColor : '#dee2e6' %>;
-      margin-bottom: 15px;
-      padding-bottom: 5px;
-    }
-    
-    .element-spacing {
-      margin-bottom: <%= page.appearance && page.appearance.elementSpacing ? page.appearance.elementSpacing : '15px' %>;
-    }
-    
-    .btn-primary {
-      background-color: <%= page.appearance && page.appearance.primaryColor ? page.appearance.primaryColor : '#007bff' %>;
-      border-color: <%= page.appearance && page.appearance.primaryColor ? page.appearance.primaryColor : '#007bff' %>;
-    }
-    
-    .btn-outline-secondary {
-      color: <%= page.appearance && page.appearance.secondaryColor ? page.appearance.secondaryColor : '#6c757d' %>;
-      border-color: <%= page.appearance && page.appearance.secondaryColor ? page.appearance.secondaryColor : '#6c757d' %>;
-    }
-    
-    <% if (page.appearance && page.appearance.buttonStyle === 'rounded') { %>
-    .btn {
-      border-radius: 50px;
-    }
-    <% } else if (page.appearance && page.appearance.buttonStyle === 'square') { %>
-    .btn {
-      border-radius: 0;
-    }
+<%- include('partials/head') %>
+
+<body>
+  <!-- Background with blur effect -->
+  <div class="page-background" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    <% if (page.appearance && page.appearance.backgroundType === 'simpleGradient' || 
+           page.appearance && page.appearance.backgroundType === 'abstractGradient' || 
+           page.appearance && page.appearance.backgroundType === 'customGradient') { %>
+    background-image: <%= page.appearance.backgroundGradient %>;
+    <% if (page.appearance && page.appearance.backgroundType === 'abstractGradient') { %>
+    background-blend-mode: overlay, color-dodge, overlay, difference, normal;
+    <% } %>
+    <% } else if (page.appearance && page.appearance.backgroundType === 'image') { %>
+    background-image: url('<%= page.appearance.backgroundImage %>');
+    background-size: cover;
+    background-position: center;
+    <% } else { %>
+    background-color: <%= page.appearance && page.appearance.backgroundColor ? page.appearance.backgroundColor : '#fff' %>;
     <% } %>
     
-    /* Carousel styles */
-    .carousel {
-      margin-bottom: 20px;
-    }
+    <% if (page.appearance && page.appearance.backgroundAttachment) { %>
+    background-attachment: <%= page.appearance.backgroundAttachment %>;
+    <% } %>
     
-    .carousel-item img {
-      max-width: 100%;
-      height: auto;
-    }
-    
-    /* Social media icons */
-    .social-icons {
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-    
-    .social-icons a {
-      margin-right: 15px;
-      color: <%= page.appearance && page.appearance.primaryColor ? page.appearance.primaryColor : '#007bff' %>;
-    }
-    
-    /* Embedded content */
-    .embed-container {
-      position: relative;
-      padding-bottom: 56.25%;
-      height: 0;
-      overflow: hidden;
-      max-width: 100%;
-      margin-bottom: 20px;
-    }
-    
-    .embed-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
-</head>
-<body>
+  "></div>
   <div class="container">
     <div class="page-container">
       <div class="page-header">
-        <h1><%= page.title %></h1>
+        <!-- Page title removed from public view -->
       </div>
       
       <div id="pageContent">
         <% if (page.sections && page.sections.length > 0) { %>
           <% page.sections.forEach(section => { %>
             <div class="page-section mb-4">
+              <!-- Section title hidden via CSS class -->
               <h2 class="section-title"><%= section.title %></h2>
               <% if (section.description) { %>
                 <p class="text-muted section-divider"><%= section.description %></p>
@@ -182,255 +50,37 @@
               <% if (section.elements && section.elements.length > 0) { %>
                 <% section.elements.forEach(element => { %>
                   <div class="element-spacing" id="element-<%= element.id %>">
-                    <!-- Element header -->
-                    <% if (element.label) { %>
-                      <h4><%= element.label %><% if (element.required) { %><span class="text-danger">*</span><% } %></h4>
-                    <% } %>
-                    <% if (element.description) { %>
-                      <p class="text-muted"><%= element.description %></p>
-                    <% } %>
+                    <!-- Element label/name removed from public view -->
                     
                     <!-- Render element based on type -->
                     <% if (element.type === 'text') { %>
-                      <% if (element.textType === 'heading') { %>
-                        <% const headingLevel = element.headingLevel || 2; %>
-                        <% const headingTag = `h${headingLevel}`; %>
-                        <div style="
-                          color: <%= element.headingColor || '#212529' %>;
-                          text-align: <%= element.headingAlignment || 'left' %>;
-                          font-family: <%= element.fontFamily || 'inherit' %>;
-                          margin: <%= element.margin || '0 0 1rem 0' %>;
-                          padding: <%= element.padding || '0' %>;
-                          background-color: <%= element.backgroundColor || 'transparent' %>;
-                          border-radius: <%= element.borderRadius || '0' %>;
-                        ">
-                          <% if (headingLevel == 1) { %>
-                            <h1><%= element.content || `Heading ${headingLevel}` %></h1>
-                          <% } else if (headingLevel == 2) { %>
-                            <h2><%= element.content || `Heading ${headingLevel}` %></h2>
-                          <% } else if (headingLevel == 3) { %>
-                            <h3><%= element.content || `Heading ${headingLevel}` %></h3>
-                          <% } else if (headingLevel == 4) { %>
-                            <h4><%= element.content || `Heading ${headingLevel}` %></h4>
-                          <% } else if (headingLevel == 5) { %>
-                            <h5><%= element.content || `Heading ${headingLevel}` %></h5>
-                          <% } else { %>
-                            <h6><%= element.content || `Heading ${headingLevel}` %></h6>
-                          <% } %>
-                        </div>
-                      <% } else if (element.textType === 'list') { %>
-                        <div style="
-                          color: <%= element.listColor || '#212529' %>;
-                          font-family: <%= element.fontFamily || 'inherit' %>;
-                          margin: <%= element.margin || '0 0 1rem 0' %>;
-                          padding: <%= element.padding || '0' %>;
-                          background-color: <%= element.backgroundColor || 'transparent' %>;
-                          border-radius: <%= element.borderRadius || '0' %>;
-                        ">
-                          <% if (element.listType === 'ordered') { %>
-                            <ol>
-                              <% (element.listItems || ['Item 1', 'Item 2', 'Item 3']).forEach(item => { %>
-                                <li><%= item %></li>
-                              <% }); %>
-                            </ol>
-                          <% } else { %>
-                            <ul>
-                              <% (element.listItems || ['Item 1', 'Item 2', 'Item 3']).forEach(item => { %>
-                                <li><%= item %></li>
-                              <% }); %>
-                            </ul>
-                          <% } %>
-                        </div>
-                      <% } else { %>
-                        <div style="
-                          color: <%= element.paragraphColor || '#212529' %>;
-                          text-align: <%= element.paragraphAlignment || 'left' %>;
-                          font-family: <%= element.fontFamily || 'inherit' %>;
-                          line-height: <%= element.paragraphLineHeight || '1.5' %>;
-                          margin: <%= element.margin || '0 0 1rem 0' %>;
-                          padding: <%= element.padding || '0' %>;
-                          background-color: <%= element.backgroundColor || 'transparent' %>;
-                          border-radius: <%= element.borderRadius || '0' %>;
-                        ">
-                          <p><%= element.content || 'Paragraph text content goes here. This is how your paragraph will look.' %></p>
-                        </div>
-                      <% } %>
+                      <%- include('partials/elements/text', { element }) %>
                     <% } else if (element.type === 'image') { %>
-                      <div class="text-center">
-                        <img src="<%= element.imageUrl || 'https://via.placeholder.com/800x400' %>" 
-                             alt="<%= element.imageAlt || element.label || 'Image' %>" 
-                             class="img-fluid" 
-                             style="
-                               max-width: <%= element.maxWidth || '100%' %>;
-                               border-radius: <%= element.borderRadius || '0' %>;
-                               margin: <%= element.margin || '0 0 1rem 0' %>;
-                             ">
-                      </div>
+                      <%- include('partials/elements/image', { element }) %>
                     <% } else if (element.type === 'video') { %>
-                      <div class="embed-container">
-                        <iframe src="<%= element.videoUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ' %>" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen></iframe>
-                      </div>
+                      <%- include('partials/elements/video', { element }) %>
                     <% } else if (element.type === 'button') { %>
-                      <div class="text-<%= element.alignment || 'left' %>">
-                        <a href="<%= element.buttonUrl || '#' %>" 
-                           class="btn <%= element.buttonStyle === 'outline' ? 'btn-outline-' : 'btn-' %><%= element.buttonVariant || 'primary' %> <%= element.buttonSize || '' %>"
-                           target="<%= element.openInNewTab ? '_blank' : '_self' %>"
-                           style="
-                             background-color: <%= element.buttonStyle !== 'outline' ? (element.buttonColor || page.appearance.primaryColor || '#007bff') : 'transparent' %>;
-                             color: <%= element.buttonStyle === 'outline' ? (element.buttonColor || page.appearance.primaryColor || '#007bff') : '#fff' %>;
-                             border-color: <%= element.buttonColor || page.appearance.primaryColor || '#007bff' %>;
-                           ">
-                          <%= element.buttonText || 'Click Here' %>
-                        </a>
-                      </div>
+                      <%- include('partials/elements/button', { element }) %>
                     <% } else if (element.type === 'form') { %>
-                      <div class="border p-3 rounded mb-3">
-                        <h5>Embedded Form</h5>
-                        <p>Form content will be loaded here.</p>
-                        <% if (element.formId) { %>
-                          <a href="/engage/forms/<%= element.formId %>" class="btn btn-primary">Go to Form</a>
-                        <% } %>
-                      </div>
+                      <%- include('partials/elements/form', { element }) %>
                     <% } else if (element.type === 'survey') { %>
-                      <div class="border p-3 rounded mb-3">
-                        <h5>Embedded Survey</h5>
-                        <p>Survey content will be loaded here.</p>
-                        <% if (element.surveyId) { %>
-                          <a href="/engage/surveys/<%= element.surveyId %>" class="btn btn-primary">Go to Survey</a>
-                        <% } %>
-                      </div>
+                      <%- include('partials/elements/form', { element }) %>
                     <% } else if (element.type === 'carousel') { %>
-                      <div id="carousel-<%= element.id %>" class="carousel slide" data-bs-ride="carousel">
-                        <div class="carousel-inner">
-                          <% if (element.carouselItems && element.carouselItems.length > 0) { %>
-                            <% element.carouselItems.forEach((item, index) => { %>
-                              <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
-                                <% if (item.type === 'image') { %>
-                                  <img src="<%= item.imageUrl || 'https://via.placeholder.com/800x400' %>" class="d-block w-100" alt="<%= item.caption || 'Slide ' + (index + 1) %>">
-                                <% } else if (item.type === 'video') { %>
-                                  <div class="embed-container">
-                                    <iframe src="<%= item.videoUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ' %>" frameborder="0" allowfullscreen></iframe>
-                                  </div>
-                                <% } %>
-                                <% if (item.caption) { %>
-                                  <div class="carousel-caption d-none d-md-block">
-                                    <p><%= item.caption %></p>
-                                  </div>
-                                <% } %>
-                              </div>
-                            <% }); %>
-                          <% } else { %>
-                            <div class="carousel-item active">
-                              <img src="https://via.placeholder.com/800x400?text=Slide+1" class="d-block w-100" alt="Slide 1">
-                            </div>
-                            <div class="carousel-item">
-                              <img src="https://via.placeholder.com/800x400?text=Slide+2" class="d-block w-100" alt="Slide 2">
-                            </div>
-                            <div class="carousel-item">
-                              <img src="https://via.placeholder.com/800x400?text=Slide+3" class="d-block w-100" alt="Slide 3">
-                            </div>
-                          <% } %>
-                        </div>
-                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-<%= element.id %>" data-bs-slide="prev">
-                          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                          <span class="visually-hidden">Previous</span>
-                        </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-<%= element.id %>" data-bs-slide="next">
-                          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                          <span class="visually-hidden">Next</span>
-                        </button>
-                      </div>
+                      <%- include('partials/elements/carousel', { element }) %>
                     <% } else if (element.type === 'wysiwyg') { %>
-                      <div class="wysiwyg-content">
-                        <%- element.content || '<p>This is a rich text editor content area.</p>' %>
-                      </div>
+                      <%- include('partials/elements/wysiwyg', { element }) %>
                     <% } else if (element.type === 'profile') { %>
-                      <div class="border p-3 rounded mb-3 d-flex">
-                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 64px; height: 64px;">
-                          <% if (element.profileImage) { %>
-                            <img src="<%= element.profileImage %>" class="rounded-circle" alt="Profile" width="64" height="64">
-                          <% } else { %>
-                            <i class="fas fa-user fa-2x"></i>
-                          <% } %>
-                        </div>
-                        <div>
-                          <h5><%= element.profileName || 'User Name' %></h5>
-                          <p><%= element.profileDescription || 'User profile description goes here.' %></p>
-                          <% if (element.profileLink) { %>
-                            <a href="<%= element.profileLink %>" class="btn btn-sm btn-primary">View Profile</a>
-                          <% } %>
-                        </div>
-                      </div>
+                      <%- include('partials/elements/profile', { element }) %>
                     <% } else if (element.type === 'social') { %>
-                      <div class="social-icons">
-                        <% if (element.facebook) { %>
-                          <a href="<%= element.facebook %>" target="_blank"><i class="fab fa-facebook"></i></a>
-                        <% } %>
-                        <% if (element.twitter) { %>
-                          <a href="<%= element.twitter %>" target="_blank"><i class="fab fa-twitter"></i></a>
-                        <% } %>
-                        <% if (element.instagram) { %>
-                          <a href="<%= element.instagram %>" target="_blank"><i class="fab fa-instagram"></i></a>
-                        <% } %>
-                        <% if (element.linkedin) { %>
-                          <a href="<%= element.linkedin %>" target="_blank"><i class="fab fa-linkedin"></i></a>
-                        <% } %>
-                        <% if (element.youtube) { %>
-                          <a href="<%= element.youtube %>" target="_blank"><i class="fab fa-youtube"></i></a>
-                        <% } %>
-                      </div>
+                      <%- include('partials/elements/social', { element }) %>
                     <% } else if (element.type === 'instagram') { %>
-                      <div class="embed-container">
-                        <% if (element.instagramUrl) { %>
-                          <iframe src="<%= element.instagramUrl %>" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
-                        <% } else { %>
-                          <div class="text-center p-4 bg-light">
-                            <i class="fab fa-instagram fa-3x mb-3"></i>
-                            <p>Instagram embed placeholder</p>
-                          </div>
-                        <% } %>
-                      </div>
+                      <%- include('partials/elements/instagram', { element }) %>
                     <% } else if (element.type === 'facebook') { %>
-                      <div class="embed-container">
-                        <% if (element.facebookUrl) { %>
-                          <iframe src="<%= element.facebookUrl %>" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-                        <% } else { %>
-                          <div class="text-center p-4 bg-light">
-                            <i class="fab fa-facebook fa-3x mb-3"></i>
-                            <p>Facebook embed placeholder</p>
-                          </div>
-                        <% } %>
-                      </div>
+                      <%- include('partials/elements/facebook', { element }) %>
                     <% } else if (element.type === 'youtube') { %>
-                      <div class="embed-container">
-                        <% if (element.youtubeUrl) { %>
-                          <iframe src="<%= element.youtubeUrl %>" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        <% } else { %>
-                          <div class="text-center p-4 bg-light">
-                            <i class="fab fa-youtube fa-3x mb-3"></i>
-                            <p>YouTube embed placeholder</p>
-                          </div>
-                        <% } %>
-                      </div>
+                      <%- include('partials/elements/youtube', { element }) %>
                     <% } else if (element.type === 'product') { %>
-                      <div class="border p-3 rounded mb-3">
-                        <div class="row">
-                          <div class="col-md-4">
-                            <img src="<%= element.productImage || 'https://via.placeholder.com/300x300' %>" class="img-fluid" alt="<%= element.productName || 'Product' %>">
-                          </div>
-                          <div class="col-md-8">
-                            <h5><%= element.productName || 'Product Name' %></h5>
-                            <p><%= element.productDescription || 'Product description goes here.' %></p>
-                            <p><strong>Price:</strong> <%= element.productPrice || '$0.00' %></p>
-                            <% if (element.productUrl) { %>
-                              <a href="<%= element.productUrl %>" class="btn btn-primary">View Product</a>
-                            <% } %>
-                          </div>
-                        </div>
-                      </div>
+                      <%- include('partials/elements/product', { element }) %>
                     <% } %>
                   </div>
                 <% }); %>
@@ -449,67 +99,6 @@
     </div>
   </div>
   
-  <!-- Bootstrap JS Bundle with Popper -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <script>
-    // Page data from server
-    const pageData = <%- JSON.stringify(page) %>;
-    
-    // Log the page appearance settings for debugging
-    console.log('Page appearance settings:', pageData.appearance);
-    
-    // Load the selected font
-    if (pageData.appearance && pageData.appearance.fontFamily) {
-      loadGoogleFont(pageData.appearance.fontFamily);
-    }
-    
-    // Track page view if analytics is enabled
-    const analyticsEnabled = pageData.settings && pageData.settings.enableAnalytics !== false;
-    if (analyticsEnabled) {
-      // Send analytics data to the server
-      fetch(`/api/engage/pages/${pageData.id}/view`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          metadata: {
-            referrer: document.referrer,
-            screenSize: {
-              width: window.innerWidth,
-              height: window.innerHeight
-            },
-            userAgent: navigator.userAgent,
-            language: navigator.language,
-            timestamp: new Date().toISOString()
-          }
-        })
-      }).catch(err => {
-        console.error('Failed to send analytics data:', err);
-      });
-    }
-    
-    // Initialize page
-    document.addEventListener('DOMContentLoaded', function() {
-      // Apply font family to all elements after rendering
-      const fontFamily = pageData.appearance && pageData.appearance.fontFamily 
-        ? pageData.appearance.fontFamily 
-        : 'Arial, sans-serif';
-      
-      // Apply to all elements
-      document.querySelectorAll('*').forEach(el => {
-        if (el.tagName !== 'STYLE' && el.tagName !== 'SCRIPT') {
-          el.style.fontFamily = fontFamily;
-        }
-      });
-      
-      // Initialize carousels
-      const carousels = document.querySelectorAll('.carousel');
-      carousels.forEach(carousel => {
-        new bootstrap.Carousel(carousel);
-      });
-    });
-  </script>
+  <%- include('partials/scripts') %>
 </body>
 </html>

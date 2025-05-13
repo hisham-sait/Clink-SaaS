@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const formService = require('../../services/engage/forms');
-const surveyService = require('../../services/engage/surveys');
 const pageService = require('../../services/engage/pages');
 const { PrismaClient } = require('@prisma/client');
 const UAParser = require('ua-parser-js');
@@ -93,59 +92,6 @@ router.get('/f/:slug', asyncHandler(async (req, res) => {
   }
 }));
 
-// Survey resolver - /y/:slug
-router.get('/y/:slug', asyncHandler(async (req, res) => {
-  try {
-    const { slug } = req.params;
-    
-    // Find the survey by slug
-    const survey = await surveyService.getSurveyBySlug(slug);
-    
-    // Check if survey is active
-    if (survey.status !== 'Active') {
-      return res.status(403).render('error', { 
-        title: 'Survey Not Available',
-        message: 'This survey is currently not active',
-        error: { status: 403, stack: '' }
-      });
-    }
-    
-    // Get user agent and IP
-    const userAgent = req.headers['user-agent'];
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const referrer = req.headers.referer || req.headers.referrer || 'Direct';
-    
-    // Parse user agent
-    const { browser, device } = parseUserAgent(userAgent);
-    
-    // Get location from IP
-    const location = getLocationFromIp(ip);
-    
-    // Record the view asynchronously (commented out for now)
-    // We'll implement this later when the surveyView model is available
-    
-    // Update the view count (commented out for now)
-    // We'll implement this later when the survey model has a views field
-    
-    // Render the survey view
-    res.render('survey-view', { survey });
-    
-  } catch (error) {
-    console.error('Error resolving survey:', error);
-    if (error.message === 'Survey not found') {
-      return res.status(404).render('error', { 
-        title: 'Survey Not Found',
-        message: 'Survey not found',
-        error: { status: 404, stack: '' }
-      });
-    }
-    res.status(500).render('error', { 
-      title: 'Server Error',
-      message: 'Error loading survey',
-      error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
-    });
-  }
-}));
 
 // Page resolver - /p/:slug
 router.get('/p/:slug', asyncHandler(async (req, res) => {
@@ -256,31 +202,6 @@ router.post('/analytics', asyncHandler(async (req, res) => {
       } catch (error) {
         if (error.message === 'Form not found') {
           const { statusCode, body } = ErrorTypes.NOT_FOUND('Form');
-          return res.status(statusCode).json(body);
-        }
-        throw error;
-      }
-    } else if (type === 'survey') {
-      try {
-        // Find the survey
-        const survey = await surveyService.getSurveyBySlug(slug);
-        
-        // Create analytics entry
-        // Note: We need to add a trackSurveyAnalytics method to the surveyService
-        // For now, we'll use the PrismaClient directly
-        const { PrismaClient } = require('@prisma/client');
-        const prisma = new PrismaClient();
-        
-        await prisma.surveyAnalytics.create({
-          data: {
-            surveyId: survey.id,
-            event,
-            metadata
-          }
-        });
-      } catch (error) {
-        if (error.message === 'Survey not found') {
-          const { statusCode, body } = ErrorTypes.NOT_FOUND('Survey');
           return res.status(statusCode).json(body);
         }
         throw error;

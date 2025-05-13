@@ -1,0 +1,190 @@
+<style>
+  /* Set the font family on the html and body elements */
+  html, body {
+    font-family: <%= page.appearance && page.appearance.fontFamily ? page.appearance.fontFamily : 'Arial, sans-serif' %> !important;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    <% if (page.appearance && page.appearance.backgroundType === 'simpleGradient' || 
+           page.appearance && page.appearance.backgroundType === 'abstractGradient' || 
+           page.appearance && page.appearance.backgroundType === 'customGradient') { %>
+    background-image: <%= page.appearance.backgroundGradient %>;
+    <% if (page.appearance && page.appearance.backgroundType === 'abstractGradient') { %>
+    background-blend-mode: overlay, color-dodge, overlay, difference, normal;
+    <% } %>
+    <% } else if (page.appearance && page.appearance.backgroundType === 'image') { %>
+    background-image: url('<%= page.appearance.backgroundImage %>');
+    background-size: cover;
+    background-position: center;
+    <% } else { %>
+    background-color: <%= page.appearance && page.appearance.backgroundColor ? page.appearance.backgroundColor : '#fff' %>;
+    <% } %>
+    
+    <% if (page.appearance && page.appearance.backgroundAttachment) { %>
+    background-attachment: <%= page.appearance.backgroundAttachment %>;
+    <% } %>
+    
+    
+    color: <%= page.appearance && page.appearance.textColor ? page.appearance.textColor : '#212529' %>;
+  }
+  
+  /* Apply font to all elements except Font Awesome icons */
+  * {
+    font-family: inherit !important;
+  }
+  
+  /* Exclude Font Awesome icons from font-family override */
+  .fa::before, .fa::after, 
+  .fas::before, .fas::after, 
+  .far::before, .far::after, 
+  .fab::before, .fab::after,
+  .fa-brands::before, .fa-brands::after,
+  .fa-solid::before, .fa-solid::after,
+  .fa-regular::before, .fa-regular::after {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "FontAwesome" !important;
+  }
+  
+  /* Force font on all elements */
+  input, textarea, select, button, option, 
+  .form-control, .form-select, .form-check-label, 
+  .btn, h1, h2, h3, h4, h5, h6, p, span, div, label, 
+  .form-text, .text-muted, .alert, .alert-heading {
+    font-family: <%= page.appearance && page.appearance.fontFamily ? page.appearance.fontFamily : 'Arial, sans-serif' %> !important;
+  }
+  
+  /* Fix for placeholder text */
+  ::placeholder {
+    font-family: <%= page.appearance && page.appearance.fontFamily ? page.appearance.fontFamily : 'Arial, sans-serif' %> !important;
+  }
+  
+  .page-container {
+    max-width: <%= page.appearance && page.appearance.width ? page.appearance.width : '800px' %>;
+    margin: 0 auto;
+    padding: <%= page.appearance && page.appearance.padding ? page.appearance.padding : '20px' %>;
+    background-color: transparent;
+    border-radius: <%= page.appearance && page.appearance.borderRadius ? page.appearance.borderRadius : '0' %>;
+    box-shadow: <%= page.appearance && page.appearance.boxShadow ? page.appearance.boxShadow : 'none' %>;
+  }
+  
+  .page-header {
+    margin-bottom: 30px;
+    text-align: <%= page.appearance && page.appearance.headerAlignment ? page.appearance.headerAlignment : 'center' %>;
+  }
+  
+  .page-footer {
+    margin-top: 30px;
+    text-align: <%= page.appearance && page.appearance.headerAlignment ? page.appearance.headerAlignment : 'center' %>;
+  }
+  
+  .section-title {
+    color: <%= page.appearance && page.appearance.sectionTitleColor ? page.appearance.sectionTitleColor : '#343a40' %>;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    display: none; /* Hide section titles */
+  }
+  
+  .section-divider {
+    border-bottom: 1px solid <%= page.appearance && page.appearance.sectionDividerColor ? page.appearance.sectionDividerColor : '#dee2e6' %>;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+  }
+  
+  .element-spacing {
+    margin-bottom: <%= page.appearance && page.appearance.elementSpacing ? page.appearance.elementSpacing : '15px' %>;
+  }
+  
+  .btn-primary {
+    background-color: <%= page.appearance && page.appearance.primaryColor ? page.appearance.primaryColor : '#007bff' %>;
+    border-color: <%= page.appearance && page.appearance.primaryColor ? page.appearance.primaryColor : '#007bff' %>;
+  }
+  
+  .btn-outline-secondary {
+    color: <%= page.appearance && page.appearance.secondaryColor ? page.appearance.secondaryColor : '#6c757d' %>;
+    border-color: <%= page.appearance && page.appearance.secondaryColor ? page.appearance.secondaryColor : '#6c757d' %>;
+  }
+  
+  <% if (page.appearance && page.appearance.buttonStyle === 'rounded') { %>
+  .btn {
+    border-radius: 50px;
+  }
+  <% } else if (page.appearance && page.appearance.buttonStyle === 'square') { %>
+  .btn {
+    border-radius: 0;
+  }
+  <% } %>
+  
+  /* Carousel styles */
+  .carousel {
+    margin-bottom: 20px;
+  }
+  
+  .carousel-item img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Social media icons */
+  .social-icons {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .social-icons a {
+    margin-right: 15px;
+    color: <%= page.appearance && page.appearance.primaryColor ? page.appearance.primaryColor : '#007bff' %>;
+  }
+  
+  /* Embedded content */
+  .embed-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .embed-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Button styles for better hover and active states */
+  .button-element {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Active state for touch devices */
+  .button-element.button-active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease-out !important;
+  }
+  
+  /* Ripple effect for click feedback */
+  .button-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+  }
+  
+  @keyframes ripple {
+    to {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+</style>
+
+<%- include('animations') %>
+<%- include('responsive') %>
+<%- include('elements/image-styles') %>

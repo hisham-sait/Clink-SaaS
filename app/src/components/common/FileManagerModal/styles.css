@@ -1,0 +1,135 @@
+/* File Manager Modal Styles */
+
+.file-manager-modal .modal-dialog {
+  max-width: 90%;
+  height: 90vh;
+}
+
+.file-manager-modal .modal-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-manager-modal .modal-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.file-manager-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.file-manager-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.file-manager-sidebar {
+  width: 250px;
+  overflow-y: auto;
+  max-height: calc(90vh - 200px);
+}
+
+.file-manager-main {
+  overflow-y: auto;
+  max-height: calc(90vh - 200px);
+}
+
+/* Folder Tree Styles */
+.folder-tree {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.folder-tree-item {
+  margin-bottom: 5px;
+}
+
+.folder-tree .list-group-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
+.folder-tree .list-group-item.active {
+  background-color: #f0f0f0;
+  color: #212529;
+  border-color: #dee2e6;
+}
+
+/* File Grid Styles */
+.file-grid .card {
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.file-grid .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.folder-card .card-img-top {
+  background-color: #fff8e1;
+}
+
+/* File List Styles */
+.file-list {
+  width: 100%;
+}
+
+.file-list .folder-row:hover {
+  background-color: #fff8e1;
+}
+
+/* Breadcrumb Styles */
+.breadcrumb-container {
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.breadcrumb-item {
+  color: #007bff;
+  text-decoration: none;
+  padding: 0;
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Dropzone Styles */
+.dropzone {
+  border: 2px dashed #dee2e6;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.dropzone:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+/* Toolbar Styles */
+.file-manager-toolbar {
+  background-color: #f8f9fa;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .file-manager-sidebar {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .file-manager-content {
+    flex-direction: column;
+  }
+}

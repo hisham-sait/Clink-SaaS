@@ -271,11 +271,20 @@ async function updatePage(id, data) {
  */
 async function deletePage(id) {
   try {
-    const page = await prisma.page.delete({
-      where: { id }
+    // Use a transaction to ensure all operations succeed or fail together
+    return await prisma.$transaction(async (tx) => {
+      // First, delete all PageView records associated with this page
+      await tx.pageView.deleteMany({
+        where: { pageId: id }
+      });
+      
+      // Then delete the page itself
+      const page = await tx.page.delete({
+        where: { id }
+      });
+      
+      return page;
     });
-    
-    return page;
   } catch (error) {
     console.warn('Failed to delete page:', error.message);
     throw new Error(`Failed to delete page: ${error.message}`);

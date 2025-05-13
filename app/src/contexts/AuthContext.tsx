@@ -16,6 +16,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -184,6 +185,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+
+  const loginWithToken = async (token: string) => {
+    try {
+      // Verify the token with the backend
+      const response = await fetch('/api/auth/verify-authentik-token', {
+        method: 'POST',
+        headers: defaultHeaders,
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      const userData = {
+        id: data.user.id,
+        name: `${data.user.firstName} ${data.user.lastName}`,
+        email: data.user.email,
+        roles: data.user.roles,
+        companyId: data.user.companyId
+      };
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      setUser(userData);
+
+      navigate('/dashboard');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Authentication failed';
+      console.error('Authentik login error:', message);
+      throw new Error(message);
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -191,6 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     forgotPassword,
+    loginWithToken,
   };
 
   return (

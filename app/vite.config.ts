@@ -35,13 +35,13 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path
       },
-      '/y/': {
+      '/p/': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path
       },
-      '/p/': {
+      '/uploads/': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,

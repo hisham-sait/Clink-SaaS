@@ -16,6 +16,9 @@ const app = express();
 app.use(cors());  // Allow all origins in development
 app.use(express.json());
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Configure EJS template engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -43,6 +46,10 @@ importQueue.on('progress', (job, progress) => {
   console.log(`Job ${job.id} progress: ${progress}%`);
 });
 
+// Make sure static file serving is before any route handlers
+// Serve static files from uploads directory without authentication
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Public routes (no auth middleware)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/engage/public', require('./routes/engage/public'));
@@ -53,14 +60,16 @@ app.use('/api/crm', auth, require('./routes/crm'));
 app.use('/api/products', auth, require('./routes/products'));
 app.use('/api/links', auth, require('./routes/links'));
 app.use('/api/engage', auth, require('./routes/engage'));
+app.use('/api/insights', auth, require('./routes/insights'));
+app.use('/api/media', auth, require('./routes/media'));
 
 // Public resolver routes (no auth middleware)
 app.use('/r', require('./routes/links/resolver'));
 // Add direct shortlink resolver route
 app.use('/', require('./routes/links/resolver'));
-// Form and Survey resolvers
+// Form resolvers
 app.use('/r', require('./routes/engage/resolver'));
-// Add direct form and survey resolver routes
+// Add direct form resolver routes
 app.use('/', require('./routes/engage/resolver'));
 
 // Import response utilities

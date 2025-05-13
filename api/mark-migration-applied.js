@@ -3,33 +3,35 @@ const prisma = new PrismaClient();
 
 async function markMigrationApplied() {
   try {
-    // Check if the migration is already in the _prisma_migrations table
+    // Migration name to mark as applied
+    const migrationName = '20250505130000_add_insight_models';
+    
+    // Check if migration already exists
     const existingMigration = await prisma.$queryRaw`
-      SELECT * FROM "_prisma_migrations" 
-      WHERE "migration_name" = '20250422154316_add_elements_to_form'
+      SELECT * FROM "_prisma_migrations" WHERE "migration_name" = ${migrationName}
     `;
-
-    if (existingMigration && existingMigration.length > 0) {
-      console.log('Migration already exists in the _prisma_migrations table');
+    
+    if (existingMigration.length > 0) {
+      console.log(`Migration ${migrationName} already exists in the database.`);
       return;
     }
-
-    // Insert the migration record
+    
+    // Insert migration record
     await prisma.$executeRaw`
       INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
       VALUES (
         gen_random_uuid(),
-        '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-        NOW(),
-        '20250422154316_add_elements_to_form',
+        'manually applied',
+        now(),
+        ${migrationName},
         NULL,
         NULL,
-        NOW(),
+        now(),
         1
       )
     `;
-
-    console.log('Migration marked as applied successfully');
+    
+    console.log(`Migration ${migrationName} marked as applied.`);
   } catch (error) {
     console.error('Error marking migration as applied:', error);
   } finally {

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SEEGAP</title>
+    <link rel="stylesheet" href="/assets/css/custom.css">
+</head>
+<body>
+    <div class="layout-content">
+        <div class="card">
+            <div class="card-header">
+                <img src="/assets/images/logo.svg" alt="SEEGAP Logo" class="logo-img">
+                <h1 class="card-title">Login to SEEGAP</h1>
+            </div>
+            <div class="card-body">
+                {{if .Error}}
+                <div class="message error">{{.Error}}</div>
+                {{end}}
+                
+                <form action="{{.ActionEndpoint}}" method="POST">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username-textfield" name="username" placeholder="Username" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password-textfield" name="password" placeholder="Password" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="remember-checkbox" name="remember" value="true">
+                        <label for="remember-checkbox" style="display: inline-block; margin-left: 5px;">Remember me</label>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn-primary">Login</button>
+                    </div>
+                    {{if .ResetPassword}}
+                    <div class="form-group" style="text-align: center; margin-top: 1rem;">
+                        <a href="{{.ResetPassword}}">Forgot Password?</a>
+                    </div>
+                    {{end}}
+                </form>
+            </div>
+            <div class="footer">
+                <p>© 2025 SEEGAP. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
