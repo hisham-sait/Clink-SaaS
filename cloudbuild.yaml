@@ -1,40 +1,31 @@
 timeout: '1800s'  # 30 minutes
-logsBucket: 'gs://clink-saas-app-build-logs-${PROJECT_ID}'
+logsBucket: 'gs://clink-saas-app-build-logs-785013106184'
 options:
-  logging: CLOUD_LOGGING_ONLY
   machineType: 'N1_HIGHCPU_8'  # Faster builds
   dynamicSubstitutions: true
   env:
     - 'NODE_ENV=production'
 
 steps:
-  # Create logs bucket if it doesn't exist
-  - name: 'gcr.io/cloud-builders/gsutil'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        gsutil mb -l europe-west1 gs://clink-saas-app-build-logs-${PROJECT_ID} || true
-
   # Pull cached images if available
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        docker pull europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest || true
-        docker pull europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest || true
+        docker pull europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:latest || true
+        docker pull europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:latest || true
 
   # Build frontend with caching
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:$COMMIT_SHA'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:latest'
       - '--cache-from'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:latest'
       - '--build-arg'
       - 'BUILDKIT_INLINE_CACHE=1'
       - './app'
@@ -46,11 +37,11 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:$COMMIT_SHA'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:latest'
       - '--cache-from'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:latest'
       - '--build-arg'
       - 'BUILDKIT_INLINE_CACHE=1'
       - './api'
@@ -59,15 +50,15 @@ steps:
 
   # Push frontend images
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA']
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:$COMMIT_SHA']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest']
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:latest']
 
   # Push backend images
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA']
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:$COMMIT_SHA']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest']
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:latest']
 
   # Get secrets
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -93,8 +84,8 @@ steps:
         GOOGLE_CLIENT_ID=$(cat google_client_id.txt)
         GOOGLE_CLIENT_SECRET=$(cat google_client_secret.txt)
         GOOGLE_REDIRECT_URI=$(cat google_redirect_uri.txt)
-        gcloud run deploy backend \
-          --image europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA \
+        gcloud run deploy api \
+          --image europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:$COMMIT_SHA \
           --region europe-west1 \
           --platform managed \
           --allow-unauthenticated \
@@ -114,16 +105,16 @@ steps:
     args:
       - '-c'
       - |
-        echo "VITE_API_URL=https://$(gcloud run services describe backend --region europe-west1 --format='value(status.url)')" > app.env
+        echo "VITE_API_URL=https://$(gcloud run services describe api --region europe-west1 --format='value(status.url)')" > app.env
 
   # Deploy frontend to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
-      - 'frontend'
+      - 'app'
       - '--image'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:$COMMIT_SHA'
       - '--region'
       - 'europe-west1'
       - '--platform'
@@ -158,10 +149,10 @@ steps:
     secretEnv: ['WEBHOOK_URL']
 
 images:
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:$COMMIT_SHA'
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/frontend:latest'
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:$COMMIT_SHA'
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/backend:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/app:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/docker-repo/api:latest'
 
 availableSecrets:
   secretManager:
